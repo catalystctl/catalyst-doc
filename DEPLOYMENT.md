@@ -15,6 +15,7 @@ The site is fully static. Cloudflare Pages builds it from this repo and serves
 | Env vars | `NODE_VERSION=22` (production + preview) |
 | Root directory | `/` (repo root) |
 | Custom domain | `docs.catalystctl.com` (zone `catalystctl.com` is on Cloudflare; TLS automatic) |
+| Status | Live — verified serving production traffic (first deploy auto-built from `main`) |
 
 No secrets are required — the build is hermetic.
 `pnpm install --frozen-lockfile` runs before the build (lockfile committed).
