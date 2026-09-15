@@ -98,6 +98,7 @@ export default defineConfig({
             { label: 'Rate Limits', slug: 'api/rate-limits' },
             { label: 'WebSockets & Events', slug: 'api/websockets' },
             { label: 'Guides', slug: 'api/guides' },
+            { label: 'Plugin Development', slug: 'api/plugins' },
             { label: 'API Reference', slug: 'api/reference' },
           ],
         },

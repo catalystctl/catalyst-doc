@@ -42,6 +42,18 @@ admin needs them to fix something.
 - API guides are hand-written concepts; the endpoint reference is generated
   (`api/openapi.json` + Scalar). Never hand-edit the generated artifact.
 
+## Screenshots
+
+- The docs site is intentionally screenshot-free for now: screenshots rot fast
+  and every one is a maintenance liability.
+- Product screenshots for the main README live in `catalystctl/catalyst`
+  under `docs/screenshots/` (with `manifest.json`).
+- If screenshots become necessary here, generate them with Playwright against
+  a deterministic test environment (seeded data, fixed viewport), store
+  sources under `screenshots/`, and never commit hand-taken screenshots.
+  Keep them to flows where an image materially beats words (first setup,
+  console layout) — not every page.
+
 ## Validation (run before every PR)
 
 ```bash

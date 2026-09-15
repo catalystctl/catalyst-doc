@@ -1,0 +1,57 @@
+---
+title: Plugin Development
+description: Extend Catalyst with backend routes, UI tabs, tasks, and events.
+audience:
+  - developer
+features:
+  - plugins
+  - api
+sources:
+  - packages/plugin-sdk/
+  - catalyst-backend/src/plugins/
+  - docs/plugins.md
+api_tags:
+  - plugins
+  - guides
+last_verified: '2026-09-15'
+---
+
+Plugins extend the panel itself: custom backend routes, extra admin and server
+tabs, scheduled tasks, WebSocket handlers, and scoped data storage. If you
+just want to *call* Catalyst from outside, use the [REST API](/api/overview/)
+instead.
+
+## What a plugin can do
+
+- **Backend routes** — new API endpoints with the same auth and permission
+  model as core routes.
+- **Frontend tabs and routes** — admin tabs, server tabs, and dynamic routes
+  rendered inside the panel.
+- **Scheduled tasks and events** — background work and plugin-to-plugin RPC.
+- **Scoped storage** — per-plugin data kept separate from core tables.
+
+## Build one
+
+1. Scaffold from the SDK (`@catalyst/plugin-sdk`): define a manifest and the
+   lifecycle hooks (`load` vs. `enable`), then add routes or UI.
+2. Test with the SDK's mock context and lifecycle harness before touching a
+   real panel.
+3. Install through **Admin → Plugins**, enable it for the right scope, and
+   watch the panel logs on first load.
+
+## Full reference
+
+The complete engineering reference — manifest fields, plugin context, scoped
+database, event system, WebSocket integration, frontend slots and hooks —
+lives with the code in `docs/plugins.md` of the main Catalyst repository,
+alongside the SDK README in `packages/plugin-sdk/`. Start there once this
+overview makes sense.
+
+## Rules for production plugins
+
+- Request the smallest permissions your plugin needs; admins judge plugins
+  partly by how much they ask for.
+- Never store secrets in plugin code or manifests — use the panel's secret
+  handling and document what operators must configure.
+- Pin your SDK version and test against the panel versions you support;
+  internal plugin APIs evolve faster than the public REST API.

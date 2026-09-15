@@ -61,7 +61,8 @@ export async function run(mode, opts) {
       if (p.rel === 'index.mdx') continue;
       for (const pat of p.meta.sources ?? []) {
         const prefix = pat.split('*')[0].replace(/\/$/, '');
-        if (prefix && sourcePresent && !existsSync(resolve(sourceRepo, prefix))) {
+        // Sources may live in either checkout (product code vs. docs tooling).
+        if (prefix && sourcePresent && !existsSync(resolve(sourceRepo, prefix)) && !existsSync(resolve(docsRepo, prefix))) {
           findings.push({ page: p.rel, issue: 'source-gone', detail: `declared source no longer exists: ${pat}` });
         }
       }
