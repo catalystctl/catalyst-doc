@@ -32,6 +32,11 @@ export default defineConfig({
       ],
       sidebar: [
         {
+          label: 'Catalyst Website',
+          link: 'https://catalystctl.com/',
+          attrs: { target: '_blank', rel: 'noopener' },
+        },
+        {
           label: 'Getting Started',
           items: [
             { label: 'What is Catalyst?', slug: 'getting-started/what-is-catalyst' },
