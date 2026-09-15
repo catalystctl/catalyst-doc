@@ -1,0 +1,36 @@
+---
+title: Terminology
+description: Panel, node, server, template, allocation, and the other words Catalyst uses.
+audience:
+  - user
+  - admin
+features:
+  - core-concepts
+sources:
+  - catalyst-frontend/src/i18n/locales/en/
+last_verified: '2026-09-15'
+---
+
+Catalyst reuses a few words with precise meanings. When docs say one of these,
+they always mean the following:
+
+| Term | Meaning |
+| --- | --- |
+| **Panel** | The Catalyst web application and API you log in to. |
+| **Node** | A machine running the Catalyst agent that hosts game servers. |
+| **Agent** | The service on a node that runs containers and talks to the panel. |
+| **Server** | One game instance with its own files, limits, ports, and backups. |
+| **Template** | A reusable recipe for a game (image, startup command, install script). |
+| **Nest** | A category that groups related templates (for example, Minecraft). |
+| **Allocation** | An IP + port pair on a node assigned to a server. |
+| **Subuser** | An extra account given limited access to someone else's server. |
+| **Task** | A scheduled action on a server, such as a restart or backup (see [Tasks](/users/tasks/)). |
+| **Backup** | A restorable snapshot of a server's files. |
+| **Database** | A managed database attached to a server (for plugins and mods). |
+| **Role** | A named set of permissions administrators assign to users. |
+| **API key** | A token that lets scripts and integrations call the Catalyst API. |
+
+One common confusion: a **node** is a machine, while a **server** is a game
+running on that machine. If your game lags, the problem may be the server's
+limits or the node's load — [troubleshooting](/troubleshooting/overview/) helps
+you tell the difference.

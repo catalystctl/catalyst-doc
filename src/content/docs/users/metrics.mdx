@@ -1,0 +1,45 @@
+---
+title: Metrics & Alerts
+description: Watch CPU, memory, and disk usage, and get notified before limits bite.
+audience:
+  - user
+features:
+  - servers
+  - metrics
+  - alerts
+sources:
+  - catalyst-frontend/src/pages/alerts/AlertsPage.tsx
+  - catalyst-backend/src/routes/metrics.ts
+  - catalyst-backend/src/routes/alerts.ts
+last_verified: '2026-09-15'
+---
+
+The **Metrics** tab graphs what your server actually consumes — CPU, memory,
+disk, and network over time. The **Alerts** tab notifies you when something
+crosses a threshold.
+
+## Read the graphs
+
+- **Memory near the limit with lag spikes:** raise the server's memory (ask your
+  administrator) or reduce view distance, plugins, and loaded chunks.
+- **CPU pinned at 100%:** a single-threaded game (like Minecraft) saturates one
+  core; spread load or upgrade the node allocation.
+- **Disk climbing steadily:** logs and backups accumulate — prune `logs/` and
+  old backups ([backups](/users/backups/)).
+- Compare against quiet hours: if usage is high with zero players, something
+  (a farm, a runaway task, a leak) is burning resources.
+
+## Set up alerts
+
+1. Open **Alerts** and create an alert for the metric you care about (for
+   example, memory above 90% for 5 minutes, or server offline).
+2. Point it at a channel you actually read.
+3. Test it once — an alert you have never seen fire is a rumor, not protection.
+
+Alert fatigue is real: alert on symptoms that need action (offline, disk nearly
+full), not on every wiggle.
+
+## Related
+
+- [Power controls](/users/power/) — what to do when a restart is the fix
+- [Panel issues](/troubleshooting/panel/) — when metrics stop reporting

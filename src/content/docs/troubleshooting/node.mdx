@@ -1,0 +1,50 @@
+---
+title: Node Issues
+description: Diagnose unreachable nodes, failed agents, and node-level failures.
+audience:
+  - admin
+features:
+  - nodes
+  - troubleshooting
+sources:
+  - docs/troubleshooting.md
+  - docs/agent.md
+  - catalyst-agent/
+last_verified: '2026-09-15'
+---
+
+## Node shows unreachable
+
+Running servers keep running — only management is down. Check in order:
+
+1. **Agent process** on the node: running? (`systemctl status` / OpenRC
+   equivalent.) Restart it and watch its logs.
+2. **Node → panel path**: DNS resolves the panel URL from the node? Outbound
+   HTTPS reaches it? A proxy or firewall change breaks this silently.
+3. **Panel side**: is the panel itself healthy ([panel issues](/troubleshooting/panel/))?
+   An unreachable panel makes every node look dead.
+4. **Credentials**: rotated or revoked node API keys break check-in — re-register
+   the key ([registering](/admin/nodes/registering/)).
+
+## Agent installed but never checks in
+
+- Wrong panel URL (scheme/host/port) in the agent config — the most common cause.
+- Clock skew: large time differences break TLS and token validation; sync with NTP.
+- Version mismatch: an agent far newer/older than the panel may be rejected —
+  keep them in step ([updating a node](/admin/nodes/updating/)).
+
+## All servers on one node suffer
+
+That is a node problem, not N server problems:
+
+1. Disk full? Memory exhausted? Check node metrics first.
+2. Recent OS/runtime/agent update? Consider rollback per
+   [updating a node](/admin/nodes/updating/).
+3. Migrate critical servers to a healthy node while you investigate — the fleet
+   exists for exactly this.
+
+## Data to collect before asking for help
+
+Agent version, agent log tail (50–100 lines around the failure), node OS and
+free resources (`df -h`, `free -m`), and whether the panel URL is reachable
+from the node with `curl`.

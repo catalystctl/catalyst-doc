@@ -1,0 +1,59 @@
+---
+title: Your First Server
+description: Create a Minecraft server in Catalyst, start it, and join it.
+audience:
+  - user
+features:
+  - servers
+  - templates
+sources:
+  - catalyst-frontend/src/pages/servers/
+  - catalyst-backend/src/routes/servers.ts
+last_verified: '2026-09-15'
+---
+
+This guide creates a working Minecraft (Paper) server. The same steps apply to
+any game: pick a template, choose resources, create, install, start.
+
+## Prerequisites
+
+- An account on a Catalyst panel (your host or administrator provides this).
+- A node with free memory, disk, and at least one free allocation. If creation
+  fails, ask your administrator — see [server issues](/troubleshooting/server/).
+
+## 1. Create the server
+
+1. Open **Servers** and select **Create Server**.
+2. Give the server a name you will recognize, for example `Survival SMP`.
+3. Choose the **Minecraft** nest and the **Paper** template.
+4. Pick the node to run it on (usually there is only one).
+5. Accept the suggested memory, disk, and CPU limits unless you know you need more.
+6. Assign an allocation (IP + port) for players to join through.
+7. Select **Create**. Catalyst installs the game files automatically — this can
+   take a few minutes. Watch progress in the **Console** tab.
+
+::: caution
+Creating a server allocates real resources on the node. Delete test servers you
+no longer need so they stop consuming memory and disk.
+:::
+
+## 2. Accept the Minecraft EULA
+
+Minecraft servers stop on first boot until you accept the EULA:
+
+1. Open the **Files** tab and open `eula.txt`.
+2. Change `eula=false` to `eula=true` and save.
+3. Return to **Console** and start the server again.
+
+## 3. Start and join
+
+1. Press **Start** in the console header and wait for the `Done!` message.
+2. Copy the server address from the server header (allocation IP + port).
+3. In Minecraft, use **Multiplayer → Add Server** and paste the address.
+
+## Next steps
+
+- [Use the console](/users/console/) — commands, power controls, and logs.
+- [Upload files and use SFTP](/users/files/) — worlds, plugins, and configs.
+- [Make a backup](/users/backups/) before experimenting.
+- [Add a friend](/users/subusers/) as a subuser instead of sharing your login.

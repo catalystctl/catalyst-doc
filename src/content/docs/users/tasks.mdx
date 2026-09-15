@@ -1,0 +1,40 @@
+---
+title: Tasks
+description: Schedule restarts, backups, and commands that run automatically.
+audience:
+  - user
+features:
+  - tasks
+sources:
+  - catalyst-frontend/src/pages/servers/
+  - catalyst-backend/src/routes/tasks.ts
+last_verified: '2026-09-15'
+---
+
+The **Tasks** tab runs actions on a schedule — nightly restarts, automatic
+backups, timed messages — so you stop doing them by hand.
+
+## Create a task
+
+1. Open **Tasks** and select **Create Task**.
+2. Choose the action: send a power signal (start/restart/stop), run a console
+   command, or create a backup.
+3. Set the schedule (daily time or interval).
+4. Enable it. Disabled tasks are kept but never run.
+
+## Recipes that work well
+
+- **Nightly restart:** restart at 04:00 when nobody is online. Warn players with
+  a preceding command task (`say Restarting in 5 minutes`) a few minutes earlier.
+- **Daily backup:** create a backup every night, and keep manual locked backups
+  for milestones ([backups](/users/backups/)).
+- **Timed messages:** broadcast rules or event reminders with `say`.
+
+## Caveats
+
+- A task action runs with the same power as clicking it yourself — a scheduled
+  `stop` really stops the server. Name tasks clearly.
+- If the panel or node is down at the scheduled time, that run is missed, not
+  queued. Check the task's last-run status after outages.
+- Over-frequent restarts annoy players and can corrupt worlds if they coincide
+  with heavy saves. Daily is plenty for most servers.

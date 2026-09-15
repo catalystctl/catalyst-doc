@@ -1,0 +1,65 @@
+---
+title: Installation
+description: Install the Catalyst panel with the Docker installer.
+audience:
+  - admin
+features:
+  - installation
+  - docker
+sources:
+  - install.sh
+  - catalyst-docker/
+  - docs/installation.md
+  - docs/INSTALLATION_DETAILED.md
+last_verified: '2026-09-15'
+---
+
+The supported path is the Docker installer: one script sets up the panel,
+PostgreSQL, Redis, and a reverse proxy.
+
+## 1. Run the installer
+
+On the panel host, as root (or with sudo):
+
+```bash
+bash install.sh
+```
+
+Useful flags:
+
+- `-y` — non-interactive (accept defaults).
+- `--dry-run` — show what would happen without changing anything.
+- `--uninstall` — remove a Catalyst Docker installation.
+- `--help` — all options.
+
+The installer downloads release artifacts and verifies their SHA-256 checksums
+before executing anything. If verification fails, it aborts — do not bypass it.
+
+## 2. What gets installed
+
+Into `catalyst-docker/` (the target directory):
+
+- **Panel** (backend + frontend containers).
+- **PostgreSQL** and **Redis** for data and caches/queues.
+- A reverse-proxy profile — **Caddy** or **Traefik** (see
+  `docker-compose.caddy.yml` / `docker-compose.traefik.yml` in `catalyst-docker/`).
+
+## 3. Finish setup in the browser
+
+Open the panel URL and complete the setup wizard
+([first-time setup](/admin/first-time-setup/)): admin account, panel URL, and
+basic settings.
+
+## After installing
+
+- [Configure TLS and networking](/admin/networking/).
+- [Install a node](/admin/nodes/installing/) — the panel alone runs no games.
+- [Update safely](/admin/updating/) when new releases arrive.
+
+## Troubleshooting
+
+- Installer fails early: re-run with `--dry-run` to see the planned steps, and
+  check Docker/Compose are present and your user can reach the Docker socket.
+- Panel 500s on first login: the database migrations run at container startup —
+  wait a minute and check container logs (`docker compose logs backend`).
+- More: [panel issues](/troubleshooting/panel/).

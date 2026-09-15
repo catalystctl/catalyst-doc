@@ -1,0 +1,46 @@
+---
+title: Monitoring & Logs
+description: Know your fleet is healthy — and find out fast when it is not.
+audience:
+  - admin
+features:
+  - monitoring
+  - logging
+sources:
+  - catalyst-frontend/src/pages/admin/SystemPage.tsx
+  - catalyst-backend/src/routes/metrics.ts
+last_verified: '2026-09-15'
+---
+
+## What to watch
+
+| Layer | Signals |
+| --- | --- |
+| Panel | HTTP errors, login failures, queue depth, DB/Redis health |
+| Nodes | Reachability, CPU/memory/disk, agent version drift |
+| Servers | Crash loops, backup failures, quota usage |
+| Platform | Disk free everywhere, certificate expiry, backup age |
+
+The admin dashboard and system views surface most of this; export it to your
+existing monitoring (Prometheus/Grafana, Uptime Kuma, plain log shipping)
+rather than living in the panel UI.
+
+## Logs that matter
+
+- **Backend container logs** — API errors, auth failures, background jobs.
+- **Agent logs on each node** — lifecycle actions, update stages, connectivity.
+- **Audit log (Admin → Audit Logs)** — who changed what in the panel. This is
+  your source of truth for staff actions; protect its retention.
+- **System errors view** — persisted application errors worth triaging regularly.
+
+## Alerting minimum
+
+Page (or at least notify) on: panel down, node unreachable > 5 min, disk > 85%,
+database backup older than expected, certificate expiring < 14 days. Everything
+else can be a dashboard. Review and prune alerts quarterly — stale alerts train
+people to ignore the channel.
+
+## When something fires
+
+Go to [troubleshooting](/troubleshooting/overview/) with the alert text, the
+affected host, and a timestamp. Those three facts solve half of all incidents.

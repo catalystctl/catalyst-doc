@@ -1,0 +1,31 @@
+---
+// ScalarReference.astro — mounts the Scalar API viewer against the served
+// OpenAPI contract (/openapi.json, copied from api/openapi.json by
+// `pnpm sync-openapi` during prebuild). Falls back to a raw-JSON link when
+// the CDN viewer cannot load (offline readers, script blockers).
+---
+<div id="scalar-api-reference" class="scalar-host"></div>
+<script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.35.2/dist/browser/standalone.min.js"></script>
+<script>
+  function mountScalar() {
+    const el = document.getElementById('scalar-api-reference');
+    if (!el) return;
+    const scalar = (window as unknown as { Scalar?: { createApiReference: (sel: string, opts: object) => void } }).Scalar;
+    if (scalar?.createApiReference) {
+      scalar.createApiReference('#scalar-api-reference', {
+        url: '/openapi.json',
+        hideDownloadButton: false,
+        hideModels: false,
+      });
+    } else {
+      el.innerHTML =
+        '<p>The interactive reference failed to load its viewer. ' +
+        'You can still browse the raw contract at <a href="/openapi.json">openapi.json</a>.</p>';
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', mountScalar);
+  } else {
+    mountScalar();
+  }
+</script>

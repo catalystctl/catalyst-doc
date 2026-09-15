@@ -1,0 +1,43 @@
+---
+title: SFTP
+description: Connect to your server files with FileZilla, WinSCP, or any SFTP client.
+audience:
+  - user
+features:
+  - files
+  - sftp
+sources:
+  - catalyst-frontend/src/components/files/SftpConnectionInfo.tsx
+  - catalyst-frontend/src/components/servers/tabs/ServerSftpTab.tsx
+  - catalyst-agent/src/sftp_server.rs
+last_verified: '2026-09-15'
+---
+
+SFTP gives you a fast, resumable connection for big transfers — uploading a
+modpack, downloading a world, syncing with an external editor. Open the
+**SFTP** tab on your server to find your connection details.
+
+## Connect
+
+1. Open your server's **SFTP** tab and copy the host, port, username, and password.
+2. In your SFTP client (FileZilla, WinSCP, Cyberduck):
+   - Protocol: **SFTP** (not plain FTP — Catalyst does not offer insecure FTP).
+   - Paste the host, port, username, and password exactly.
+3. You land in your server's root directory, same files as the **Files** tab.
+
+## Good practice
+
+- **Stop the server** before uploading or replacing world data or databases.
+- Uploads go through the same permission checks as the file manager: you can
+  only touch your own server.
+- If your client warns about an unknown host key on first connect, verify the
+  fingerprint with your administrator before accepting it.
+
+## Troubleshooting
+
+- **Authentication failed:** credentials rotate — copy them fresh from the SFTP
+  tab instead of reusing a saved password.
+- **Connection refused/timed out:** the node may block the SFTP port, or your
+  network may block outbound SSH. See [networking issues](/troubleshooting/networking/).
+- **Transfers stall on huge folders:** archive them first (zip), upload one file,
+  then extract via the **Files** tab.

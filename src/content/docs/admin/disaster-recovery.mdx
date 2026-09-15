@@ -1,0 +1,47 @@
+---
+title: Disaster Recovery
+description: Be able to rebuild the panel and restore service after serious failure.
+audience:
+  - admin
+features:
+  - disaster-recovery
+  - backups
+sources:
+  - docs/admin-guide.md
+  - catalyst-docker/
+last_verified: '2026-09-15'
+---
+
+Disaster recovery is a tested procedure, not a backup job. If you have never
+restored, you do not have recovery — you have a theory.
+
+## What you must be able to rebuild
+
+1. **Panel database** — automated dumps, off-host, tested restores
+   ([backups](/admin/backups/)).
+2. **Panel configuration** — compose files, `.env`, proxy configs, TLS state:
+   version-controlled or copied with the dumps.
+3. **Nodes** — agents reinstall from the panel; game data restores from
+   node-level and user backups.
+
+## The recovery drill (quarterly)
+
+1. Restore the database dump into a scratch host.
+2. Start the panel stack against it.
+3. Log in, open servers, list backups, check the audit log.
+4. Time the whole thing. If it takes six hours, your RTO is six hours — plan
+   staffing and communication around the truth, not the hope.
+5. Write down everything that was confusing and fix the docs or automation.
+
+## During a real incident
+
+1. Declare: who is in charge, where status is posted, when the next update lands.
+2. Protect the evidence: snapshot failing disks/containers before wiping.
+3. Restore in dependency order: database → panel → nodes → verify servers.
+4. Tell users what happened and what you changed — trust compounds.
+
+## Keep off the burning host
+
+Recovery instructions, credentials for restores, and contact lists must live
+somewhere other than the infrastructure they recover. A runbook on the dead
+panel helps no one.

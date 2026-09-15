@@ -1,0 +1,45 @@
+---
+title: Registering a Node
+description: Add a node to the panel and give it addresses and ports.
+audience:
+  - admin
+features:
+  - nodes
+sources:
+  - catalyst-backend/src/routes/nodes.ts
+  - catalyst-frontend/src/pages/admin/NodesPage.tsx
+last_verified: '2026-09-15'
+---
+
+Registration introduces a machine to the panel: identity, credentials, and the
+network addresses it may hand out to servers.
+
+## Register
+
+1. Open **Admin → Nodes** and select **Add Node**.
+2. Enter a clear name (datacenter + purpose, for example `eu-frankfurt-01`),
+   the node's address as the panel reaches it, and resource overviews.
+3. Save — the panel generates the node's ID and API key.
+4. Install the agent with those credentials
+   ([installing](/admin/nodes/installing/)). The agent's first check-in flips
+   the node to healthy.
+
+## Add allocations
+
+Servers need IP + port pairs. Under the node's **Allocations** (see also the
+admin allocations view), add the public IPs and port ranges players will use.
+Rules:
+
+- Only add IPs actually configured on the node.
+- Reserve panel/agent/management ports — never hand them to game servers.
+- Document which ranges serve which games if you split traffic.
+
+## Credential hygiene
+
+- Node API keys are long-lived secrets. If one leaks, rotate it immediately
+  and re-run the agent setup on that node.
+- One key per node — never copy a key between machines.
+
+## Next
+
+[Updating a node](/admin/nodes/updating/) · [Node issues](/troubleshooting/node/)

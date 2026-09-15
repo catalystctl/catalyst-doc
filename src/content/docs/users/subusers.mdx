@@ -1,0 +1,44 @@
+---
+title: Users & Subusers
+description: Share your server with friends without sharing your login.
+audience:
+  - user
+features:
+  - servers
+  - subusers
+  - permissions
+sources:
+  - catalyst-frontend/src/pages/servers/
+  - catalyst-backend/src/routes/servers/
+last_verified: '2026-09-15'
+---
+
+The **Users** tab adds subusers: extra accounts with limited access to your
+server. Your friend logs in with their own account and only sees what you allow.
+
+## Add a subuser
+
+1. Open **Users** and select **Invite/Add User**.
+2. Enter their panel account email (they need an account on the same panel).
+3. Tick **only** the permissions they need:
+   - A moderator might get console + power + files (view).
+   - A builder might get files only.
+   - Nobody needs everything except you.
+4. Send the invite. They accept it and the server appears in their list.
+
+## Least privilege, always
+
+- Every permission is a way to break something. Console access can run
+  destructive commands; file access can delete worlds; power access can stop
+  the server mid-event.
+- Remove subusers who no longer play. Stale access is the most common source
+  of "someone griefed my server files" stories.
+- Never share your own login instead — then nobody can tell who did what in
+  [Activity](/users/activity/), and you cannot revoke access without changing
+  your password.
+
+## Remove access
+
+Open **Users**, select the subuser, and remove them. Removal is immediate: open
+sessions lose access. If you suspect misuse, check **Activity** first so you
+know what changed.

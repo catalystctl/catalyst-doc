@@ -1,0 +1,51 @@
+---
+title: Backups
+description: Create, restore, download, and lock backups of your server.
+audience:
+  - user
+features:
+  - backups
+sources:
+  - catalyst-frontend/src/components/backups/BackupSection.tsx
+  - catalyst-backend/src/routes/backups.ts
+last_verified: '2026-09-15'
+---
+
+A backup is a restorable snapshot of your server's files. Make one before every
+risky change — updates, new plugins, world edits, reinstalls.
+
+## Create a backup
+
+1. Open **Backups** and select **Create Backup**.
+2. Give it a descriptive name, for example `before-1.21-update`.
+3. Optional: **lock** the backup so automatic cleanup never deletes it.
+4. Wait for the status to finish before stopping the server or making changes.
+
+Backup limits and automatic retention are set by your administrator. If creation
+fails with a quota error, delete or download old backups first.
+
+## Restore a backup
+
+1. Open **Backups**, find the snapshot, and select **Restore**.
+2. Restoring **overwrites current files**. Download anything you want to keep first.
+3. The server is stopped during the restore and must be started afterwards.
+4. Verify the world loads correctly before deleting the backup you restored from.
+
+::: caution
+Restore is destructive to current state. When in doubt, download a fresh backup
+of the *current* files first, so you can go back either way.
+:::
+
+## Good habits
+
+- Backup cadence: before changes (manual) plus a recurring [Task](/users/tasks/)
+  for daily/weekly safety nets.
+- Keep at least one locked backup from before major version upgrades.
+- Download critical backups off-site — a backup on the same node does not
+  protect against node loss. Administrators handle node-level disaster recovery
+  ([admin backups](/admin/backups/)).
+
+## Related
+
+- [Tasks](/users/tasks/) — schedule automatic backups
+- [Reinstalling](/users/reinstalling/) — backup first, always

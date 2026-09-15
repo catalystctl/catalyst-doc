@@ -1,0 +1,51 @@
+---
+title: Panel Issues
+description: Fix login failures, 500s, and a panel that will not start.
+audience:
+  - admin
+features:
+  - troubleshooting
+  - administration
+sources:
+  - docs/troubleshooting.md
+  - catalyst-docker/
+last_verified: '2026-09-15'
+---
+
+## Panel will not start after an update
+
+1. Read the backend container logs first (`docker compose logs backend`).
+   Most failures announce themselves: a migration waiting on a lock, a renamed
+   environment variable (check the release notes), or an unreachable database.
+2. Confirm PostgreSQL and Redis containers are up before blaming the backend.
+3. Roll back per [updating Catalyst](/admin/updating/) if the cause is not
+   obvious within minutes — a down panel blocks all management.
+
+## HTTP 500s in the UI
+
+- One page broken, rest fine: note the exact page + action and check backend
+  logs at that timestamp. A missing column after a partial migration looks
+  exactly like this — never interrupt migrations.
+- Everything broken: database or Redis connectivity. Verify credentials,
+  connectivity, and free disk on the database host.
+
+## Nobody can log in
+
+1. Can you reach the panel URL at all? If not, this is
+   [networking](/troubleshooting/networking/), not auth.
+2. Wrong-password for everyone including admins: check the backend logs for
+   auth/database errors rather than resetting passwords blindly.
+3. Invites/resets never arrive: mail configuration ([configuration](/admin/configuration/)),
+   spam folders, then mail provider logs.
+
+## Pages load but data is stale
+
+The UI caches aggressively. Hard-refresh, then check whether realtime streams
+are connecting ([WebSockets](/api/websockets/)) — a broken event stream looks
+like frozen data while REST keeps working.
+
+## Collect for a bug report
+
+Panel version, browser + version, exact steps, backend log lines for the
+incident window, and whether the problem survives a private window
+(rules out extensions/cookies).

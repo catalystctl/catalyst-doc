@@ -1,0 +1,19 @@
+{
+  "preferred": {
+    "Catalyst": "Product name is always capitalized.",
+    "panel": "The web application. Never 'dashboard' for the app itself (Dashboard is a page).",
+    "node": "A machine running the agent. Never 'server' for a node.",
+    "server": "One game instance. Never 'container' or 'instance' in user docs.",
+    "template": "Installable game recipe. Never 'egg' except when describing Pterodactyl imports.",
+    "allocation": "An IP + port pair. Never 'port' alone when the IP matters.",
+    "task": "A scheduled server action. Never 'cron job' or 'schedule' as a noun for it.",
+    "subuser": "One word. Never 'sub-user' or 'sub user'.",
+    "API key": "Capitalized. Never 'apikey' or 'api-key' in prose."
+  },
+  "banned": {
+    "pterodactyl server": "Say 'Catalyst server'. Pterodactyl is only named for imports/migration.",
+    "cron job": "Say 'task'.",
+    "sub-user": "Say 'subuser'.",
+    "apikey": "Say 'API key'."
+  }
+}

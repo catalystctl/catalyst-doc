@@ -1,0 +1,50 @@
+---
+title: Console
+description: Read live logs, run commands, and control your server from the console.
+audience:
+  - user
+features:
+  - console
+sources:
+  - catalyst-frontend/src/pages/servers/ServerConsolePage.tsx
+  - catalyst-backend/src/routes/console-stream.ts
+last_verified: '2026-09-15'
+---
+
+The **Console** tab shows everything your game server prints — startup messages,
+player joins, errors — as it happens. It keeps the last 2,000 lines on screen;
+older output scrolls away.
+
+## Run a command
+
+Type into the input at the bottom and press Enter. Commands run as the server
+itself, exactly as if you typed them into the server's own terminal:
+
+- Minecraft: `say Hello`, `whitelist add Notch`, `tps`
+- Source games: `status`, `changelevel de_dust2`
+
+::: caution
+Console commands bypass most safety rails. A wrong command can ban players or
+delete data. When in doubt, [make a backup](/users/backups/) first.
+:::
+
+## Read a crash
+
+When a server will not stay up:
+
+1. Press **Start** and watch the first 50 lines — the real error is usually
+   near the top, not at the end.
+2. Look for `ERROR`, `Exception`, `missing`, or `port already in use`.
+3. Common causes and fixes live in [server issues](/troubleshooting/server/).
+
+## Console vs. logs
+
+The console is a live view, not permanent storage. For history, use the
+**Activity** tab (who did what) or download log files from the **Files** tab
+(usually under `logs/`). Realtime integrations should use the
+[WebSocket events API](/api/websockets/) rather than scraping the console.
+
+## Related
+
+- [Power controls](/users/power/)
+- [Tasks](/users/tasks/) — run commands on a schedule

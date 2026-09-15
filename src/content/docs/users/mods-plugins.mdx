@@ -1,0 +1,43 @@
+---
+title: Mods & Plugins
+description: Extend your server with the built-in mod and plugin managers.
+audience:
+  - user
+features:
+  - servers
+  - mods
+  - plugins
+sources:
+  - catalyst-frontend/src/pages/servers/
+  - catalyst-backend/src/routes/plugins.ts
+last_verified: '2026-09-15'
+---
+
+Servers based on supported templates offer **Mod Manager** and **Plugin
+Manager** tabs: curated installers for popular mods and plugins without manual
+jar wrangling.
+
+## Install a mod or plugin
+
+1. Open the **Mod Manager** or **Plugin Manager** tab.
+2. Find what you want and select **Install**.
+3. [Restart](/users/power/) the server so the game loads it.
+4. Check the console for load errors — a red stack trace on boot usually names
+   the incompatible mod and the version it wants.
+
+## Rules for a stable server
+
+1. **Backup first.** Mods touch worlds and configs; see [backups](/users/backups/).
+2. **Match versions.** A plugin built for game version X on server version Y is
+   the top cause of boot failures. The manager usually filters this — manual
+   uploads via [Files](/users/files/) do not.
+3. **Add one at a time** and restart between additions. Ten mods at once means
+   ten suspects when it crashes.
+4. **Remove cleanly:** uninstall from the manager (or delete the jar) and
+   restart; leftover configs in `config/` or `plugins/` are harmless but can
+   confuse replacements.
+
+## When it breaks
+
+Read the error in the [console](/users/console/) first — it almost always says
+which mod failed and why. Then see [server issues](/troubleshooting/server/).

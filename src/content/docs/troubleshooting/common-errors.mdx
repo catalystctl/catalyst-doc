@@ -1,0 +1,34 @@
+---
+title: Common Errors
+description: Look up a Catalyst error message and fix it.
+audience:
+  - user
+  - admin
+  - developer
+features:
+  - troubleshooting
+sources:
+  - catalyst-backend/src/lib/error-codes/
+  - catalyst-frontend/src/i18n/api-errors.ts
+last_verified: '2026-09-15'
+---
+
+Copy the `code` from your error (API consumers) or match the message below.
+API codes are stable identifiers — see [errors](/api/errors/).
+
+| Error | Meaning | Fix |
+| --- | --- | --- |
+| `PERMISSION_DENIED` / "Insufficient permissions" | Logged in, but not allowed. | Check your role/subuser grants ([authorization](/api/authorization/), [subusers](/users/subusers/)). |
+| `VALIDATION_ERROR` / "Missing required fields" | The request or form was incomplete. | Fill the highlighted fields; for API calls compare against the [reference](/api/reference/). |
+| `NOT_FOUND` | No such thing (or hidden from you). | Check the ID/UUID; confirm it was not deleted. |
+| `CONFLICT` | Duplicate or state clash. | Rename, or stop/delete the conflicting resource first. |
+| `RATE_LIMITED` / "Too many requests" | Over the limit. | Slow down, back off, stop polling ([rate limits](/api/rate-limits/)). |
+| `INSUFFICIENT_RESOURCES` | Node lacks memory/disk/ports. | Free capacity or ask the administrator for a bigger node. |
+| `port already in use` | Allocation clash. | [Server issues](/troubleshooting/server/) — free or reassign the port. |
+| `eula=false` / server stops instantly (Minecraft) | EULA not accepted. | Set `eula=true` in `eula.txt`, restart ([first server](/getting-started/first-server/)). |
+| SFTP "authentication failed" | Stale or mistyped credentials. | Copy fresh credentials from the SFTP tab ([SFTP](/users/sftp/)). |
+| Setup wizard missing on fresh install | Setup already ran, or backend still migrating. | Sign in; if erroring, check container logs ([panel issues](/troubleshooting/panel/)). |
+
+If your message is not here, search the page text in the main Catalyst
+repository issues — and consider contributing the fix back to this page (see
+[docs contributor guide](/contributing/docs/)).

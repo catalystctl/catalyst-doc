@@ -1,0 +1,38 @@
+---
+title: Updating a Node
+description: Roll the agent and runtime forward without losing servers.
+audience:
+  - admin
+features:
+  - nodes
+  - updates
+sources:
+  - catalyst-agent/src/updater.rs
+  - catalyst-backend/src/routes/nodes.ts
+last_verified: '2026-09-15'
+---
+
+## Safe update order
+
+1. **Update the panel first** ([updating Catalyst](/admin/updating/)). New agents
+   expect a panel at least as new as they are.
+2. Update **one node** and watch it for a full day before touching the rest.
+3. Update remaining nodes in batches, never all at once.
+
+## Process per node
+
+1. Announce maintenance — restarts interrupt running servers.
+2. Trigger the agent update from **Admin → Nodes** (or your usual automation)
+   and follow progress in the node view; the agent reports update stages back
+   to the panel.
+3. Verify: node healthy, a test server starts, console streams, backups list.
+4. If the agent fails to come back, the node's local logs and the previous
+   agent binary are your recovery path — see [node issues](/troubleshooting/node/).
+
+## Rules
+
+- Never update panel and all nodes simultaneously. A bad release then breaks
+  everything instead of one canary node.
+- Game servers themselves do not update with the agent — game versions come
+  from templates ([templates](/admin/templates/)).
+- Keep a changelog note per node (agent version + date) for the next incident.

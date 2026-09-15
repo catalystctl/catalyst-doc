@@ -1,0 +1,45 @@
+---
+title: Importing Pterodactyl Eggs
+description: Bring Pterodactyl eggs into Catalyst as templates.
+audience:
+  - admin
+features:
+  - templates
+  - migration
+sources:
+  - docs/pterodactyl-migration.md
+  - docs/egg-migration-audit.md
+  - catalyst-backend/src/routes/migration.ts
+last_verified: '2026-09-15'
+---
+
+Catalyst can import Pterodactyl eggs as templates, so a library built for
+Pterodactyl does not have to be rebuilt from scratch.
+
+## Import
+
+1. Open **Admin → Migration** (the migration center also handles full-panel
+   imports — see [migration](/admin/migration/)).
+2. Provide the egg JSON and test the import — the panel validates structure
+   before committing.
+3. Review the generated template carefully: startup command, variables, image,
+   and install script. Automated conversion is faithful, not perfect.
+4. Create a test server from it and run the full lifecycle (install → start →
+   join → backup → restore) before publishing.
+
+## What to check by hand
+
+- **Variables:** names, defaults, and validation rules sometimes need renaming
+  to match Catalyst conventions.
+- **Images:** confirm the container image exists and is maintained; repoint to
+  your own registry mirror if you run one.
+- **Install scripts:** read them. Imported scripts run as part of installation
+  with significant privilege — never import eggs from sources you do not trust.
+- **Paths:** document root and config paths occasionally differ; a quick
+  install test exposes this immediately.
+
+::: caution
+Imported install scripts execute code from the egg author. Review every script
+before publishing its template to users — this is a supply-chain boundary.
+See [security](/admin/security/).
+:::

@@ -1,0 +1,53 @@
+---
+title: What is Catalyst?
+description: The panel, the node, and the server — how Catalyst fits together.
+audience:
+  - user
+  - admin
+features:
+  - core-concepts
+sources:
+  - catalyst-frontend/src/pages/
+  - catalyst-backend/src/routes/
+last_verified: '2026-09-15'
+---
+
+Catalyst is a self-hosted game-server control panel. You install it on your own
+infrastructure and use it to create, run, and share game servers — Minecraft,
+Rust, CS2, ARK, and more — through a web interface instead of SSH and
+hand-edited config files.
+
+Three ideas explain almost everything in these docs:
+
+## Panel
+
+The **panel** is the web application you log in to. It stores users, roles,
+servers, and settings, and it coordinates everything else. Administrators
+install and update the panel; server owners mostly live inside it.
+
+## Node
+
+A **node** is a machine that actually runs game servers. Each node runs the
+Catalyst **agent**, a small service that starts and stops game containers,
+streams console output, and reports health back to the panel. One panel can
+manage many nodes, and nodes can live in different datacenters.
+
+## Server
+
+A **server** is one game instance — for example, a single Minecraft world with
+its own files, memory limit, network ports, backups, and databases. A server
+always lives on exactly one node. Server owners manage their server through
+tabs such as **Console**, **Files**, **Backups**, and **Databases**.
+
+## Templates
+
+A **template** (imported from a Pterodactyl egg, or built in) describes how to
+run a particular game: the container image, startup command, default settings,
+and install script. Administrators manage templates; creating a server is
+mostly picking a template and choosing resources.
+
+## Where to go next
+
+- Server owners: [create your first server](/getting-started/first-server/).
+- New operators: [install Catalyst](/admin/installation/).
+- Integrators: [tour the API](/api/overview/).

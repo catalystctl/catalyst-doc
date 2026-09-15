@@ -1,0 +1,10 @@
+{
+  "name": "catalyst-docs-agent",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Catalyst docs-maintenance agent: maps Catalyst repo changes to documentation impact.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  }
+}

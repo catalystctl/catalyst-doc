@@ -1,0 +1,41 @@
+---
+title: Networking
+description: Understand allocations and how players reach your server.
+audience:
+  - user
+features:
+  - networking
+  - allocations
+sources:
+  - catalyst-frontend/src/pages/admin/NodeAllocationsPage.tsx
+  - catalyst-backend/src/routes/servers/
+last_verified: '2026-09-15'
+---
+
+An **allocation** is an IP address + port pair on your node. Your primary
+allocation is the address players join through; extra allocations serve extra
+ports (query, RCON, voice, Bedrock vs. Java).
+
+## View your allocations
+
+Open the server header or the **Networking**/**Settings** area to see:
+
+- The **primary allocation** (default join address).
+- Any **additional allocations** assigned to the server.
+
+Most server owners never need to change these — allocations are assigned by the
+administrator when the server is created.
+
+## What you can and cannot do
+
+- You can see which ports belong to your server and which game services use them.
+- You generally **cannot** add or remove allocations yourself; ask your
+  administrator if you need another port (for example, for a plugin's web map).
+- Never point two servers at the same allocation — the second one will fail to
+  bind with `port already in use`. See [server issues](/troubleshooting/server/).
+
+## Giving players an address
+
+Share the primary allocation as `IP:port`. If your host provides a hostname or
+does not require the default port, they will tell you — otherwise always include
+the port. Details: [connecting to your server](/getting-started/connecting/).

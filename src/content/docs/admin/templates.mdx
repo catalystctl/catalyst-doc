@@ -1,0 +1,42 @@
+---
+title: Templates
+description: Provide the games your users can install.
+audience:
+  - admin
+features:
+  - templates
+sources:
+  - catalyst-frontend/src/pages/templates/
+  - catalyst-backend/src/routes/templates.ts
+last_verified: '2026-09-15'
+---
+
+**Templates** define installable games: container image, install script,
+startup command, variables, and defaults. Users pick a template when creating a
+server; everything else flows from it.
+
+## Offer a game
+
+1. Open **Admin → Templates** and review what exists.
+2. Import from a Pterodactyl egg ([importing eggs](/admin/importing-eggs/)) or
+   create a template for your game.
+3. Test it end to end: create a real server, install, start, join, stop,
+   backup, restore. A template you have not installed from scratch is untested.
+4. Publish it to the nests your users browse.
+
+## Maintain templates
+
+- **Pin versions** in install scripts where stability matters; `latest` moves
+  under you on the worst possible day.
+- **Keep variables minimal.** Every variable is support surface — expose what
+  users actually change, hide the rest in sane defaults.
+- **Version your changes.** When a template update changes behavior, note what
+  and when; existing servers usually keep their old effective config until
+  reinstalled, so document whether users must act.
+- **Retire broken templates** instead of leaving them for users to discover.
+
+## Nests
+
+Nests group templates (Minecraft, Source, and so on). Keep the nest list short
+and obvious — it is the first choice users make, and twenty near-identical
+entries help nobody.

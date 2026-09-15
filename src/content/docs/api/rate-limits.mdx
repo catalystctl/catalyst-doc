@@ -1,0 +1,34 @@
+---
+title: Rate Limits
+description: Stay inside the API rate limits and handle 429s gracefully.
+audience:
+  - developer
+features:
+  - api
+sources:
+  - catalyst-backend/src/index.ts
+api_tags:
+  - rate-limits
+last_verified: '2026-09-15'
+---
+
+The API rate-limits globally (on the order of 1,200 requests per minute under
+default configuration), bucketed by client identity — authenticated callers get
+their own budget rather than sharing one IP pool.
+
+## Stay friendly
+
+- **Poll rarely.** Dashboards refreshing every second per server will eat the
+  budget and get throttled. Prefer 10–30 s intervals, and use
+  [WebSockets](/api/websockets/) for live data instead of polling.
+- **Back off on 429.** The response carries code `RATE_LIMITED`; honor any
+  `Retry-After`, then retry with exponential backoff.
+- **Batch and cache.** Fetch lists once and derive views client-side; cache
+  slow-moving data (templates, nests, permissions catalog).
+
+## If you are limited during normal use
+
+1. Reduce poll frequency and parallel fan-out first.
+2. Move live views to event streams.
+3. Talk to the panel administrator — limits are operator-configured, and a
+   legitimate integration with a sensible pattern can get headroom.

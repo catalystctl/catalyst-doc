@@ -1,0 +1,29 @@
+---
+title: API Reference
+description: Generated endpoint reference for the Catalyst REST API.
+audience:
+  - developer
+features:
+  - api
+sources:
+  - catalyst-backend/src/routes/
+api_tags:
+  - rest
+  - reference
+last_verified: '2026-09-15'
+---
+
+import ScalarReference from '../../../components/ScalarReference.astro';
+
+This reference is **generated** from the backend's route definitions
+(`catalyst-backend/scripts/export-openapi.ts` → `api/openapi.json`), so it
+tracks the code instead of drifting from it. Each operation links back to its
+source file. Conceptual guides live under [API & Developers](/api/overview/).
+
+<ScalarReference />
+
+::: note
+The viewer loads from a CDN with JavaScript enabled. Offline or script-blocked
+readers can use the raw [openapi.json](/openapi.json) directly with any
+OpenAPI tool.
+:::

@@ -1,0 +1,48 @@
+---
+title: Catalyst Documentation
+description: Use, operate, and integrate with Catalyst — the game-server control panel.
+template: splash
+hero:
+  tagline: Run game servers without the guesswork. Create servers, manage files and backups, and automate everything through the API.
+  actions:
+    - text: Manage a game server
+      link: /users/overview/
+      icon: right-arrow
+    - text: Administer Catalyst
+      link: /admin/overview/
+      icon: open-book
+      variant: secondary
+    - text: Use the API
+      link: /api/overview/
+      icon: setting
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## Start here
+
+<CardGrid>
+  <Card title="Getting started" icon="rocket">
+    New to Catalyst? Learn what a panel, node, and server are, then create your
+    first game server in minutes. [Start with your first server](/getting-started/first-server/).
+  </Card>
+  <Card title="Game server guide" icon="laptop">
+    Console, power controls, files, SFTP, backups, databases, tasks, networking,
+    and sharing your server with others. [Open the guide](/users/overview/).
+  </Card>
+  <Card title="Administrator guide" icon="server">
+    Install the panel, register nodes, configure networking and storage, manage
+    users and roles, and keep everything updated. [Open the guide](/admin/overview/).
+  </Card>
+  <Card title="API & developers" icon="code">
+    Authenticate, call endpoints, handle errors and pagination, and subscribe to
+    realtime events. [Open the API docs](/api/overview/).
+  </Card>
+</CardGrid>
+
+## Something broken?
+
+Head straight to [troubleshooting](/troubleshooting/overview/) for server, node,
+panel, and networking issues, or look up a specific message in
+[common errors](/troubleshooting/common-errors/).

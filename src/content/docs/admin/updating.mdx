@@ -1,0 +1,40 @@
+---
+title: Updating Catalyst
+description: Update the panel and nodes safely, in the right order.
+audience:
+  - admin
+features:
+  - updates
+sources:
+  - catalyst-backend/src/routes/update.ts
+  - catalyst-docker/
+last_verified: '2026-09-15'
+---
+
+## The order (always)
+
+1. **Read the release notes.** Note breaking changes, migration steps, and
+   minimum versions.
+2. **Back up the database** ([admin backups](/admin/backups/)). This is the
+   rollback for everything except node agents.
+3. **Update the panel** — pull the new images and recreate containers. Database
+   migrations run automatically at backend startup; watch the logs until they
+   complete.
+4. **Verify the panel**: log in, open a server console, check a backup listing.
+5. **Update nodes one batch at a time** ([updating a node](/admin/nodes/updating/)).
+
+## Rules
+
+- Never update everything at once. Panel first, one canary node, then the fleet.
+- Never skip the pre-update database backup, even for "tiny" releases.
+- Pin production to release tags, not `main`. Track `main` only in a lab.
+- If the panel fails to start after an update, read the container logs before
+  doing anything — most failures are a migration waiting on a lock or an env
+  variable renamed in the release notes.
+
+## Rollback
+
+- Panel: restore the database backup, then restart the previous images.
+- Nodes: reinstall the previous agent build on the affected node.
+- After any rollback, verify the same four checks as an update before
+  declaring victory.

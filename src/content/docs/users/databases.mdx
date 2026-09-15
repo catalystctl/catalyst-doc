@@ -1,0 +1,47 @@
+---
+title: Databases
+description: Create and use managed databases for plugins and mods.
+audience:
+  - user
+features:
+  - databases
+sources:
+  - catalyst-frontend/src/pages/servers/
+  - catalyst-backend/src/routes/servers/
+last_verified: '2026-09-15'
+---
+
+Many plugins (permissions, economy, logging, Dynmap) need a database. The
+**Databases** tab provisions one for your server without you touching a
+database server.
+
+## Create a database
+
+1. Open **Databases** and select **Create Database**.
+2. Note the connection details shown afterwards: host, port, database name,
+   username, and password.
+3. Paste those details into your plugin's config file (via the **Files** tab).
+4. Restart the server.
+
+## Rules
+
+- Each database belongs to exactly one server. It is removed if the server is deleted.
+- Treat the password like any other secret: it is shown once for a reason.
+  If you lose it, rotate it (see below) rather than sharing workarounds.
+- Database size counts against your server's overall disk quota on most hosts.
+
+## Rotate credentials
+
+If a password leaks (pasted into chat, committed to a public repo):
+
+1. Open **Databases**, select the database, and rotate/reset the password.
+2. Update every plugin config that uses it.
+3. Restart the server and check the logs for successful connections.
+
+## Troubleshooting
+
+- **Plugin cannot connect:** double-check host/port (not `localhost` — the
+  database usually runs on shared infrastructure), then confirm the credentials
+  and that the server was restarted after the config change.
+- **Access denied after rotation:** one of your configs still has the old password.
+- **Limit reached:** ask your administrator to raise the per-server database limit.

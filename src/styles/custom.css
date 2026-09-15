@@ -1,0 +1,42 @@
+/* Catalyst docs theme: aligns with the panel's Precision Console tokens.
+   Accent teal (hsl 174 80% 46%), DM Sans body, Outfit display, JetBrains Mono code. */
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Outfit:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --sl-font: 'DM Sans', system-ui, sans-serif;
+  --sl-font-system-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* Catalyst teal accent */
+  --sl-color-accent-low: #134e4a;
+  --sl-color-accent: #0d9488;
+  --sl-color-accent-high: #99f6e4;
+  --sl-color-white: #ffffff;
+  --sl-color-gray-1: #f5f4f0;
+  --sl-color-gray-2: #e9e7e1;
+  --sl-color-gray-3: #cfccc2;
+  --sl-color-gray-4: #8a877d;
+  --sl-color-gray-5: #57544c;
+  --sl-color-gray-6: #26241f;
+  --sl-color-black: #191817;
+}
+
+:root[data-theme='light'] {
+  --sl-color-accent-low: #ccfbf1;
+  --sl-color-accent: #0d9488;
+  --sl-color-accent-high: #115e59;
+}
+
+.site-title,
+.sl-markdown-content h1,
+.sl-markdown-content h2 {
+  font-family: 'Outfit', var(--sl-font);
+  letter-spacing: -0.01em;
+}
+
+/* API reference page: Scalar mounts into #scalar-api-reference. */
+.scalar-host {
+  border: 1px solid var(--sl-color-gray-2);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  margin-top: 1rem;
+}

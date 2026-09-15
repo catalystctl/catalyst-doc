@@ -1,0 +1,44 @@
+---
+title: First-Time Setup
+description: Create the admin account and configure the panel on first launch.
+audience:
+  - admin
+features:
+  - installation
+  - setup
+sources:
+  - catalyst-frontend/src/pages/setup/SetupPage.tsx
+  - catalyst-backend/src/routes/setup.ts
+last_verified: '2026-09-15'
+---
+
+After [installation](/admin/installation/), opening the panel URL shows the
+setup wizard. It runs once and locks itself afterwards.
+
+## Complete the wizard
+
+1. **Admin account.** Create the first administrator. Use a strong, unique
+   password and a real email address (used for notifications and recovery).
+2. **Panel URL.** Set the public URL players and staff use (for example,
+   `https://panel.example.com`). This URL appears in emails, invites, and API
+   responses — changing it later is possible but annoying, so get it right now.
+3. **Basic settings.** Defaults are sane; review them and finish.
+
+## Immediately afterwards
+
+1. **Verify login works** in a private window (catches cookie/proxy issues early).
+2. **[Install a node](/admin/nodes/installing/)** — without one you cannot create servers.
+3. **[Create roles](/admin/roles/)** for staff before inviting people.
+4. **[Configure backups](/admin/backups/)** for the panel database itself.
+
+::: caution
+The setup wizard is single-use. If you need to re-run it (for example, after
+restoring a database), see [disaster recovery](/admin/disaster-recovery/)
+rather than deleting data to force it.
+:::
+
+## If the wizard does not appear
+
+- You see the login page instead: setup already completed — sign in.
+- You see an error page: the backend may still be migrating — wait and check
+  container logs. See [panel issues](/troubleshooting/panel/).

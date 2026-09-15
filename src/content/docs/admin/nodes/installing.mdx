@@ -1,0 +1,46 @@
+---
+title: Installing a Node
+description: Install the Catalyst agent on a fresh Linux machine.
+audience:
+  - admin
+features:
+  - nodes
+  - installation
+sources:
+  - scripts/deploy-agent.sh
+  - catalyst-agent/
+last_verified: '2026-09-15'
+---
+
+## Prerequisites
+
+- A Linux machine meeting the [requirements](/admin/requirements/) with root access.
+- The panel's public URL and an API key for node registration (create the node
+  entry in **Admin → Nodes** first — see [registering](/admin/nodes/registering/)).
+
+## Run the agent installer
+
+From the panel host (or wherever you keep the backend image's scripts), the
+agent deployment script installs and configures the agent:
+
+```bash
+deploy-agent.sh <backend_url> <node_id> <node_hostname>
+```
+
+with the node API key provided via `CATALYST_API_KEY_FILE` (preferred — keeps
+the key out of process listings). The script supports apt, dnf, yum, pacman,
+zypper, and apk-based distributions, and sets up the container runtime
+(containerd/nerdctl), CNI networking, and the agent service.
+
+## Verify
+
+1. In **Admin → Nodes**, the node appears and turns healthy within a minute.
+2. Check the agent service is running on the node (`systemctl status` or the
+   OpenRC equivalent).
+3. Create a test server on the node and start it before offering the node to users.
+
+## If it fails
+
+Work through [node issues](/troubleshooting/node/): version mismatches, blocked
+panel connectivity, and missing kernel features are the usual suspects. The
+agent logs on the node say exactly which step failed.

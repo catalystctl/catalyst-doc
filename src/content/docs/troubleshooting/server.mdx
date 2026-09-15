@@ -1,0 +1,54 @@
+---
+title: Server Issues
+description: Fix crashes, boot loops, and misbehaving game servers.
+audience:
+  - user
+  - admin
+features:
+  - servers
+  - troubleshooting
+sources:
+  - docs/troubleshooting.md
+  - catalyst-backend/src/routes/servers/
+last_verified: '2026-09-15'
+---
+
+## Crash loop (starts, then stops)
+
+1. Read the **Console** from the top after pressing Start — the first error is
+   the cause; everything after is fallout.
+2. Usual suspects in order:
+   - A config or startup variable you just changed → revert it ([startup](/users/startup/)).
+   - A new/updated mod or plugin → remove it and restart ([mods](/users/mods-plugins/)).
+   - Minecraft without accepted EULA → set `eula=true` and start again.
+   - Out of memory → the game asked for more than the server owns; lower the
+     game's memory setting or raise the server limit.
+3. If nothing changed and it suddenly loops, check whether the **node** is
+   unhealthy ([node issues](/troubleshooting/node/)) — full disks and OOM
+   killers look like game crashes.
+
+## Stuck "starting" or "stopping"
+
+1. Wait 60–90 seconds; large worlds save slowly.
+2. Use **Kill** if Stop hangs, then Start again ([power](/users/power/)).
+3. Repeated hangs on stop point at a mod blocking shutdown — remove suspects
+   one by one.
+
+## `port already in use`
+
+Two servers claim the same allocation, or a killed server did not release its
+port. Confirm no other server uses that IP + port
+([networking](/users/networking/)), kill any ghost process via the node, and
+restart. If it persists, the administrator must free the allocation.
+
+## Lag with normal-looking settings
+
+1. Check **Metrics**: memory pressure, CPU saturation, or disk latency.
+2. Reduce view distance / loaded chunks / entity counts before buying bigger limits.
+3. Rule out the network path ([networking issues](/troubleshooting/networking/)) —
+   server TPS fine + players rubber-banding means transit, not the server.
+
+## Nuclear option
+
+When the install itself is damaged: [back up](/users/backups/), then
+[reinstall](/users/reinstalling/). Faster than archaeology for mangled installs.

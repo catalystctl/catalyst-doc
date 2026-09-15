@@ -1,0 +1,43 @@
+---
+title: Connecting to Your Server
+description: Find your server address and connect from the game client.
+audience:
+  - user
+features:
+  - servers
+  - networking
+sources:
+  - catalyst-frontend/src/pages/servers/
+last_verified: '2026-09-15'
+---
+
+Your game client connects directly to the node running your server — the panel
+is for management, not for play.
+
+## Find your address
+
+1. Open your server and look at the header: it shows the primary allocation
+   (IP + port).
+2. Additional allocations are listed under **Networking** (or **Settings**,
+   depending on your permissions).
+3. The address players use is usually `IP:port`, for example `203.0.113.10:25565`.
+
+Some hosts put a reverse proxy or custom hostname in front of game ports. If
+your host gave you a hostname such as `play.example.com`, use that instead of
+the raw IP.
+
+## Connect from the game
+
+- **Minecraft (Java):** Multiplayer → Add Server → paste the address.
+- **Minecraft (Bedrock):** Play → Servers → Add Server (check the port — Bedrock
+  defaults differ from Java).
+- **Other games:** use the address shown in the server header with the game's
+  normal server browser or `connect` command.
+
+## If you cannot connect
+
+1. Confirm the server is **running** (green status in the console header).
+2. Confirm you are using the right IP **and** port.
+3. Check the console for errors during startup — a crashed server accepts no connections.
+4. See [server issues](/troubleshooting/server/) and
+   [networking issues](/troubleshooting/networking/).

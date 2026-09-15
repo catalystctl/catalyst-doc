@@ -1,0 +1,41 @@
+---
+title: Power Controls
+description: Start, stop, restart, and kill a game server safely.
+audience:
+  - user
+features:
+  - servers
+  - power
+sources:
+  - catalyst-frontend/src/pages/servers/
+  - catalyst-backend/src/routes/servers/
+last_verified: '2026-09-15'
+---
+
+Power controls sit in the server header and in the **Console** tab.
+
+| Action | What it does | When to use it |
+| --- | --- | --- |
+| **Start** | Boots the server. | After creating, editing configs, or a crash. |
+| **Restart** | Stops gracefully, then starts. | After config or plugin changes. |
+| **Stop** | Asks the game to shut down cleanly. | Before editing world files or upgrading. |
+| **Kill** | Force-stops the container immediately. | Only when Stop/Restart hang (world may not save). |
+
+## The safe order
+
+1. Warn players if anyone is online.
+2. Prefer **Restart** over Kill — graceful stops let the game save the world.
+3. After changing configs, plugins, or startup variables, always restart; most
+   games only read those files at boot.
+
+## If a server will not stop
+
+1. Wait 60 seconds — large worlds take a while to save.
+2. Use **Kill** as a last resort.
+3. If it still shows as running, check [server issues](/troubleshooting/server/)
+   or ask your administrator — the node agent may need attention.
+
+## Automate it
+
+Nightly restarts and similar routines belong in [Tasks](/users/tasks/), not in
+manual clicking.

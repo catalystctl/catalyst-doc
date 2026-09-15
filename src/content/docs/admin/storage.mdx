@@ -1,0 +1,44 @@
+---
+title: Storage
+description: Disk layout for the panel and nodes, and keeping disks healthy.
+audience:
+  - admin
+features:
+  - storage
+  - database
+  - redis
+sources:
+  - catalyst-docker/
+  - docs/redis.md
+last_verified: '2026-09-15'
+---
+
+## Panel host
+
+- **PostgreSQL** holds everything the panel knows (users, servers, audit logs).
+  Back it up continuously — see [backups](/admin/backups/) and
+  [disaster recovery](/admin/disaster-recovery/).
+- **Redis** holds sessions, rate-limit counters, caches, and queues. Losing it
+  is an inconvenience (logins drop, jobs retry), not data loss — but size and
+  persist it sanely anyway.
+- Keep database volumes on fast, monitored disks separate from bulk backup
+  storage.
+
+## Nodes
+
+Node disk fills with, in rough order: game servers, backups, container images,
+and logs. Plan for it:
+
+1. **Separate filesystems** (or at least quotas) for server data vs. images/logs,
+   so a log flood cannot wedge game I/O.
+2. **Image pruning** on a schedule — old game images accumulate silently.
+3. **Backup retention** that matches disk: user backups count against quotas,
+   but node-level snapshots need their own policy ([backups](/admin/backups/)).
+4. **Alert at 80%, act at 90%.** A full disk stops servers ugly. Wire node disk
+   into [monitoring](/admin/monitoring/).
+
+## Rules
+
+- Never let any volume hit 100%. Ever. This is the single most preventable
+  cause of "everything broke at 3 AM".
+- Test restores, not just backups — an untested snapshot is a hope.

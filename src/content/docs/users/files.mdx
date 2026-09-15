@@ -1,0 +1,49 @@
+---
+title: Files
+description: Browse, edit, upload, download, and archive your server files in the browser.
+audience:
+  - user
+features:
+  - files
+sources:
+  - catalyst-frontend/src/components/files/FileManager.tsx
+  - catalyst-backend/src/routes/servers/
+last_verified: '2026-09-15'
+---
+
+The **Files** tab is a file manager for your server: configs, worlds, plugins,
+and logs. For large transfers (whole world folders, modpacks), use
+[SFTP](/users/sftp/) instead.
+
+## Everyday tasks
+
+- **Edit a config:** click the file, edit in the built-in editor, save, then
+  [restart](/users/power/) the server so the game re-reads it.
+- **Upload:** use the upload button for small files (jars, zips, single configs).
+- **Download:** select files or folders and download them as an archive.
+- **Create/rename/move/delete:** right-click (or the action menu) on any entry.
+- **Find an error:** game logs usually live under `logs/` — open the latest log
+  after a crash before asking for help.
+
+## Rules that prevent data loss
+
+1. **Stop the server** before replacing world files or large data directories.
+   Editing live world data while the game holds it in memory corrupts saves.
+2. **Back up before big changes.** [One backup](/users/backups/) takes seconds
+   and undoes almost any mistake.
+3. The file manager cannot see outside your server directory — that is
+   intentional isolation, not a bug.
+
+## Common locations
+
+| Game | Where things live |
+| --- | --- |
+| Minecraft | `server.properties`, `config/`, `plugins/`, `world/`, `logs/` |
+| Source/CS2 | `cfg/`, `addons/`, `maps/` |
+| Generic | Check your template's documentation or ask your host. |
+
+::: note
+Exact paths depend on the template your server was created from. If a path here
+does not exist on your server, look at the template description or ask your
+administrator rather than creating it by hand.
+:::

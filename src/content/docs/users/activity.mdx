@@ -1,0 +1,33 @@
+---
+title: Activity
+description: See who did what on your server and when.
+audience:
+  - user
+features:
+  - servers
+  - activity
+sources:
+  - catalyst-frontend/src/components/servers/tabs/ServerActivityLogTab.tsx
+  - catalyst-backend/src/routes/servers/
+last_verified: '2026-09-15'
+---
+
+The **Activity** tab is an audit trail for your server: power actions, file
+changes, backup restores, subuser changes, and similar events, each stamped
+with who did it and when.
+
+## Use it for
+
+- **"Who stopped the server?"** — filter by power events and time.
+- **"What changed before it broke?"** — correlate the first failure with the
+  last file/config change.
+- **Subuser oversight** — confirm helpers only touch what they should.
+
+## Limits
+
+- Activity records panel actions, not in-game events. For gameplay history, use
+  your game's own logs (see [console](/users/console/)).
+- Retention is finite and set by the administrator — export anything you need
+  for disputes promptly.
+- If an expected entry is missing, the action may have happened outside the
+  panel (direct node access) — ask your administrator.

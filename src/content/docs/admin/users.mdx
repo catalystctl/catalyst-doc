@@ -1,0 +1,38 @@
+---
+title: Users
+description: Create accounts, handle invites, and manage the admin team.
+audience:
+  - admin
+features:
+  - users
+  - administration
+sources:
+  - catalyst-frontend/src/pages/admin/UsersPage.tsx
+  - catalyst-backend/src/routes/admin.ts
+last_verified: '2026-09-15'
+---
+
+## Accounts and invites
+
+- Users sign up themselves (if registration is open) or are created/invited by
+  staff under **Admin → Users** and the **Invites** view.
+- Server sharing between players does **not** need admin help — owners add
+  [subusers](/users/subusers/) themselves.
+
+## Admin discipline
+
+1. **Few admins.** Admin rights bypass every limit in the system. Most staff
+   need a scoped [role](/admin/roles/), not admin.
+2. **Named accounts only.** No shared `admin` login — shared logins make the
+   audit log useless and revocation impossible.
+3. **Offboard promptly.** Disable accounts when staff leave; their API keys and
+   sessions should die with the account — verify this in the audit log.
+4. **Strong auth.** Enforce strong passwords; enable whatever MFA/SSO the panel
+   offers (see [security](/admin/security/)).
+
+## When users cannot log in
+
+1. Confirm the account exists and is not suspended.
+2. Check mail delivery if invites or resets never arrive (see
+   [panel issues](/troubleshooting/panel/)).
+3. Look at the audit log for lockouts before resetting anything.

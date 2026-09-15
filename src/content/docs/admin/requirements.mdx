@@ -1,0 +1,47 @@
+---
+title: Requirements
+description: What the panel and nodes need before you install Catalyst.
+audience:
+  - admin
+features:
+  - installation
+sources:
+  - docs/installation.md
+  - install.sh
+last_verified: '2026-09-15'
+---
+
+## Panel host
+
+- **OS:** a current Linux distribution (Ubuntu/Debian, RHEL/CentOS, Fedora,
+  Arch, Alpine, or openSUSE).
+- **Docker** (or Podman) with Compose, installed or installable by `install.sh`.
+- **Resources:** at least 2 CPU cores, 4 GB RAM, and 20 GB free disk for the
+  panel, PostgreSQL, and Redis. Production panels serving many servers want more.
+- **Network:** a public IP or LAN address, plus a DNS name if you want TLS
+  (recommended — see [installation](/admin/installation/)).
+- Outbound HTTPS to pull container images.
+
+## Node hosts
+
+Each node runs game containers through the Catalyst agent (containerd-based):
+
+- **OS:** Linux with systemd (or OpenRC on Alpine).
+- **Resources:** whatever your game servers need, plus ~1 GB RAM overhead for
+  the agent and system. CPU and memory are the usual bottlenecks; disk fills up
+  with backups and images.
+- **Network:** stable connectivity back to the panel (the agent calls home —
+  nodes do not need public IPs unless players connect directly to them).
+- Root access for the agent installer.
+
+::: note
+Sizing is workload-dependent: a handful of small Minecraft servers fits on a
+4-core/16 GB node, while modded servers and many slots need substantially more.
+Start with headroom and watch [monitoring](/admin/monitoring/).
+:::
+
+## What you do not need yet
+
+PostgreSQL, Redis, Caddy/Traefik — the Docker installer provisions all panel
+dependencies. You only configure them when you outgrow the defaults
+([configuration](/admin/configuration/)).

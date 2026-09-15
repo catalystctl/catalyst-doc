@@ -1,0 +1,48 @@
+---
+title: Networking
+description: Panel TLS, reverse proxies, node connectivity, and game ports.
+audience:
+  - admin
+features:
+  - networking
+  - tls
+sources:
+  - catalyst-docker/
+  - docs/docker-setup.md
+last_verified: '2026-09-15'
+---
+
+## Panel access (HTTPS)
+
+Serve the panel behind **Caddy** (automatic certificates) or **Traefik**
+(compose profiles for both ship in `catalyst-docker/`). Requirements:
+
+- A DNS name pointing at the panel host.
+- Ports 80/443 reachable for issuance and traffic.
+- The panel URL in settings must exactly match what users type (scheme + host).
+
+Terminating TLS at the proxy and running the panel behind it over plain HTTP is
+the normal layout — but then only the proxy may reach the panel port. Never
+expose the backend container directly alongside the proxy.
+
+## Node ↔ panel
+
+Agents call home over HTTPS/WebSocket, so nodes need **outbound** access to the
+panel URL. No inbound holes toward nodes are required for management. If a node
+shows unreachable while its servers run fine, the management path (DNS, proxy,
+panel) is broken — not the games. See [node issues](/troubleshooting/node/).
+
+## Game traffic
+
+Players connect directly to nodes, so each game port in your allocations must
+be reachable from the internet (or your LAN): firewall rules, security groups,
+and NAT forwards all have to agree. UDP matters — many games use UDP, and a
+TCP-only test will mislead you. Debugging steps live in
+[networking issues](/troubleshooting/networking/).
+
+## Checklist for a new site
+
+1. DNS → panel, TLS valid, login works in a private window.
+2. Node checks in healthy.
+3. A test server's game port answers from outside your network.
+4. SFTP port reachable if you offer it to users.

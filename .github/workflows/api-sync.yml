@@ -1,0 +1,25 @@
+name: API sync check
+
+# Verifies the committed OpenAPI artifact is well-formed. Regeneration from
+# the Catalyst source repo happens via the docs agent (`pnpm docs-agent api
+# --source-repo <checkout>`) and lands through normal PR review — this job
+# only guarantees the committed contract never silently rots.
+on:
+  push:
+    branches: [main]
+    paths: ['api/openapi.json', 'scripts/sync-openapi.mjs']
+  pull_request:
+    paths: ['api/openapi.json', 'scripts/sync-openapi.mjs']
+  schedule:
+    - cron: '0 6 * * 1'
+
+jobs:
+  api-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate OpenAPI artifact + served copy
+        run: node scripts/sync-openapi.mjs --check

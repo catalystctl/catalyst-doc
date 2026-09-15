@@ -1,0 +1,61 @@
+---
+title: API Guides
+description: Common Catalyst workflows built from API calls.
+audience:
+  - developer
+features:
+  - api
+sources:
+  - catalyst-backend/src/routes/
+  - docs/automation.md
+api_tags:
+  - guides
+last_verified: '2026-09-15'
+---
+
+Copy-pasteable patterns for the jobs integrations do most. Adapt the host,
+key, and IDs. Full field details live in the [API reference](/api/reference/).
+
+## Provision a server for a new customer
+
+```bash
+BASE=https://panel.example.com
+AUTH="Authorization: Bearer $CATALYST_API_KEY"
+
+# 1. Pick a template and node
+curl -H "$AUTH" "$BASE/api/templates?search=paper" | head -c 600
+curl -H "$AUTH" "$BASE/api/nodes" | head -c 600
+
+# 2. Create the server (see reference for the full body)
+curl -X POST -H "$AUTH" -H 'Content-Type: application/json' \
+  -d '{"name":"customer-1","templateId":"<id>","nodeId":"<id>"}' \
+  "$BASE/api/servers"
+
+# 3. Start it and follow the console via WebSocket
+curl -X POST -H "$AUTH" "$BASE/api/servers/<serverId>/power" \
+  -H 'Content-Type: application/json' -d '{"action":"start"}'
+```
+
+## Nightly backup check
+
+```bash
+# List recent backups; alert if the newest successful one is too old.
+curl -H "$AUTH" "$BASE/api/servers/<serverId>/backups?limit=5"
+```
+
+## Rotate a leaked API key
+
+```bash
+# Create the replacement first, deploy it, then delete the old key —
+# never delete-then-create (that is an outage).
+curl -X POST -H "$AUTH" -H 'Content-Type: application/json' \
+  -d '{"name":"billing-sync-v2","permissions":[...]}' \
+  "$BASE/api/admin/api-keys"
+curl -X DELETE -H "$AUTH" "$BASE/api/admin/api-keys/<oldId>"
+```
+
+## React to crashes in realtime
+
+Subscribe to server events ([WebSockets](/api/websockets/)), trigger on the
+offline/crash event, then confirm via REST before paging anyone — flapping
+nodes produce duplicate events during reconnects.

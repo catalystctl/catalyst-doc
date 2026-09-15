@@ -1,0 +1,67 @@
+---
+title: Docs Contributor Guide
+description: How to edit, validate, and publish Catalyst documentation.
+audience:
+  - admin
+  - developer
+features:
+  - contributing
+sources:
+  - tools/docs-agent/
+  - scripts/
+last_verified: '2026-09-15'
+---
+
+## Edit
+
+Docs are Markdown/MDX under `src/content/docs/`, organized by audience:
+`getting-started/`, `users/`, `admin/`, `api/`, `troubleshooting/`,
+`contributing/`. Every page needs frontmatter:
+
+```yaml
+---
+title: Creating Backups
+description: One line saying what the page teaches.
+audience: [user]        # user, admin, developer (one or more)
+features: [backups]     # product area tagssources:                # repo paths whose changes should trigger review
+  - catalyst-backend/src/routes/backups.ts
+last_verified: '2026-09-15'
+---
+```
+
+Rules: task-oriented prose, one audience per page, Catalyst terminology
+(`panel`, `node`, `server`, `template`, `allocation`, `task` — never reuse the Pterodactyl product name for a Catalyst server), no invented flags/ports/defaults.
+See `AGENTS.md` for the full conventions.
+
+## Validate
+
+```bash
+pnpm install
+pnpm validate     # links, slugs, frontmatter, assets, OpenAPI, terminology
+pnpm run build    # the same command Cloudflare Pages runs
+```
+
+Fix every failure — CI runs the same checks on every pull request.
+
+## API reference
+
+Never hand-edit `api/openapi.json`. Regenerate it from a Catalyst checkout:
+
+```bash
+pnpm sync-openapi --from-checkout ../catalyst
+```
+
+then commit the result. The Scalar viewer (`api/reference`) renders whatever is
+committed.
+
+## The docs agent
+
+For larger sync work, use the docs agent (`tools/docs-agent/`) in `audit`,
+`diff`, `feature`, `validate`, or `api` mode — it maps Catalyst changes to
+affected pages and opens reviewable changes. Details in its README.
+
+## Publish
+
+Merge to `main` → Cloudflare Pages builds and deploys to
+`docs.catalystctl.com` automatically. Pull requests get preview deployments.
+Deployment details: `DEPLOYMENT.md`.

@@ -1,0 +1,49 @@
+---
+title: Authorization & Permissions
+description: How Catalyst decides what an identity may do.
+audience:
+  - developer
+features:
+  - api
+  - permissions
+sources:
+  - catalyst-backend/src/routes/roles.ts
+  - catalyst-backend/src/routes/api-keys.ts
+  - catalyst-backend/src/lib/error-codes/
+api_tags:
+  - auth
+last_verified: '2026-09-15'
+---
+
+## The model
+
+- **Users** get powers through [roles](/admin/roles/). A request is allowed
+  when any of the caller's roles grants the required permission.
+- **API keys** carry their own scoped permissions, chosen at creation from the
+  permissions catalog (`GET /api/admin/api-keys/permissions-catalog`).
+- **Subusers** are limited twice: by the permissions the server owner gave them
+  and by what the API exposes for their role.
+
+## What to do when you get 403
+
+A `403` with code `PERMISSION_DENIED` means authentication worked but the
+identity lacks the permission — not that the endpoint is wrong:
+
+1. Check which identity you sent (session user vs. which API key).
+2. Compare its permissions against the endpoint's requirement in the
+   [API reference](/api/reference/).
+3. Ask an administrator to widen the role/scope, or use a better-scoped key.
+
+## Design guidance for integrators
+
+- Request the smallest scope that works today; widen deliberately later.
+- Distinguish "not found" from "forbidden" carefully in your UX: returning 404
+  for things the caller may not see avoids leaking existence — match the API's
+  behavior rather than inventing your own.
+- Permission names are stable identifiers. Cache the catalog, but re-fetch when
+  you see unknown-permission errors after a panel upgrade.
+
+## Related
+
+- [Errors](/api/errors/) — the full code contract
+- [Roles & permissions](/admin/roles/) — the operator view

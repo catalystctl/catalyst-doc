@@ -1,0 +1,44 @@
+---
+title: Startup & Variables
+description: Change the startup command, version, and variables your server boots with.
+audience:
+  - user
+features:
+  - servers
+  - startup
+sources:
+  - catalyst-frontend/src/components/servers/tabs/ServerConfigurationTab.tsx
+  - catalyst-backend/src/routes/servers/
+last_verified: '2026-09-15'
+---
+
+The **Configuration** (startup) area controls how your server boots: which
+version runs, how much memory the game itself may use, and the command-line
+flags the template supports.
+
+## Change a variable
+
+1. Open your server's configuration/startup area.
+2. Edit the variable (for example, game version or extra Java flags).
+3. Save and [restart](/users/power/) — variables only take effect at boot.
+
+## Rules
+
+- Only change variables you understand. A bad startup flag is the most common
+  self-inflicted reason a server enters a boot loop.
+- Memory variables must stay within the server's allocated limits — the game
+  cannot use more than the server owns, and the container will kill it if it tries.
+- If the server worked before your change and boot-loops now, revert the last
+  edit first and ask questions later.
+
+## Templates define what is editable
+
+Which variables exist, their defaults, and their allowed values come from the
+server's **template** (set by your administrator). If you need a variable the
+template does not expose, ask your administrator — editing the raw startup
+command is usually restricted for good reason.
+
+## Related
+
+- [Reinstalling](/users/reinstalling/) — when a fresh install is cleaner than debugging
+- [Server issues](/troubleshooting/server/) — boot loops and crashes

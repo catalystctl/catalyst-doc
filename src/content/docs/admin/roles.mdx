@@ -1,0 +1,40 @@
+---
+title: Roles & Permissions
+description: Design roles that give staff exactly the access they need.
+audience:
+  - admin
+features:
+  - users
+  - roles
+  - permissions
+sources:
+  - catalyst-frontend/src/pages/admin/RolesPage.tsx
+  - catalyst-backend/src/routes/roles.ts
+last_verified: '2026-09-15'
+---
+
+**Roles** are named bundles of permissions; users get powers through roles, not
+one-off grants. Manage them under **Admin → Roles**.
+
+## Design principles
+
+1. **Least privilege.** Start from nothing and add what the job needs. It is
+   easy to grant more later; it is hard to un-see leaked data.
+2. **Job-shaped roles.** `Support L1` (view servers, restart, read logs),
+   `Billing` (view users, no server control), `Node operator` (nodes only).
+   Avoid one giant `Staff` role.
+3. **Separate read from write.** Most incidents come from write access that was
+   only ever needed for reading.
+4. **Review quarterly.** Roles accrete permissions; audit who has what and trim.
+
+## API keys follow the same model
+
+Admin-created [API keys](/api/authentication/) carry scoped permissions from
+the same catalog — a monitoring key gets read-only metrics, not server control.
+The permissions catalog endpoint documents every available scope.
+
+## Dangerous combinations
+
+- User management + server file access can become full account takeover paths.
+- Backup restore + subuser creation can exfiltrate other users' data.
+- When a role needs a risky permission, time-box it: grant, do the task, revoke.

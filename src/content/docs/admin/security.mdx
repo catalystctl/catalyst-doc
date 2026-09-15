@@ -1,0 +1,42 @@
+---
+title: Security
+description: Harden the panel, nodes, and accounts against the common attacks.
+audience:
+  - admin
+features:
+  - security
+sources:
+  - docs/SECURITY.md
+  - catalyst-backend/src/routes/admin.ts
+last_verified: '2026-09-15'
+---
+
+## Panel
+
+- Serve everything over HTTPS with valid certificates ([networking](/admin/networking/)).
+- Keep the panel updated — security fixes ship in releases ([updating](/admin/updating/)).
+- Restrict who can reach the admin UI by network (VPN, allowlist) in addition
+  to passwords.
+- Never expose the database or Redis ports to the internet.
+
+## Accounts and access
+
+- Few admins, named accounts, prompt offboarding ([users](/admin/users/)).
+- Least-privilege [roles](/admin/roles/) for staff; scoped
+  [API keys](/api/authentication/) for integrations.
+- Treat node API keys and backup encryption keys as crown jewels: generated
+  randomly, stored once, rotated on suspicion.
+
+## Nodes
+
+- Only the agent's required ports plus game allocations listen publicly.
+- Apply OS and runtime updates on a rhythm; nodes run untrusted game code and
+  third-party mods by design.
+- Review [imported egg install scripts](/admin/importing-eggs/) — they are the
+  largest untrusted-code surface in normal operation.
+
+## Report a vulnerability
+
+Do not open a public issue for a suspected security bug. See `SECURITY.md` in
+the main Catalyst repository for the private reporting channel, and expect
+coordinated disclosure: report, fix window, then public advisory.

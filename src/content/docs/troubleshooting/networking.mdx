@@ -1,0 +1,47 @@
+---
+title: Networking Issues
+description: Fix connection failures between players, nodes, and the panel.
+audience:
+  - user
+  - admin
+features:
+  - networking
+  - troubleshooting
+sources:
+  - docs/troubleshooting.md
+  - catalyst-docker/
+last_verified: '2026-09-15'
+---
+
+## Players cannot reach a game server
+
+1. Is the server **running**? A stopped server refuses everything.
+2. Is the address right — IP **and** port? Retype it; do not trust memory.
+3. Is the port reachable from outside? Test from a different network (mobile
+   data works). "Works on my LAN, not from outside" means NAT/firewall, not
+   the game.
+4. **UDP vs TCP**: many games need UDP. A TCP-only port check passing proves
+   nothing for a UDP game.
+5. Host firewall, cloud security group, Docker port publishing, and any NAT
+   rule must all agree. Check each layer; the missing one is usually the one
+   "nobody changed".
+
+## Node cannot reach the panel
+
+From the node: resolve the panel hostname, then `curl` the panel URL. Fix DNS
+first, then TLS (cert valid for that name?), then HTTP. See
+[node issues](/troubleshooting/node/).
+
+## TLS warnings in browsers
+
+- Name mismatch: the certificate must cover exactly the host users type.
+- Expired: renewal failed — port 80 reachable? DNS unchanged? Check the
+  proxy (Caddy/Traefik) logs, not the backend.
+- Mixed setups: after moving TLS to the proxy, the panel setting for the
+  public URL must still be `https://…`.
+
+## SFTP times out
+
+The SFTP port is separate from game ports and the panel. Confirm it is
+published and allowed through every firewall layer, and that the client uses
+SFTP (port 22-style SSH transport), not FTP. Details: [SFTP](/users/sftp/).

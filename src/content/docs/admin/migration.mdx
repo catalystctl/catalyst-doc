@@ -1,0 +1,44 @@
+---
+title: Migration
+description: Move servers into Catalyst from Pterodactyl or another panel.
+audience:
+  - admin
+features:
+  - migration
+  - templates
+sources:
+  - catalyst-frontend/src/pages/admin/MigrationPage.tsx
+  - catalyst-backend/src/routes/migration.ts
+  - docs/pterodactyl-migration.md
+last_verified: '2026-09-15'
+---
+
+The migration center (**Admin → Migration**) imports servers from other panels
+with tracked jobs: test first, run, then pause, resume, retry, or cancel per step.
+
+## Process
+
+1. **Inventory the source.** List every server, its game, disk use, databases,
+   and custom config. Note anything exotic (custom images, sidecars) — those
+   need manual handling.
+2. **Prepare Catalyst.** Nodes with enough free capacity, matching
+   [templates](/admin/templates/) (import eggs first —
+   [importing eggs](/admin/importing-eggs/)), allocations, and raised limits
+   for the migration window.
+3. **Test the connection** from the migration center before starting anything.
+4. **Migrate one pilot server.** Full cycle: import → install → start → join →
+   backup. Fix the template from what you learn.
+5. **Migrate in batches**, biggest risk first, during low-traffic windows.
+6. **Verify each batch** with owners before moving on.
+
+## Per-server checklist
+
+- Files and worlds intact (compare sizes and spot-check).
+- Databases moved and plugins connecting.
+- Startup variables and schedules recreated ([tasks](/users/tasks/)).
+- Backups running on the new side before DNS/addresses switch.
+- Old server kept (stopped) until the owner confirms — the rollback is "turn
+  the old one back on".
+
+Migration jobs expose step-level status with retry — a failed step does not
+mean a failed migration. Work the steps, do not restart blindly.

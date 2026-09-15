@@ -1,0 +1,68 @@
+---
+title: WebSockets & Events
+description: Subscribe to console output, server events, and metrics in realtime.
+audience:
+  - developer
+features:
+  - api
+  - websockets
+  - console
+sources:
+  - catalyst-backend/src/websocket/gateway.ts
+  - catalyst-backend/src/routes/console-stream.ts
+  - catalyst-backend/src/routes/sse-events.ts
+  - catalyst-backend/src/routes/metrics-stream.ts
+api_tags:
+  - websockets
+  - console
+  - events
+last_verified: '2026-09-15'
+---
+
+Polling the REST API for live state is wasteful. For anything realtime — console
+output, power transitions, metric ticks — subscribe to a stream.
+
+## Channels
+
+| Channel | Transport | Use for |
+| --- | --- | --- |
+| Console stream | WebSocket (`/api/servers/:serverId/console`) | Live logs, sending input |
+| Server events | SSE (`/api/servers/:serverId/events`) | Status changes, lifecycle events |
+| Metrics stream | WebSocket/SSE metrics endpoints | CPU/memory/disk ticks |
+| Node updates | Panel WebSocket gateway | Node health, agent update progress |
+
+Authenticate the upgrade request the same way as REST (session or API key).
+Unauthenticated or unauthorized upgrades are rejected before any data flows.
+
+## Message shape
+
+Frames are JSON with a `type` discriminator (`console`, `node_updated`,
+`resource_stats`, `error`, …). Always switch on `type` and ignore unknown
+types — new event types are added over time and must not break your client.
+
+## Client rules
+
+1. **Reconnect with backoff** and resume from the last seen marker where the
+   channel offers one (`resume_console` and friends).
+2. **Handle `error` frames** (`auth_failed`, `auth_lockout` with
+   `retryAfterSeconds`, connection limits) instead of reconnect-spinning.
+3. **One connection per view**, not per widget — fan out locally.
+4. Fall back to REST polling only when streams are unavailable, and say so in
+   your UI.
+
+## Example (console)
+
+```js
+const ws = new WebSocket(
+  `wss://panel.example.com/api/servers/${serverId}/console`,
+);
+ws.onmessage = ({ data }) => {
+  const msg = JSON.parse(data);
+  if (msg.type === 'console') appendOutput(msg.line);
+  else if (msg.type === 'error') handleStreamError(msg);
+};
+```
+
+Exact paths, parameters, and event types are pinned in the
+[API reference](/api/reference/) — treat this page as concepts, the reference
+as contract.

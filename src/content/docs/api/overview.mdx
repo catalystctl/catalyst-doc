@@ -1,0 +1,43 @@
+---
+title: API & Developers
+description: Integrate with Catalyst programmatically — REST, realtime events, and the reference.
+audience:
+  - developer
+features:
+  - api
+sources:
+  - catalyst-backend/src/routes/
+  - catalyst-backend/src/lib/error-codes/
+api_tags:
+  - rest
+last_verified: '2026-09-15'
+---
+
+Catalyst exposes a REST API for everything the panel does, plus realtime
+channels for console output, metrics, and events.
+
+## Start here
+
+1. [Authentication](/api/authentication/) — sessions for the panel UI, API keys
+   for integrations.
+2. [Authorization](/api/authorization/) — permissions and scopes.
+3. [Errors](/api/errors/) — stable codes you can branch on.
+4. [Pagination](/api/pagination/) and [rate limits](/api/rate-limits/).
+5. [WebSockets & events](/api/websockets/) — console streams, SSE, metrics.
+6. [Guides](/api/guides/) — common workflows end to end.
+7. [API reference](/api/reference/) — generated endpoint documentation.
+
+## Conventions
+
+- Base path: `/api` (for example, `/api/servers`, `/api/nodes`).
+- JSON everywhere, UTF-8.
+- List endpoints paginate with `page`/`limit` (defaults 1/20).
+- Errors carry a stable machine-readable `code` in addition to the message —
+  branch on the code, never on English text.
+
+## Source of truth
+
+The [API reference](/api/reference/) is generated from the backend's route
+definitions, not hand-written. If the reference and a guide disagree, the
+reference (and the actual behavior) wins — and please report the mismatch so
+the guide gets fixed.

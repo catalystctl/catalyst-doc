@@ -1,0 +1,42 @@
+---
+title: Nodes Overview
+description: What nodes do, how they talk to the panel, and the node lifecycle.
+audience:
+  - admin
+features:
+  - nodes
+sources:
+  - catalyst-backend/src/routes/nodes.ts
+  - catalyst-frontend/src/pages/nodes/NodeDetailsPage.tsx
+last_verified: '2026-09-15'
+---
+
+A node is a Linux machine that runs game servers. The panel never runs games
+itself — it tells nodes what to run, and the **agent** on each node does it.
+
+## Lifecycle
+
+1. **Install** — run the agent installer on the machine
+   ([installing a node](/admin/nodes/installing/)).
+2. **Register** — the node authenticates to the panel with its ID and API key
+   ([registering](/admin/nodes/registering/)).
+3. **Allocate** — define the node's IP addresses and port ranges so servers get
+   join addresses.
+4. **Operate** — create servers on it, watch health, apply updates
+   ([updating a node](/admin/nodes/updating/)).
+5. **Retire** — migrate servers off, then remove the node.
+
+## How panel and node communicate
+
+- The **agent calls the panel** (outbound HTTPS/WebSocket). Nodes do not need
+  inbound panel ports — useful behind NAT.
+- Players connect **directly to the node** on game ports.
+- If the link drops, running servers keep running; the panel shows the node as
+  unreachable until the agent reconnects. See [node issues](/troubleshooting/node/).
+
+## Capacity thinking
+
+Nodes are divided by memory first, CPU second, disk third. Overcommitting
+memory causes the worst failures (the kernel kills game processes), so keep
+headroom and set per-server limits honestly. [Monitoring](/admin/monitoring/)
+shows when a node is full before your players notice.

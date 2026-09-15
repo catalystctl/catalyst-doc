@@ -1,0 +1,45 @@
+---
+title: Configuration
+description: Panel settings, environment variables, and when to change them.
+audience:
+  - admin
+features:
+  - configuration
+sources:
+  - docs/environment-variables.md
+  - catalyst-backend/src/config.ts
+  - catalyst-docker/
+last_verified: '2026-09-15'
+---
+
+Most day-to-day settings live in the panel UI under **Admin → System/Settings**.
+Infrastructure behavior (ports, database URLs, feature flags) is controlled by
+environment variables on the backend container.
+
+## The two layers
+
+| Layer | Where | Examples |
+| --- | --- | --- |
+| **Panel settings** | Admin UI | Panel name, registration policy, mail, backups, limits |
+| **Environment** | Compose file / container env | `DATABASE_URL`, Redis URL, ports, `DOCS_ENABLED`, rate-limit and payload tunables |
+
+Change panel settings in the UI whenever possible — they validate input and
+take effect without restarts. Touch environment variables when the setting you
+need is not in the UI, and restart the backend container afterwards.
+
+## Rules
+
+1. **Do not edit the database by hand.** Every supported change has a UI field,
+   an API endpoint, or a documented variable. Raw SQL edits bypass validation
+   and break upgrades ([updating](/admin/updating/)).
+2. **Keep secrets out of chat and screenshots.** Database passwords, API keys,
+   and node tokens live in your compose `.env`, never in docs or tickets.
+3. **Record what you changed.** A one-line note (what, when, why) saves hours
+   during the next incident.
+
+## Reference
+
+- Environment variable details: see `docs/environment-variables.md` in the
+  main Catalyst repository (contributor reference).
+- Database and cache tuning: [storage](/admin/storage/).
+- TLS and proxy headers: [networking](/admin/networking/).

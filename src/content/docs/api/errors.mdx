@@ -1,0 +1,55 @@
+---
+title: Errors
+description: Status codes, stable error codes, and how to handle failures.
+audience:
+  - developer
+features:
+  - api
+sources:
+  - catalyst-backend/src/lib/error-codes/
+  - catalyst-backend/src/lib/http-error.ts
+  - catalyst-frontend/src/i18n/api-errors.ts
+api_tags:
+  - errors
+last_verified: '2026-09-15'
+---
+
+## Shape
+
+Error responses carry a stable machine-readable `code` plus a human message:
+
+```json
+{
+  "error": "Server not found",
+  "code": "NOT_FOUND"
+}
+```
+
+**Branch on `code`, never on the message.** Messages are localized and may
+change; codes are versioned identifiers — renaming one is a breaking change.
+
+## Codes you will meet
+
+| Code | HTTP | Meaning |
+| --- | --- | --- |
+| `VALIDATION_ERROR` | 400 | Request shape or values rejected. Check field details. |
+| `PERMISSION_DENIED` | 403 | Authenticated but not allowed ([authorization](/api/authorization/)). |
+| `NOT_FOUND` | 404 | No such resource (or hidden from this identity). |
+| `CONFLICT` | 409 | State conflict — duplicate name, already exists, busy. |
+| `RATE_LIMITED` | 429 | Slow down ([rate limits](/api/rate-limits/)). |
+| `INSUFFICIENT_RESOURCES` | 422/400 | Node lacks memory/disk/allocations for the request. |
+| `CONTAINER_ERROR` | 502/500 | The runtime failed the operation — retry may help. |
+| `INTERNAL_ERROR` | 500 | Panel-side failure. Retry with backoff, then report. |
+
+Domain codes (servers, auth, infrastructure) extend this set — the
+[API reference](/api/reference/) lists per-endpoint errors.
+
+## Handling guidance
+
+1. **Retry** on 429 (after `Retry-After`), 502/503/504, and network failures —
+   with exponential backoff and a cap.
+2. **Do not blindly retry** 400/403/404/409 — the request itself must change.
+3. **Surface the code to your users** alongside your own message; it is what
+   support will ask for.
+4. **Log request ID, endpoint, code, and timestamp** on every failure. "It broke
+   yesterday" is not debuggable.
