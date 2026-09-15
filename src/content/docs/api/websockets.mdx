@@ -1,6 +1,6 @@
 ---
-title: WebSockets & Events
-description: Subscribe to console output, server events, and metrics in realtime.
+title: Realtime Events
+description: Subscribe to console output, server events, and metrics over SSE.
 audience:
   - developer
 features:
@@ -20,19 +20,22 @@ last_verified: '2026-09-15'
 ---
 
 Polling the REST API for live state is wasteful. For anything realtime — console
-output, power transitions, metric ticks — subscribe to a stream.
+output, power transitions, metric ticks — subscribe to a stream. Browser-facing
+realtime is **Server-Sent Events (SSE)**; the true WebSocket gateway carries
+the agent control plane (node traffic), not browser clients.
 
 ## Channels
 
-| Channel | Transport | Use for |
+| Channel | Transport | Endpoint |
 | --- | --- | --- |
-| Console stream | WebSocket (`/api/servers/:serverId/console`) | Live logs, sending input |
-| Server events | SSE (`/api/servers/:serverId/events`) | Status changes, lifecycle events |
-| Metrics stream | WebSocket/SSE metrics endpoints | CPU/memory/disk ticks |
+| Console output | SSE | `GET /api/servers/:serverId/console/stream` (25 s heartbeats) |
+| Console input | REST | `POST /api/servers/:serverId/console/command` |
+| Server events | SSE | `GET /api/servers/:serverId/events` (state, backups, alerts) |
+| Metrics stream | SSE/WebSocket metrics endpoints | CPU/memory/disk ticks |
 | Node updates | Panel WebSocket gateway | Node health, agent update progress |
 
-Authenticate the upgrade request the same way as REST (session or API key).
-Unauthenticated or unauthorized upgrades are rejected before any data flows.
+Authenticate stream requests the same way as REST (session or API key).
+Unauthenticated or unauthorized subscribers are rejected before any data flows.
 
 ## Message shape
 
@@ -53,14 +56,21 @@ types — new event types are added over time and must not break your client.
 ## Example (console)
 
 ```js
-const ws = new WebSocket(
-  `wss://panel.example.com/api/servers/${serverId}/console`,
+const src = new EventSource(
+  `/api/servers/${serverId}/console/stream`,
+  { withCredentials: true },
 );
-ws.onmessage = ({ data }) => {
-  const msg = JSON.parse(data);
-  if (msg.type === 'console') appendOutput(msg.line);
-  else if (msg.type === 'error') handleStreamError(msg);
-};
+src.addEventListener('console', ({ data }) => {
+  appendOutput(JSON.parse(data).line);
+});
+src.addEventListener('error', handleStreamError);
+
+// Sending input is a normal POST, not a socket frame:
+await fetch(`/api/servers/${serverId}/console/command`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+  body: JSON.stringify({ command: 'say Hello' }),
+});
 ```
 
 Exact paths, parameters, and event types are pinned in the

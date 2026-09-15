@@ -20,9 +20,11 @@ their own budget rather than sharing one IP pool.
 
 - **Poll rarely.** Dashboards refreshing every second per server will eat the
   budget and get throttled. Prefer 10–30 s intervals, and use
-  [WebSockets](/api/websockets/) for live data instead of polling.
-- **Back off on 429.** The response carries code `RATE_LIMITED`; honor any
-  `Retry-After`, then retry with exponential backoff.
+  [event streams](/api/websockets/) for live data instead of polling (streams
+  are long-lived and not counted like REST calls).
+- **Back off on 429.** The response carries code `RATE_LIMITED` with
+  `X-RateLimit-*` headers (and `Retry-After` where offered); honor them, then
+  retry with exponential backoff.
 - **Batch and cache.** Fetch lists once and derive views client-side; cache
   slow-moving data (templates, nests, permissions catalog).
 

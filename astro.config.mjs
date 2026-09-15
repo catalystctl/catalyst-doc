@@ -96,7 +96,7 @@ export default defineConfig({
             { label: 'Errors', slug: 'api/errors' },
             { label: 'Pagination', slug: 'api/pagination' },
             { label: 'Rate Limits', slug: 'api/rate-limits' },
-            { label: 'WebSockets & Events', slug: 'api/websockets' },
+            { label: 'Realtime & Events', slug: 'api/websockets' },
             { label: 'Guides', slug: 'api/guides' },
             { label: 'Plugin Development', slug: 'api/plugins' },
             { label: 'API Reference', slug: 'api/reference' },

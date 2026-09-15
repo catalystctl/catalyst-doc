@@ -20,6 +20,13 @@ curl -H "Authorization: Bearer $CATALYST_API_KEY" \
   "https://panel.example.com/api/admin/servers?page=2&limit=50&search=survival"
 ```
 
+::: note
+Pagination is intentionally not universal: some collections (nodes, templates,
+roles, allocations, tasks) return full lists. Check the
+[API reference](/api/reference/) for whether an endpoint paginates before
+writing generic page-walking code.
+:::
+
 ## Rules
 
 - **Cap your `limit`.** Ask for what you will display (20–100). Full exports

@@ -26,9 +26,11 @@ AUTH="Authorization: Bearer $CATALYST_API_KEY"
 curl -H "$AUTH" "$BASE/api/templates?search=paper" | head -c 600
 curl -H "$AUTH" "$BASE/api/nodes" | head -c 600
 
-# 2. Create the server (see reference for the full body)
+# 2. Create the server (see reference for the full body — field names below
+#    match the real create schema: allocation comes from primaryPort/primaryIp
+#    or an explicit allocationId)
 curl -X POST -H "$AUTH" -H 'Content-Type: application/json' \
-  -d '{"name":"customer-1","templateId":"<id>","nodeId":"<id>"}' \
+  -d '{"name":"customer-1","templateId":"<id>","nodeId":"<id>","locationId":"<id>","allocatedMemoryMb":2048,"allocatedCpuCores":2,"allocatedDiskMb":10240,"primaryPort":25565,"environment":{}}' \
   "$BASE/api/servers"
 
 # 3. Start it and follow the console via WebSocket
