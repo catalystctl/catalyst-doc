@@ -87,6 +87,9 @@ for (const [slug, rel] of pages) {
   }
   const lv = fm.match(/^last_verified:\s*['"]?([\d-]+)['"]?/m)?.[1];
   if (lv && !/^\d{4}-\d{2}-\d{2}$/.test(lv)) fail(`${slug}: last_verified must be YYYY-MM-DD`);
+  // Starlight asides need `:::note` (no space) — `::: note` renders literally.
+  const spaced = [...src.matchAll(/^::: (note|tip|caution|danger)\s*$/gm)];
+  if (spaced.length > 0) fail(`${slug}: spaced aside directive(s) will not render: ${spaced.map((m) => m[0].trim()).join(', ')}`);
 }
 ok('frontmatter checked');
 

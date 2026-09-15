@@ -10,7 +10,7 @@ export default defineConfig({
       title: 'Catalyst Docs',
       description: 'Use, operate, and integrate with Catalyst — the game-server control panel.',
       logo: {
-        src: './src/assets/logo.svg',
+        src: './src/assets/logo.png',
         alt: 'Catalyst',
       },
       social: [
@@ -23,7 +23,11 @@ export default defineConfig({
       head: [
         {
           tag: 'meta',
-          attrs: { name: 'theme-color', content: '#0d9488' },
+          attrs: { name: 'theme-color', content: '#0a0908' },
+        },
+        {
+          tag: 'link',
+          attrs: { rel: 'icon', type: 'image/png', href: '/favicon.png' },
         },
       ],
       sidebar: [
