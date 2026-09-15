@@ -3,18 +3,20 @@
 The site is fully static. Cloudflare Pages builds it from this repo and serves
 `docs.catalystctl.com`.
 
-## Cloudflare Pages settings
+## Cloudflare Pages project (live)
 
 | Setting | Value |
 | --- | --- |
+| Project | `catalyst-docs` (`catalyst-docs.pages.dev`) |
+| Source | GitHub `catalystctl/catalyst-doc`, production branch `main` |
 | Framework preset | Astro (or None — the build command is explicit) |
 | Build command | `pnpm run build` (`prebuild` refreshes `public/openapi.json` first) |
 | Output directory | `dist` |
-| Node version | `22` (set `NODE_VERSION=22` env var on the project) |
-| Package manager | `pnpm` (set `PACKAGE_MANAGER=pnpm` if auto-detect fails) |
+| Env vars | `NODE_VERSION=22` (production + preview) |
 | Root directory | `/` (repo root) |
+| Custom domain | `docs.catalystctl.com` (zone `catalystctl.com` is on Cloudflare; TLS automatic) |
 
-No environment variables or secrets are required — the build is hermetic.
+No secrets are required — the build is hermetic.
 `pnpm install --frozen-lockfile` runs before the build (lockfile committed).
 
 ## Custom domain
