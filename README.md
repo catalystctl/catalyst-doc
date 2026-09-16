@@ -11,8 +11,9 @@ The production docs site for Catalyst, served at
   (`api/openapi.json`, rendered with Scalar) — never hand-edited.
 - **Docs agent:** `tools/docs-agent/` keeps pages synchronized with the
   `catalystctl/catalyst` codebase.
-- **Relation to Catalyst:** this repo is also consumed as the `catalyst-doc`
-  git submodule inside `catalystctl/catalyst`.
+- **Relation to Catalyst:** standalone companion to `catalystctl/catalyst`
+  (not a submodule). Clone it next to the product checkout and point the
+  docs agent at both with `--source-repo/--docs-repo`.
 
 ## Local development
 
@@ -73,9 +74,9 @@ Push to `main` → Cloudflare Pages builds (`pnpm run build`, output `dist/`)
 and deploys `docs.catalystctl.com`. PRs get preview deployments. Setup:
 `DEPLOYMENT.md`.
 
-## Remote / submodule
+## Remote
 
 - Remote: `https://github.com/catalystctl/catalyst-doc`
-- Consumed by Catalyst as `./catalyst-doc` submodule. Clone with
-  `git clone --recurse-submodules`, update docs via normal PRs here, and bump
-  the submodule pointer in the Catalyst repo to adopt a new revision.
+- Standalone repo by design (not a Catalyst submodule): clone it next to the
+  product checkout (`../catalyst`) so docs and product rev independently.
+  Update docs via normal PRs here; no pointer bumps needed anywhere.
