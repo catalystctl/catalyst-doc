@@ -9,15 +9,35 @@ features:
 sources:
   - install.sh
   - catalyst-docker/
-  - install.sh
-  - catalyst-docker/
-last_verified: '2026-09-15'
+last_verified: '2026-09-17'
 ---
 
-The supported path is the Docker installer: one script sets up the panel,
-PostgreSQL, Redis, and a reverse proxy.
+The supported path is the Docker installer: one script installs Docker if
+needed, downloads the compose stack, and writes a fully configured `.env`
+with generated secrets. You start the stack yourself afterwards.
 
-## 1. Run the installer
+## 1. Get the installer
+
+Every release publishes `install.sh` plus a `install.sh.sha256` checksum.
+Download both from the release you want and verify before running:
+
+```bash
+VERSION=v1.60.3  # replace with the release you want
+curl -fsSL -o install.sh "https://github.com/catalystctl/catalyst/releases/download/${VERSION}/install.sh"
+curl -fsSL -o install.sh.sha256 "https://github.com/catalystctl/catalyst/releases/download/${VERSION}/install.sh.sha256"
+sha256sum -c install.sh.sha256
+```
+
+To have the script verify itself as well, export the hash before running it
+(the raw hex or the whole `.sha256` line both work):
+
+```bash
+export INSTALL_SHA256="$(awk '{print $1}' install.sh.sha256)"
+```
+
+A mismatch aborts the install before anything runs.
+
+## 2. Run the installer
 
 On the panel host, as root (or with sudo):
 
@@ -25,26 +45,59 @@ On the panel host, as root (or with sudo):
 bash install.sh
 ```
 
+The installer checks the container runtime and Compose, offers to install
+Docker when missing, warns when the target ports are already in use or disk
+space is low, then prompts for the panel URL and name. It generates every
+required secret (`POSTGRES_PASSWORD`, `BETTER_AUTH_SECRET`, `REDIS_PASSWORD`,
+`API_KEY_SECRET`, `BACKUP_CREDENTIALS_ENCRYPTION_KEY`) and writes `.env`
+with `chmod 600`.
+
 Useful flags:
 
-- `-y` — non-interactive (accept defaults).
+- `-y` — non-interactive (accept defaults / environment overrides).
+- `--set KEY=VALUE` — set any `.env` variable (repeatable). Applied on top
+  of the prompts, so it also overrides the environment. Secret-looking
+  values are never echoed.
+- `--env-file FILE` — read `KEY=VALUE` overrides from a file, applied
+  before `--set` (a later `--set` wins).
 - `--dry-run` — show what would happen without changing anything.
-- `--uninstall` — remove a Catalyst Docker installation.
+- `--reconfigure` — re-run the `.env` prompts (secrets are preserved so they
+  stay in sync with existing volumes).
+- `--update` — refresh the compose stack files, keeping `.env`.
+- `--uninstall` — remove the stack (data volumes are kept unless
+  `REMOVE_VOLUMES=1` is set with `-y`).
 - `--help` — all options.
 
-The installer downloads release artifacts and verifies their SHA-256 checksums
-before executing anything. If verification fails, it aborts — do not bypass it.
+Environment overrides:
 
-## 2. What gets installed
+- `PUBLIC_URL`, `APP_NAME` — pre-answer the prompts (or supply defaults with `-y`).
+- `INSTALL_VERSION` — git ref for the stack files. Defaults to `main`; a
+  release tag like `v1.60.1` pins `catalyst-docker/` to that release so a
+  verified installer from release X installs stack X.
+- `INSTALL_SHA256` — expected checksum of `install.sh` itself (see above).
+- `REMOVE_VOLUMES=1` — with `--uninstall -y`, also delete data volumes.
 
-Into `catalyst-docker/` (the target directory):
+Example — non-interactive, pinned to a release, custom port and timezone:
 
-- **Panel** (backend + frontend containers).
-- **PostgreSQL** and **Redis** for data and caches/queues.
-- A reverse-proxy profile — **Caddy** or **Traefik** (see
-  `docker-compose.caddy.yml` / `docker-compose.traefik.yml` in `catalyst-docker/`).
+```bash
+INSTALL_VERSION=v1.60.3 bash install.sh -y \
+  --set PUBLIC_URL=https://panel.example.com \
+  --set FRONTEND_PORT=0.0.0.0:8081 \
+  --set TZ=Europe/Berlin
+```
 
-## 3. Finish setup in the browser
+## 3. Start the stack
+
+The installer configures but does not start anything. Review the result,
+then bring it up:
+
+```bash
+cd catalyst-docker
+nano .env   # optional — check everything the installer wrote
+docker compose up -d
+```
+
+## 4. Finish setup in the browser
 
 Open the panel URL and complete the setup wizard
 ([first-time setup](/admin/first-time-setup/)): admin account, panel URL, and
@@ -60,6 +113,9 @@ basic settings.
 
 - Installer fails early: re-run with `--dry-run` to see the planned steps, and
   check Docker/Compose are present and your user can reach the Docker socket.
+- Port warnings during install: something is already listening on a port the
+  stack wants — stop that service or set the matching `*_PORT` variable
+  (for example `--set FRONTEND_PORT=0.0.0.0:8081`).
 - Panel 500s on first login: the database migrations run at container startup —
   wait a minute and check container logs (`docker compose logs backend`).
 - More: [panel issues](/troubleshooting/panel/).
