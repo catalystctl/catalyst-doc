@@ -8,7 +8,10 @@ features:
 sources:
   - docs/SECURITY.md
   - catalyst-backend/src/routes/admin.ts
-last_verified: '2026-09-15'
+  - catalyst-backend/src/routes/mcp.ts
+  - catalyst-backend/src/mcp/tools.ts
+  - catalyst-backend/src/services/mcp-settings.ts
+last_verified: '2026-09-17'
 ---
 
 ## Panel
@@ -26,6 +29,33 @@ last_verified: '2026-09-15'
   [API keys](/api/authentication/) for integrations.
 - Treat node API keys and backup encryption keys as crown jewels: generated
   randomly, stored once, rotated on suspicion.
+
+## Panel MCP endpoint (AI assistants)
+
+The panel can expose itself as a Streamable HTTP MCP server so an AI
+assistant can manage servers, nodes, users, and the rest of the panel API
+with the same permissions as the API key it is given. It is **disabled by
+default**.
+
+Prerequisites: an admin account, and a panel API key for the assistant
+(Profile > API keys) scoped to only the permissions it needs.
+
+1. Go to Admin **Security** and turn on **Panel MCP access**. It takes
+   effect immediately — no restart.
+2. Point the MCP client at `https://panel.example.com/api/mcp` with the
+   dedicated API key as the Bearer credential.
+3. Verify with a read-only call first (for example `whoami`), then try one
+   `list_servers` before granting broader scopes.
+
+:::caution
+Destructive tools (delete, reinstall, restore, ban, …) run as soon as the
+assistant calls them with `confirm: true`. Use a least-privilege key, keep
+the per-minute tool budget low, and revoke the key when the job is done.
+:::
+
+Session cookies are never accepted on this endpoint, so it cannot be
+abused from a browser session. Every tool call is permission-checked and
+audit-logged exactly like direct API use.
 
 ## Nodes
 
