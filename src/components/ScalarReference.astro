@@ -7,22 +7,41 @@
 <div id="scalar-api-reference" class="scalar-host"></div>
 <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.35.2/dist/browser/standalone.min.js"></script>
 <script>
+  /**
+   * Scalar's standalone build always uses its light theme and, inside
+   * Starlight's content column, collapses to a mobile layout that stacks
+   * every operation into one enormous page. Lift the mount out of that
+   * column, fill the viewport below the docs header, and follow the active
+   * docs theme.
+   */
   function mountScalar() {
     const el = document.getElementById('scalar-api-reference');
     if (!el) return;
     const scalar = (window as unknown as { Scalar?: { createApiReference: (sel: string, opts: object) => void } }).Scalar;
-    if (scalar?.createApiReference) {
-      scalar.createApiReference('#scalar-api-reference', {
-        url: '/openapi.json',
-        hideDownloadButton: false,
-        hideModels: false,
-      });
-    } else {
+    if (!scalar?.createApiReference) {
       el.innerHTML =
         '<p>The interactive reference failed to load its viewer. ' +
         'You can still browse the raw contract at <a href="/openapi.json">openapi.json</a>.</p>';
+      return;
     }
+
+    const dark = document.documentElement.dataset.theme !== 'light';
+    scalar.createApiReference('#scalar-api-reference', {
+      url: '/openapi.json',
+      darkMode: dark,
+      forceDarkModeState: dark ? 'dark' : 'light',
+      hideDarkModeToggle: true,
+      hideClientButton: true,
+      hideDownloadButton: false,
+      hideModels: false,
+      defaultOpenFirstTag: false,
+    });
+
+    const header = document.querySelector('header');
+    const top = header ? Math.round(header.getBoundingClientRect().height) : 64;
+    document.documentElement.style.setProperty('--scalar-top', `${top}px`);
   }
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', mountScalar);
   } else {

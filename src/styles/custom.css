@@ -121,12 +121,107 @@
   font-family: var(--sl-font-system-mono);
 }
 
-/* API reference page: Scalar mounts into #scalar-api-reference. */
+/*
+ * API reference. Scalar is a full app, not a content block: inside
+ * Starlight's ~45rem column it falls back to its mobile layout and renders
+ * every operation as one endless page. Pin the mount to the viewport below
+ * the docs header and hide the page chrome that would sit underneath it.
+ */
 .scalar-host {
-  border: 1px solid var(--sl-color-hairline);
-  border-radius: 0.625rem;
+  position: fixed;
+  top: var(--scalar-top, 64px);
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 20;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
   overflow: hidden;
-  margin-top: 1rem;
+  background: var(--sl-color-bg);
+}
+
+@media (min-width: 50rem) {
+  /* Sit beside the docs sidebar instead of underneath it. */
+  .scalar-host {
+    left: var(--sl-sidebar-width, 18.75rem);
+  }
+}
+
+/* The standalone bundle wraps the app in a plain div and sizes its own
+   layers to `100dvh`. Without !important those beat `height: 100%` and the
+   grid overflows the fixed host by the header height. */
+.scalar-host > *,
+.scalar-host .scalar-app {
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+}
+
+/*
+ * The standalone bundle stamps `references-standalone-mobile` onto the app
+ * even on a desktop viewport (its `showSidebar` flag defaults on, and that
+ * flag *is* the mobile class). That layout hides the section nav and renders
+ * every operation in one column. Force the desktop grid instead.
+ */
+.scalar-host .scalar-api-references-standalone-mobile {
+  --scalar-header-height: 0px;
+}
+
+.scalar-host .scalar-api-references-standalone-mobile .references-header,
+.scalar-host .scalar-api-references-standalone-mobile .references-footer {
+  display: none;
+}
+
+.scalar-host .scalar-app.references-layout.scalar-api-references-standalone-mobile {
+  display: grid !important;
+  grid-template-columns: 280px minmax(0, 1fr) !important;
+  grid-template-rows: minmax(0, 1fr) !important;
+  grid-template-areas: 'sidebar content' !important;
+  height: 100%;
+}
+
+.scalar-host .references-navigation {
+  display: block !important;
+  grid-area: sidebar !important;
+  position: relative;
+  height: 100% !important;
+  min-height: 0 !important;
+  width: 280px;
+  overflow: hidden;
+}
+
+.scalar-host .references-navigation-list {
+  position: absolute;
+  inset: 0;
+  height: auto;
+  overflow: auto;
+}
+
+.scalar-host .references-rendered {
+  grid-area: content !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  overflow: auto;
+}
+
+/* The toaster container is a bare grid child; keep it out of the layout. */
+.scalar-host .references-layout > div:not([class]) {
+  display: none;
+}
+
+/* The reference page's prose is only an introduction; once the viewer is
+   pinned to the viewport, hide that prose and the empty right-hand outline.
+   The host itself stays, because it is position:fixed. */
+body:has(.scalar-host) .sl-markdown-content > :not(.scalar-host),
+body:has(.scalar-host) .right-sidebar,
+body:has(.scalar-host) footer {
+  display: none;
+}
+
+/* Keep the docs nav clickable above the viewer. */
+body:has(.scalar-host) .sidebar-pane {
+  z-index: 30;
 }
 
 /* Text selection in peach. */
