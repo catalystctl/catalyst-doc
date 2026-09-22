@@ -1,0 +1,249 @@
+---
+title: Plugin Backend
+description: Lifecycle hooks, routes, tasks, events, WebSocket, and file access for a plugin backend.
+audience:
+  - developer
+features:
+  - plugins
+sources:
+  - catalyst-backend/src/plugins/types.ts
+  - catalyst-backend/src/plugins/context.ts
+  - catalyst-backend/src/plugins/host-events.ts
+  - catalyst-plugins/example-plugin/backend/index.js
+last_verified: '2026-09-22'
+---
+
+The backend entry (`backend.entry` in `plugin.json`) is an ES module. The panel
+imports it and calls the hooks on the default export.
+
+```javascript
+export default {
+  async onLoad(ctx) {},
+  async onEnable(ctx) {},
+  async onDisable(ctx) {},
+  async onUnload(ctx) {},
+};
+```
+
+| Hook | When | Register routes? |
+| --- | --- | --- |
+| `onLoad` | Plugin discovered, before it is enabled | Yes. This is the only hook that may register routes. |
+| `onEnable` | Admin enables it, or the panel starts with it already enabled | No. Register tasks, WebSocket handlers, and event listeners here. |
+| `onDisable` | Admin disables it | No. The host stops tasks and drops WebSocket handlers. Event listeners stay until unload. |
+| `onUnload` | Plugin removed from the registry (uninstall, or a reload) | No. Last chance to release anything you opened yourself. Event listeners come off here. |
+
+Routes stay mounted after disable and return `503` until the next enable.
+Tasks do not survive a restart; `onEnable` must register them again.
+
+## Context
+
+Every hook receives the same context.
+
+| Member | What it does |
+| --- | --- |
+| `manifest` | The validated manifest. |
+| `logger` | Pino logger, child-bound to the plugin name. |
+| `db` | Scoped database. See [Data](/api/plugins/data/). |
+| `registerRoute(options)` | Mount a route under `/api/plugins/<name>`. |
+| `registerMiddleware(handler, { scope })` | `scope` is `'global'` or `'route'`. |
+| `requirePermission(...tokens)` | Returns a `preHandler` that 403s unless the **caller** holds a token. |
+| `hasPermission(request, ...tokens)` | Soft check. `*` on the user satisfies it. |
+| `getUserId(request)` | `request.user.userId`, or `null`. |
+| `getConfig(key)` / `setConfig(key, value)` | Plugin config values. See [Data](/api/plugins/data/). |
+| `getStorage` / `setStorage` / `deleteStorage` | Plugin-scoped key-value store. |
+| `collection(name)` | Document collection. |
+| `scheduleTask(cron, handler)` | Scheduled work. Host clears it on disable. |
+| `on(event, handler)` / `emit(event, data)` | Event bus shared by plugins and the host. |
+| `emitTyped(event, data)` | Same as `emit`, plus a warning if `events[event].payload` does not match. |
+| `onWebSocketMessage(type, handler)` | Handle `plugin:<name>:<type>`. |
+| `sendWebSocketMessage(target, message)` | `target` is a client id, or `'*'` to broadcast. |
+| `exposeApi(name, handler)` / `callPluginApi(plugin, api, params)` | Plugin-to-plugin calls. Caller needs `plugin.rpc`. |
+| `fileTunnel` | Present on a normal panel. File operations on a node's server directory. |
+| `auth` | Present on a normal panel. Sign-in bridge. See [Sign-in](/api/plugins/auth/). |
+| `getDeclaredEvents()` | The manifest `events` map. |
+
+## Routes
+
+```javascript
+ctx.registerRoute({
+  method: 'GET',
+  url: '/hello',
+  preHandler: ctx.requirePermission('server.read'),
+  handler: async (request) => {
+    return { success: true, userId: ctx.getUserId(request) };
+  },
+});
+```
+
+`url: '/hello'` becomes `GET /api/plugins/my-plugin/hello`. Methods are the
+usual HTTP verbs. The SDK builder produces the same objects:
+
+```typescript
+import { defineRoutes } from '@catalyst/plugin-sdk';
+
+const routes = defineRoutes((router) => {
+  router
+    .get('/hello', async () => ({ success: true }))
+    .post('/echo', async (request) => ({ success: true, echoed: request.body }))
+    .put('/items/:id', async () => ({ success: true }))
+    .patch('/items/:id', async () => ({ success: true }))
+    .del('/items/:id', async () => ({ success: true }));
+});
+for (const route of routes) ctx.registerRoute(route);
+```
+
+Auth modes, set on `config.auth`:
+
+| Mode | Behavior |
+| --- | --- |
+| `required` (default) | No session or [API key](/api/authentication/) → 401. `request.user` is set. |
+| `optional` | A valid session sets `request.user`; anonymous callers still reach the handler. |
+| `public` | Session is never required. Use for OAuth redirects and callbacks. |
+
+`optional` and `public` only stick when the plugin holds a live `routes.public`
+grant. Without it the route is downgraded to `required` (a warning is logged),
+and revoking the grant re-secures the route on the next request.
+
+`requirePermission` checks the **user**, not the plugin. The scoped database
+checks the **plugin grant**. You want both: a route that reads servers should
+use `preHandler: ctx.requirePermission('server.read')` and `ctx.db.servers`,
+so a normal user cannot call it and a revoked plugin cannot read.
+
+Return `{ success: true, ... }` and use `reply.status(code).send(...)` for
+errors. The frontend client in `@catalyst/plugin-sdk/frontend` treats a body
+with `success` as the whole response.
+
+## Tasks
+
+`scheduleTask` takes a five-field cron expression. The panel does not call
+this a task in the server-owner sense — a [task](/users/tasks/) is a scheduled
+action on one server. This is in-process scheduled work, and it dies when the
+plugin is disabled or the process restarts.
+
+```javascript
+async onEnable(ctx) {
+  if (ctx.getConfig('cronEnabled') !== false) {
+    ctx.scheduleTask('*/5 * * * *', async () => {
+      const n = (await ctx.getStorage('runs')) || 0;
+      await ctx.setStorage('runs', n + 1);
+    });
+  }
+}
+```
+
+## Events
+
+The host emits these from server power actions (start, stop, restart, kill).
+A node agent reporting a status change on its own does not emit them.
+
+| Event | When | Payload |
+| --- | --- | --- |
+| `server:status-changed` | A power action changes status | `{ serverId, status, timestamp }` |
+| `server:started` | Status becomes `starting` **or** `running` | same |
+| `server:stopped` | Status becomes `stopping` **or** `stopped` | same |
+
+`server:started` fires twice on a normal start. If you only care that the
+server is up, ignore payloads whose `status` is not `'running'`.
+
+```javascript
+ctx.on('server:started', async (data) => {
+  if (data.status !== 'running') return;
+  ctx.logger.info({ serverId: data.serverId }, 'server is up');
+});
+```
+
+Your own events are plain strings. Prefix them with the plugin name
+(`my-plugin:ready`) so another plugin can subscribe without colliding.
+Declare them in the manifest `events` block.
+
+## WebSocket
+
+```javascript
+ctx.onWebSocketMessage('ping', async (data, clientId) => {
+  if (clientId) {
+    ctx.sendWebSocketMessage(clientId, { type: 'pong', echo: data });
+  }
+});
+```
+
+The host prefixes the type: clients send and receive
+`plugin:my-plugin:ping`. `sendWebSocketMessage('*', message)` broadcasts.
+Register handlers in `onEnable`; disable removes them.
+
+## Plugin-to-plugin calls
+
+```javascript
+// ticketing-plugin
+ctx.exposeApi('getOpenCount', async ({ serverId }) => {
+  return ctx.collection('tickets').count({ serverId, status: 'open' });
+});
+
+// caller — manifest must include "plugin.rpc"
+const count = await ctx.callPluginApi('ticketing-plugin', 'getOpenCount', {
+  serverId,
+});
+```
+
+The grant is checked on every call. Calls time out at 10 seconds. After
+repeated consecutive failures the host opens a circuit for about 30 seconds
+and further calls throw; handle that error instead of retrying in a loop.
+
+## File tunnel
+
+`ctx.fileTunnel.queueRequest` runs a file operation on a server's directory
+through the node agent. It is how
+[fastdl-sync](https://github.com/catalystctl/catalyst-plugins/tree/main/fastdl-sync)
+copies content between servers on the same node.
+
+```javascript
+const result = await ctx.fileTunnel.queueRequest(
+  nodeId,        // node the server runs on
+  'list',        // list | download | upload | write | create | delete | rename | permissions | compress | decompress
+  serverUuid,    // server UUID, not the panel id
+  '/cstrike',    // path inside the server directory
+  {},            // operation-specific data
+);
+if (!result.success) throw new Error(result.error);
+```
+
+`download` returns bytes on `result.body`. `upload` takes those bytes as the
+last argument. Requests are capped per node and time out (60 seconds, longer
+for large uploads). The method is absent only when the host did not provide a
+tunnel — check `ctx.fileTunnel` before calling it.
+
+The tunnel does not filter by server ownership. A plugin that holds a node id
+and a server UUID can read that server's files. Declare `files.read` /
+`files.write` in the manifest so the consent dialog says so, and check
+`requirePermission` plus `ctx.db.servers` before you touch a path.
+
+## Middleware
+
+```javascript
+ctx.registerMiddleware(async (request, reply, done) => {
+  reply.raw.on('finish', () => {
+    ctx.logger.debug({ path: request.url, method: request.method }, 'observed');
+  });
+  done();
+}, { scope: 'route' });
+```
+
+The handler is Fastify-shaped: `(request, reply, done)`. Pass an error to
+`done(err)`. Register it from `onEnable` if it should only run while enabled.
+
+## Testing without a panel
+
+```typescript
+import { createTestPlugin } from '@catalyst/plugin-sdk/testing';
+
+const harness = createTestPlugin(plugin, manifest, {
+  greeting: { type: 'string', default: 'Hi' },
+});
+const ctx = await harness.load();
+await harness.enable();
+await harness.disable();
+await harness.unload();
+```
+
+`createMockContext()` records `registerRoute` calls and stores collections in
+memory, including `$set`, `$unset`, `$inc`, `$push`, `$pull`, and dotted paths.
+Schema-shaped config values are unwrapped the same way the host unwraps them.

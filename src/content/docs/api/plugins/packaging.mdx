@@ -1,0 +1,170 @@
+---
+title: Packaging & Marketplace
+description: Build a .catpkg.zip, publish an index, and get a plugin onto a panel.
+audience:
+  - developer
+features:
+  - plugins
+sources:
+  - catalyst-backend/src/plugins/marketplace/packaging.ts
+  - catalyst-backend/src/plugins/marketplace/service.ts
+  - packages/plugin-sdk/cli/src/index.ts
+  - catalyst-plugins/scripts/build-packages.sh
+last_verified: '2026-09-22'
+---
+
+Panels install plugins from a marketplace index. The official index is
+[catalyst-plugins](https://github.com/catalystctl/catalyst-plugins) and is
+browsed by default. You can run your own index without being listed there.
+
+## Package layout
+
+A `.catpkg.zip` is a zip whose entries sit at the archive root (one wrapper
+folder is flattened). The installer allows only:
+
+| Entry | Required |
+| --- | --- |
+| `plugin.json` | yes |
+| `backend/` | no |
+| `frontend/` | no |
+| `assets/` | no |
+| `README.md` | no |
+| `LICENSE` | no |
+
+Anything else is rejected, including `package.json`, `node_modules`, `src/`,
+and dotfiles. `../`, absolute paths, and links that escape the plugin
+directory are rejected before anything is written.
+
+Limits: 256 MB compressed, 512 MB extracted, 20,000 entries.
+
+`backend.entry` must name a JavaScript file under `backend/`. `dist/` is not
+an allowed top-level entry, so the scaffold default `dist/src/index.js` cannot
+ship in a package. Official plugins author `backend/index.js` directly and set
+`entry` to that path. If you did compile TypeScript, copy the output to
+`backend/index.js` and point the manifest there before packing.
+
+## Build the archive
+
+The CLI ships in the Catalyst repository, not on npm. From a checkout where
+you have built `packages/plugin-sdk` (its `pack` command imports `archiver`
+from that package):
+
+```bash
+catalyst-plugin pack
+catalyst-plugin pack --out dist
+```
+
+`pack` writes `<name>-<version>.catpkg.zip` and `<name>-<version>.catpkg.zip.sha256`.
+It includes `plugin.json`, `README.md`, `LICENSE`, and the `backend/`,
+`frontend/`, and `assets/` directories when they exist. It does not compile
+TypeScript and it does not build `frontend.mjs`. Do both before packing. A
+package with neither `backend/` nor `frontend/` installs and does nothing.
+
+The official repository does the same thing with `zip` and then rewrites
+`index.json`:
+
+```bash
+# from a plugin directory — matches scripts/build-packages.sh
+zip -qr ../my-plugin-1.0.0.catpkg.zip plugin.json backend frontend README.md \
+  -x '*/node_modules/*' -x '*/.*' -x 'frontend/dist/*'
+sha256sum ../my-plugin-1.0.0.catpkg.zip
+```
+
+## Index document
+
+Serve JSON over HTTPS. The panel accepts either a bare array or:
+
+```json
+{
+  "schemaVersion": 1,
+  "plugins": [
+    {
+      "name": "my-plugin",
+      "displayName": "My Plugin",
+      "description": "What an admin reads in the marketplace list.",
+      "author": "Your Name",
+      "version": "1.0.0",
+      "downloadUrl": "https://cdn.example.com/my-plugin-1.0.0.catpkg.zip",
+      "sha256": "hex digest of the zip",
+      "homepage": "https://github.com/you/my-plugin",
+      "tags": ["notifications"]
+    }
+  ]
+}
+```
+
+Required per entry: `name`, `downloadUrl`. Recommended: `version`, `sha256`,
+`displayName`, `description`, `author`. `tags` keeps the first 12 strings.
+`sha256` is optional and should not be — the installer checks it when the
+index provides it, and skips the check when the field is absent.
+
+`downloadUrl` must be `http` or `https`. Hosts that resolve to loopback,
+link-local, or private addresses are refused unless the host is one of the
+configured index hosts or the panel has `PLUGIN_MARKETPLACE_ALLOW_LOCAL=true`.
+
+The panel caches each index for 5 minutes. One failing source does not hide
+the others.
+
+## Point a panel at your index
+
+An admin adds the URL under **Admin → Plugins → Marketplace → Marketplaces**,
+or sets environment variables on the backend:
+
+| Variable | Effect |
+| --- | --- |
+| `PLUGIN_MARKETPLACE_URLS` | Comma-separated extra index URLs, browsed together with the official index. |
+| `PLUGIN_MARKETPLACE_DISABLE_OFFICIAL` | `true` skips the official index. Use on air-gapped installs. |
+| `PLUGIN_MARKETPLACE_ALLOW_LOCAL` | `true` permits downloading from loopback and private hosts. Leave unset on a public panel. |
+
+When two sources list the same `name`, the newest `version` wins.
+
+## Install, update, uninstall
+
+1. Admin opens **Marketplace**, picks the plugin, and installs.
+2. The panel downloads, checks `sha256` when present, extracts, and validates
+   `plugin.json`. The code is on disk and **not running**.
+3. Admin enables it and accepts the safety disclaimer. See
+   [Data & permissions](/api/plugins/data/).
+4. A higher `version` in the index shows as an update. Installing it replaces
+   the directory. The version change forces the disclaimer again.
+5. Uninstall removes the directory. Pass `purgeData: true` only when the
+   stored keys and collections should go too.
+
+`POST /api/plugins/install` with `{ "url", "sha256"? }` is the same flow.
+`POST /api/plugins/:name/reload` re-reads the directory without a panel
+restart.
+
+## Get listed officially
+
+Third-party indexes do not need anyone's approval. To land in the official
+index, open a pull request on
+[catalystctl/catalyst-plugins](https://github.com/catalystctl/catalyst-plugins)
+that adds one directory:
+
+- Directory name equals `plugin.json` `name`.
+- `backend.entry` and `frontend.entry` point at files that exist.
+- An `index.json` entry with the same `name` and `version`. CI rejects a
+  mismatch either way.
+- UI plugins include a `vite.config.mts` that emits `frontend/frontend.mjs`.
+  CI runs `scripts/build-bundles.mjs` before packing.
+
+CI packs every directory that contains `plugin.json`, writes the sha256 back
+into `index.json`, and publishes the zips on the `dist` branch. Download URLs
+look like:
+
+```text
+https://raw.githubusercontent.com/catalystctl/catalyst-plugins/dist/plugins/<name>-<version>.catpkg.zip
+```
+
+## Verify
+
+After enable:
+
+```bash
+curl -H "Authorization: Bearer $CATALYST_API_KEY" \
+  https://panel.example.com/api/plugins/my-plugin
+```
+
+The response includes the manifest, whether consent is current, and the
+granted permissions. Then call one of your own routes and confirm a disabled
+plugin returns `503` rather than running the handler.

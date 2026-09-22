@@ -1,0 +1,101 @@
+---
+title: Plugin Development
+description: Extend the panel with plugins — routes, tabs, tasks, storage, and sign-in.
+audience:
+  - developer
+features:
+  - plugins
+sources:
+  - packages/plugin-sdk/
+  - catalyst-backend/src/plugins/
+  - catalyst-frontend/src/plugins/
+last_verified: '2026-09-22'
+---
+
+A **plugin** extends the panel itself: extra API routes, admin and server tabs,
+scheduled work, WebSocket messages, and plugin-owned storage. It is not the
+same thing as a game-server mod. Server owners install those from
+[Mods & Plugins](/users/mods-plugins/); this guide is for people who write
+code that runs inside the panel.
+
+If you only need to call Catalyst from outside, use the [REST API](/api/overview/)
+instead.
+
+## What a plugin can do
+
+| Capability | Where it shows up |
+| --- | --- |
+| HTTP routes | `/api/plugins/<name>/…`, same session and [API key](/api/authentication/) auth as the rest of the panel |
+| Admin and server tabs | Sidebar and server detail pages |
+| Standalone pages | A path such as `/my-plugin` |
+| UI slots | Dashboard, sidebar, and profile |
+| Scheduled work | Re-registered every time the plugin is enabled |
+| Events | Host lifecycle (`server:started`) and your own events |
+| Storage | Key-value plus document collections, scoped to the plugin |
+| Sign-in | "Continue with …" buttons on the login page |
+| Plugin-to-plugin calls | Named functions another plugin can invoke |
+
+Plugins run **in the panel process**. A thrown error in your code can take the
+backend down with it. There is no worker isolation to rely on: `"runtime":
+"isolated"` is accepted in the manifest and then forced in-process.
+
+## The pieces
+
+Every plugin is one directory whose name equals the manifest `name`:
+
+```text
+my-plugin/
+  plugin.json          required manifest
+  backend/index.js     optional backend entry (ESM)
+  frontend/index.ts    optional UI entry
+  frontend/frontend.mjs  optional self-contained UI bundle
+  README.md            optional
+  assets/              optional static files
+```
+
+That layout is what the official
+[catalyst-plugins](https://github.com/catalystctl/catalyst-plugins) repository
+uses, and it is what the panel installer accepts. A package may contain only
+`plugin.json`, `README.md`, `LICENSE`, `backend/`, `frontend/`, and `assets/`.
+Anything else is rejected.
+
+| File | Job |
+| --- | --- |
+| `plugin.json` | Identity, permissions, config fields, events. Validated before the plugin loads. See [Manifest](/api/plugins/manifest/). |
+| `backend` entry | Default-exports `{ onLoad, onEnable, onDisable, onUnload }`. See [Backend](/api/plugins/backend/). |
+| `frontend` entry | Default-exports a frontend plugin definition. See [Frontend](/api/plugins/frontend/). |
+
+## Two ways to ship
+
+**Marketplace package.** Build a `.catpkg.zip`, publish it from an index, and
+admins install it from **Admin → Plugins → Marketplace**. The package stays
+inert until an admin accepts the safety disclaimer and enables it. This is how
+third-party plugins reach a panel. See [Packaging](/api/plugins/packaging/).
+
+**Repository checkout.** The panel image compiles first-party plugins from the
+`catalyst-plugins` repository at build time. That path shares the panel's React
+copy, so React hooks work. A marketplace install that was not compiled into the
+image falls back to `frontend.mjs`, which cannot use React hooks. If your UI
+calls `useState` or `useEffect`, ship it as a repository plugin or keep the UI
+free of hooks.
+
+## Read next
+
+1. [Create a plugin](/api/plugins/creating/) — scaffold, install, enable.
+2. [Manifest](/api/plugins/manifest/) — every `plugin.json` field.
+3. [Backend](/api/plugins/backend/) — routes, tasks, events, WebSocket, files.
+4. [Frontend](/api/plugins/frontend/) — tabs, pages, slots.
+5. [Data & permissions](/api/plugins/data/) — config, storage, what you may read.
+6. [Sign-in plugins](/api/plugins/auth/) — OAuth and SSO.
+7. [Packaging & marketplace](/api/plugins/packaging/) — `.catpkg.zip` and indexes.
+
+## Rules
+
+- Declare the smallest permission set you actually use. Admins see that list
+  before they enable the plugin.
+- Never put secrets in `plugin.json` or in source. Put them in config fields
+  of type `password`, and document what the operator must set.
+- Register HTTP routes in `onLoad`. Register tasks, WebSocket handlers, and
+  event listeners in `onEnable`, because disable clears them.
+- `request.user.userId` is the authenticated user id. Use `context.getUserId(request)`.
+- `context.getConfig(key)` returns the configured **value**, not the schema object.

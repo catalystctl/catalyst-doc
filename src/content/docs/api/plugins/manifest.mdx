@@ -1,0 +1,163 @@
+---
+title: Plugin Manifest
+description: Every plugin.json field the panel validates, with the rules that reject a plugin.
+audience:
+  - developer
+features:
+  - plugins
+sources:
+  - catalyst-backend/src/plugins/validator.ts
+last_verified: '2026-09-22'
+---
+
+`plugin.json` sits at the plugin root. The panel parses it with the manifest
+schema in `catalyst-backend/src/plugins/validator.ts` before loading any code.
+A plugin that fails validation does not load.
+
+```json
+{
+  "name": "my-plugin",
+  "version": "1.0.0",
+  "displayName": "My Plugin",
+  "description": "What an admin sees in the plugin list.",
+  "author": "Your Name",
+  "catalystVersion": ">=1.62.0",
+  "permissions": ["server.read"],
+  "permissionDescriptions": {
+    "my-plugin.sample": "Shown verbatim in the safety dialog."
+  },
+  "backend": { "entry": "backend/index.js" },
+  "frontend": { "entry": "frontend/index.ts", "hasTabs": true },
+  "config": {
+    "greeting": { "type": "string", "default": "Hello", "description": "Shown by /hello" }
+  },
+  "events": {
+    "my-plugin:ready": {
+      "payload": { "id": "string" },
+      "description": "Emitted after the first successful run."
+    }
+  },
+  "dependencies": {},
+  "storageEngine": "dedicated"
+}
+```
+
+## Fields
+
+| Field | Required | Rule |
+| --- | --- | --- |
+| `name` | yes | 1–50 chars, `^[a-z0-9-]+$`. Must equal the directory name in the official repository. |
+| `version` | yes | `MAJOR.MINOR.PATCH` only (`1.0.0`). No pre-release tags. |
+| `displayName` | yes | 1–100 chars. Shown in the admin UI. |
+| `description` | yes | 1–500 chars. |
+| `author` | yes | 1–100 chars. |
+| `catalystVersion` | yes | Comparison against the running panel: `>=1.62.0`, `>1.0.0`, `=1.62.2`, `<2.0.0`, `<=1.62.2`. A bare `1.62.0` means equal. Anything that does not match that pattern is incompatible. |
+| `permissions` | no | Array of strings. Defaults to `[]`. Each token is trimmed; tokens that are not `^[a-zA-Z0-9_.*-]{1,64}$` are dropped. |
+| `permissionDescriptions` | no | Map of permission token → 1–200 char sentence. Every key must also appear in `permissions`, or discovery fails. |
+| `backend` | no | `{ "entry": "backend/index.js" }`. Path is resolved inside the plugin directory. |
+| `frontend` | no | `{ "entry": "frontend/index.ts", "hasTabs"?: boolean, "hasComponents"?: boolean }`. |
+| `dependencies` | no | Map of other plugin name → exact `MAJOR.MINOR.PATCH`. The dependency must be installed and version-compatible or the plugin is skipped. |
+| `config` | no | Map of field name → schema object. Keys match `^[a-zA-Z][a-zA-Z0-9_-]{0,50}$`. |
+| `events` | no | Map of event name → `{ "payload": object, "description"?: string }`. |
+| `authProviders` | no | Up to 8 sign-in buttons. See [Sign-in plugins](/api/plugins/auth/). |
+| `storageEngine` | no | `"legacy"` (default) or `"dedicated"`. See [Data](/api/plugins/data/). |
+| `runtime` | no | `"legacy"` (default) or `"isolated"`. `"isolated"` is accepted and then forced in-process. Do not depend on it. |
+
+Unknown top-level keys are stripped by the schema. Do not hide required
+settings there.
+
+## Permissions you can declare
+
+Built-in tokens already have reviewer copy. Add `permissionDescriptions` for
+custom tokens, or to replace the built-in sentence.
+
+| Token | What granting it allows |
+| --- | --- |
+| `server.read` | Read server rows through `context.db.servers`. Field list is fixed; see [Data](/api/plugins/data/). |
+| `server.write` | `context.db.servers.update` may change `status` only. |
+| `user.read` | Read user rows through `context.db.users` (no credentials). |
+| `user.write` | Declared for route intent. `context.db.users.update` currently whitelists **no** fields, so it cannot change a user. Role changes go through `roles.assign`. |
+| `admin.read` | Reviewer signal that the plugin registers admin-information routes. It does not open admin tables. |
+| `admin.write` | Reviewer signal that the plugin registers admin-mutation routes. It does not open admin tables. |
+| `plugin.rpc` | `context.callPluginApi`. Checked on every call. |
+| `routes.public` | Lets `registerRoute({ config: { auth: 'public' \| 'optional' } })` skip session auth. Without it those routes are forced back to `required`. |
+| `auth.sessions` | `context.auth.createSession`. |
+| `auth.users` | `context.auth.findUser` and `createUser`. |
+| `roles.assign` | `context.auth.listRoles`, `listUserRoles`, `assignRoles`, `removeRoles`. |
+| `*` | Every token above. Treated as critical in the consent dialog. |
+
+`files.read` and `files.write` appear on some official plugins as reviewer
+copy for file-tunnel use. The host does **not** gate `context.fileTunnel` on
+those tokens. Treat them as documentation of intent, not as an enforcement
+boundary, and still declare them so the consent dialog tells the truth.
+
+Custom tokens (for example `my-plugin.sample`) are stored and shown to admins.
+They do not unlock host APIs. Gate your own routes with
+`context.requirePermission('my-plugin.sample')`.
+
+The SDK helper that produces the two manifest fields:
+
+```typescript
+import { definePermissions } from '@catalyst/plugin-sdk';
+
+const declared = definePermissions(
+  'server.read',
+  { token: 'my-plugin.sample', description: 'Read the sample records this plugin stores.' },
+);
+// declared.permissions, declared.permissionDescriptions
+```
+
+Descriptions are cut at 200 characters.
+
+## Config field types
+
+The admin plugin page renders a control from each entry in `config`.
+
+| `type` | Control | Useful keys |
+| --- | --- | --- |
+| `string` | Single-line text | `default`, `description` |
+| `password` | Masked text | `default`, `description` |
+| `text` | Multiline text | `default`, `description` |
+| `number` | Number | `default`, `description` |
+| `boolean` | Toggle | `default`, `description` |
+| `select` | Dropdown | `default`, `options`, `description` |
+
+`options` may be a list of strings (the ticketing plugin does this) or
+`[{ "label": "High", "value": "high" }]`. `getConfig` returns the stored value,
+falling back to `default`. It does not return this schema object.
+
+```typescript
+import { defineConfig, configField } from '@catalyst/plugin-sdk/config';
+
+const config = defineConfig({
+  greeting: configField({ type: 'string', default: 'Hello', description: 'Greeting' }),
+  enabled: configField({ type: 'boolean', default: true }),
+  priority: configField({
+    type: 'select',
+    default: 'medium',
+    options: [
+      { label: 'High', value: 'high' },
+      { label: 'Medium', value: 'medium' },
+    ],
+  }),
+});
+```
+
+`defineConfig` returns the object you put in `plugin.json`. It does not write
+the file for you.
+
+## Events block
+
+`events` documents payloads your plugin emits. `emitTyped` warns when a
+payload does not match the declared `payload` object; it does not reject the
+emit. Listeners use `context.on` — see [Backend](/api/plugins/backend/).
+
+## Dependencies
+
+```json
+"dependencies": { "ticketing-plugin": "3.0.0" }
+```
+
+The version is compared with the same operators as `catalystVersion`. The
+panel loads dependencies first. A cycle is logged and the plugins still load;
+do not rely on cycle-breaking.

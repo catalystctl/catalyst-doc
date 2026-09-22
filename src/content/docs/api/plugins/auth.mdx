@@ -1,0 +1,157 @@
+---
+title: Sign-in Plugins
+description: Add a "Continue with" login button that creates a real panel session.
+audience:
+  - developer
+features:
+  - plugins
+  - authentication
+sources:
+  - catalyst-backend/src/plugins/types.ts
+  - catalyst-backend/src/plugins/context.ts
+  - catalyst-plugins/discord-oauth/
+  - catalyst-plugins/oidc-sso/
+last_verified: '2026-09-22'
+---
+
+A sign-in plugin puts a button on the login page and, after the external
+provider redirects back, creates a normal panel session. Password login,
+[API keys](/api/authentication/), and two-factor settings are unchanged. The
+official examples are
+[discord-oauth](https://github.com/catalystctl/catalyst-plugins/tree/main/discord-oauth)
+and
+[oidc-sso](https://github.com/catalystctl/catalyst-plugins/tree/main/oidc-sso).
+
+## Prerequisites
+
+Declare all four of these, or the pieces that depend on them silently do less:
+
+| Permission | Unlocks |
+| --- | --- |
+| `routes.public` | `authorize` and `callback` routes that have no panel session yet |
+| `auth.users` | `ctx.auth.findUser`, `ctx.auth.createUser` |
+| `auth.sessions` | `ctx.auth.createSession` |
+| `roles.assign` | Role listing and assignment, if you mirror groups |
+
+`auth.sessions` and `roles.assign` are marked critical in the consent dialog.
+Say what you use them for in `permissionDescriptions`.
+
+## 1. Declare the button
+
+```json
+"authProviders": [
+  { "id": "discord", "label": "Discord", "authorizePath": "authorize" }
+]
+```
+
+While the plugin is enabled, each entry becomes a "Continue with `{label}`"
+button. The button links to `/api/plugins/<name>/<authorizePath>`.
+`authorizePath` defaults to `authorize`. `id` is 1–32 characters, `label` is
+1–64, and you may declare at most 8 providers.
+
+The list is public (`GET /api/auth/oauth-providers`) so the login page can
+render it before anyone has a session.
+
+## 2. Register public routes
+
+```javascript
+async onLoad(ctx) {
+  ctx.registerRoute({
+    method: 'GET',
+    url: '/authorize',
+    config: { auth: 'optional' },
+    handler: async (request, reply) => {
+      const userId = ctx.getUserId(request); // set when an already-signed-in user is linking
+      // redirect to the provider
+      return reply.redirect(authorizeUrl);
+    },
+  });
+
+  ctx.registerRoute({
+    method: 'GET',
+    url: '/callback',
+    config: { auth: 'public' },
+    handler: async (request, reply) => {
+      // exchange the code, then find or create the user, then:
+      await ctx.auth.createSession(user.id, {
+        reply,
+        rememberMe: true,
+        ipAddress: request.ip,
+        userAgent: request.headers['user-agent'],
+      });
+      return reply.redirect('/');
+    },
+  });
+}
+```
+
+`optional` on `authorize` lets a signed-in user start a link flow and an
+anonymous user start a login flow. `public` on `callback` is required because
+the provider redirects a browser that may have no panel cookie yet.
+
+Both modes are downgraded to `required` unless `routes.public` is currently
+granted. A revoked grant re-secures the routes on the next request.
+
+## 3. Use the auth bridge
+
+`ctx.auth` is present on a normal panel. Every method checks the live grant
+and throws if it is missing.
+
+```javascript
+const existing = await ctx.auth.findUser({ email });          // or { userId } or { username }
+// PluginAuthUser: { id, email, username, name, image, emailVerified, banned, lockedUntil }
+
+const created = await ctx.auth.createUser({
+  email,
+  username,          // 1–32 of [a-zA-Z0-9._-]
+  name,
+  emailVerified: true,
+  image: null,
+});
+
+const session = await ctx.auth.createSession(created.id, { reply, rememberMe: true });
+// session is { token, expiresAt }; passing reply sets the session cookie
+```
+
+`createUser` creates an account with no password. Those users come back
+through your plugin. Duplicate email or username throws.
+
+`createSession` writes a real session cookie, the same one password login
+sets. Refuse banned users and users with a `lockedUntil` in the future before
+you call it.
+
+On failure, redirect to:
+
+```text
+/login?oauthError=<code>&providerLabel=<label>
+```
+
+The login page shows a failure notice for that query shape. Use a short
+stable `oauthError` code (`access_denied`, `email_unverified`), not a sentence.
+
+## 4. Mirror roles
+
+Role changes are audited. Pass `reason` so the audit log says why.
+
+```javascript
+const roles = await ctx.auth.listRoles();                 // { id, name, description }[]
+const mine = await ctx.auth.listUserRoles(userId);
+await ctx.auth.assignRoles(userId, ['role_id'], { reason: 'discord guild role match' });
+await ctx.auth.removeRoles(userId, ['role_id'], { reason: 'discord guild role removed' });
+```
+
+This is the only supported way for a plugin to change roles. `user.write`
+cannot.
+
+## 5. Show link state on the profile
+
+Mount a card on the `profile-connections` slot so a signed-in user can link
+and unlink. See [Frontend](/api/plugins/frontend/). discord-oauth is the
+reference implementation.
+
+## Store the link
+
+Keep the external account id in a `dedicated` collection, not in a user
+column. You cannot add columns. discord-oauth and oidc-sso both set
+`"storageEngine": "dedicated"` and key documents by the panel user id plus
+the provider subject.

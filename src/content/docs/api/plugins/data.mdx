@@ -1,0 +1,181 @@
+---
+title: Plugin Data & Permissions
+description: Config, key-value storage, collections, and the database fields a plugin is allowed to touch.
+audience:
+  - developer
+features:
+  - plugins
+sources:
+  - catalyst-backend/src/plugins/context.ts
+  - catalyst-backend/src/plugins/storage/
+  - catalyst-backend/src/plugins/safety.ts
+last_verified: '2026-09-22'
+---
+
+A plugin has three stores, and a narrow window onto panel data. Use the
+stores for your own records. Use `context.db` only to read servers and users
+you were granted.
+
+## Config
+
+`getConfig(key)` returns the value an admin saved, or the `default` from
+`plugin.json`. It never returns the schema object.
+
+```javascript
+const greeting = ctx.getConfig('greeting') ?? 'Hello';
+const enabled = ctx.getConfig('cronEnabled'); // boolean, not { type, default }
+await ctx.setConfig('greeting', 'Hi');
+```
+
+`setConfig` persists the value on the plugin row. The admin UI keeps rendering
+the schema. Keys must match the manifest config map; see
+[Manifest](/api/plugins/manifest/).
+
+Put secrets in a `password` field. Do not hard-code them.
+
+## Key-value storage
+
+`getStorage` / `setStorage` / `deleteStorage` are a JSON blob per key, scoped
+to the plugin. Missing keys return `null`.
+
+```javascript
+const first = await ctx.getStorage('initialized');
+if (!first) {
+  await ctx.setStorage('initialized', true);
+  await ctx.setStorage('installDate', new Date().toISOString());
+}
+await ctx.deleteStorage('installDate');
+```
+
+Fine for flags and small counters. Not fine for a list that grows without a
+bound — use a collection.
+
+## Collections
+
+```javascript
+const tickets = ctx.collection('tickets');
+
+const created = await tickets.insert({
+  serverId: 'srv_123',
+  subject: 'Server will not start',
+  status: 'open',
+});
+
+const open = await tickets.find(
+  { serverId: 'srv_123', status: 'open' },
+  { sort: { createdAt: -1 }, limit: 50, skip: 0 },
+);
+
+await tickets.update({ _id: created._id }, { $set: { status: 'resolved' } });
+await tickets.delete({ _id: created._id });
+const n = await tickets.count({ status: 'open' });
+```
+
+`insert` adds `_id`, `_createdAt`, and `_updatedAt`. Filters support dotted
+paths (`sla.resolutionBreached`) and these operators: `$eq`, `$ne`, `$gt`,
+`$gte`, `$lt`, `$lte`, `$in`, `$nin`, `$exists`, `$regex`, `$or`, `$and`.
+
+Updates accept `$set`, `$unset`, `$inc`, `$push`, and `$pull`. `$set` keys
+may be dotted.
+
+Typed wrapper:
+
+```typescript
+import { createTypedCollection } from '@catalyst/plugin-sdk/storage';
+
+interface Ticket {
+  _id?: string;
+  serverId: string;
+  subject: string;
+  status: 'open' | 'resolved';
+}
+
+const tickets = createTypedCollection<Ticket>('tickets', ctx.collection('tickets'));
+```
+
+### Which engine
+
+| `storageEngine` | Behavior | Use when |
+| --- | --- | --- |
+| omitted or `"legacy"` | One JSON array per collection, loaded fully for every query | A few hundred documents at most |
+| `"dedicated"` | One database row per document | Anything you would paginate |
+
+[ticketing-plugin](https://github.com/catalystctl/catalyst-plugins/tree/main/ticketing-plugin)
+and
+[discord-oauth](https://github.com/catalystctl/catalyst-plugins/tree/main/discord-oauth)
+set `"storageEngine": "dedicated"`. The collection API is the same either way.
+Pick `dedicated` unless you know the collection stays small.
+
+There is no row-level security. `server.read` returns every server on the
+panel, not the ones the calling user owns. Filter in your handler after
+`requirePermission`, and do not assume the database did it for you.
+
+## Reading panel data
+
+`ctx.db.servers` requires a live `server.read` grant. `ctx.db.users` requires
+`user.read`. Any other table throws. `credentials`, API keys, and audit logs
+are blocked even for `*`-adjacent custom tokens; `*` itself only adds
+`servers` and `users`.
+
+Reads always project a fixed field set. Requesting other fields drops them.
+
+Server fields: `id`, `name`, `uuid`, `description`, `status`, `createdAt`,
+`updatedAt`, `nodeId`, `ownerId`, `templateId`, `locationId`,
+`allocatedMemoryMb`, `allocatedCpuCores`, `allocatedDiskMb`, `allocatedSwapMb`,
+`containerId`, `containerName`, `networkMode`, `primaryPort`, `primaryIp`,
+`environment`, `startupCommand`, `suspendedAt`, `suspensionReason`.
+
+User fields: `id`, `username`, `email`, `name`, `image`, `banned`,
+`createdAt`, `updatedAt`, `firstName`, `lastName`, `role`.
+
+```javascript
+const servers = await ctx.db.servers.findMany({
+  select: { id: true, name: true, status: true, uuid: true, nodeId: true },
+  orderBy: { name: 'asc' },
+  take: 25,
+});
+const one = await ctx.db.servers.findUnique({ where: { id } });
+const count = await ctx.db.servers.count();
+```
+
+`update` signatures are `(id, data)`, not Prisma's `{ where, data }`.
+
+```javascript
+await ctx.db.servers.update(id, { status: 'suspended' });
+```
+
+`server.write` keeps `status` and discards every other field. If nothing
+whitelisted remains, the call throws. `user.write` keeps nothing — the
+whitelist is empty on purpose, so a plugin cannot write `roleIds` and grant
+itself a role. Role changes go through the auth bridge (`roles.assign`), which
+is audited. See [Sign-in plugins](/api/plugins/auth/).
+
+Grants are re-read on every call. An admin revoking `server.read` makes the
+next `findMany` throw. You do not need to reload the plugin.
+
+## What enabling checks
+
+Enabling (`POST /api/plugins/:name/enable`) requires a current safety
+acceptance when any of these is true:
+
+| Reason | Meaning |
+| --- | --- |
+| `never_accepted` | No acceptance on record |
+| `plugin_updated` | `version` changed since acceptance |
+| `permissions_grew` | The manifest declares a permission the accepted snapshot does not cover |
+| `disclaimer_updated` | The panel disclaimer text version changed |
+
+The enable body is `{ "enabled": true, "safety": { "disclaimerVersion": "1" } }`.
+When consent is missing the panel responds `409` with `code:
+"SAFETY_CONSENT_REQUIRED"` and the permission list the dialog renders. The
+panel UI sends this; call it yourself only if you are driving enable through
+the API.
+
+Disabling never requires consent. Uninstall (`POST /api/plugins/:name/uninstall`)
+accepts `{ "purgeData": true }` to also delete stored keys, collections, and
+the plugin row. Omit `purgeData` to remove the code and leave the data.
+
+Admins can revoke individual declared permissions after enable
+(`PUT /api/plugins/:name/permissions` with `{ "granted": ["server.read"] }`).
+The list must be a subset of the manifest. Revocation is the lever for data
+access; it does not unload your routes.

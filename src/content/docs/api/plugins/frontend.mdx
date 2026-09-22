@@ -1,0 +1,211 @@
+---
+title: Plugin Frontend
+description: Add admin tabs, server tabs, pages, and slots, and call your plugin API from the browser.
+audience:
+  - developer
+features:
+  - plugins
+sources:
+  - packages/plugin-sdk/src/frontend/
+  - catalyst-frontend/src/plugins/loader.ts
+  - catalyst-frontend/src/plugins/PluginSlot.tsx
+last_verified: '2026-09-22'
+---
+
+`frontend.entry` in `plugin.json` points at an ES module. The panel loads it
+two ways:
+
+1. **Compiled in.** A checkout of `catalyst-plugins` is bundled with the panel
+   frontend. The module shares the panel's React, so hooks work. This is how
+   official plugins render.
+2. **Runtime bundle.** A marketplace install with no compiled copy is loaded
+   from `/plugins-assets/<name>/frontend.mjs`. That file is one self-contained
+   ESM bundle. It has its own React copy, and **hooks throw**. Use it for
+   static UI, or ship the plugin in the repository so it is compiled in.
+
+The loader only reads the module when the plugin is enabled and the manifest
+has a `frontend` block.
+
+## Definition
+
+Default-export the object returned by `createFrontendPlugin`:
+
+```typescript
+import { createFrontendPlugin, createPluginApi } from '@catalyst/plugin-sdk/frontend';
+import { AdminTab, ServerTab } from './components';
+
+const api = createPluginApi('my-plugin');
+
+export default createFrontendPlugin({
+  manifest: {
+    name: 'my-plugin',
+    version: '1.0.0',
+    displayName: 'My Plugin',
+    description: 'What this UI does',
+    author: 'Your Name',
+  },
+  tabs: [
+    {
+      id: 'my-plugin-admin',
+      label: 'My Plugin',
+      icon: 'Puzzle',
+      component: AdminTab,
+      location: 'admin',
+      order: 100,
+      requiredPermissions: ['admin.read'],
+    },
+    {
+      id: 'my-plugin-server',
+      label: 'My Plugin',
+      icon: 'Zap',
+      component: ServerTab,
+      location: 'server',
+      order: 100,
+      requiredPermissions: ['server.read'],
+    },
+  ],
+  routes: [
+    { path: '/my-plugin', component: AdminTab, requiredPermissions: ['server.read'] },
+  ],
+  components: [
+    { slot: 'dashboard-widgets', component: MyWidget, order: 50 },
+  ],
+  onMount: () => {},
+  onUnmount: () => {},
+});
+```
+
+`onMount` runs when the module is first imported. `onUnmount` runs when a
+hot reload replaces it. Neither runs per page navigation.
+
+If the default export has no `manifest` object, the loader falls back to
+legacy named exports: `AdminTab`, `ServerTab`, `UserPage`, `slots`, and
+`registerSlots()`. New plugins should use the definition above. Official
+plugins all do.
+
+## Tabs
+
+| Property | Required | Meaning |
+| --- | --- | --- |
+| `id` | yes | Unique among your tabs. |
+| `label` | yes | Sidebar label. |
+| `component` | yes | React component. |
+| `location` | yes | `'admin'` or `'server'`. |
+| `icon` | no | [Lucide](https://lucide.dev/) icon name, for example `'Puzzle'`. |
+| `order` | no | Lower comes first. Default 50. |
+| `requiredPermissions` | no | Hidden unless the signed-in user holds them. Default is `admin.read` for admin tabs and `server.read` for server tabs. |
+| `templateFilter` | no | Server tabs only. Hides the tab unless the server matches. |
+
+A server-tab component receives `{ serverId: string }`.
+
+`templateFilter` limits a server tab to matching servers. While the server
+record is still loading, a filtered tab stays hidden.
+
+```typescript
+templateFilter: {
+  namePattern: 'counter-strike',          // case-insensitive regex against the template name
+  env: { SRCDS_APPID: '10' },              // every entry must match the server environment, case-insensitive
+}
+```
+
+[cs16-admin](https://github.com/catalystctl/catalyst-plugins/tree/main/cs16-admin)
+uses this so its tab only appears on Counter-Strike 1.6 servers.
+
+## Pages
+
+`routes[].path` is an app path (`/my-plugin`). The panel renders `component`
+when the location matches. There is no router nesting; keep paths to a single
+segment unless you have confirmed the panel route that mounts them.
+
+## Slots
+
+`components[].slot` injects a component where the panel already mounts a slot.
+Only these names render today:
+
+| Slot | Rendered in |
+| --- | --- |
+| `dashboard-widgets` | Dashboard, below the activity list |
+| `sidebar-bottom` | Bottom of the sidebar, above the version line (hidden while the sidebar is collapsed) |
+| `profile-connections` | Profile page, under linked accounts |
+
+[discord-oauth](https://github.com/catalystctl/catalyst-plugins/tree/main/discord-oauth)
+uses `profile-connections` for its link/unlink card. Anything else is stored
+and never mounted.
+
+## Calling your backend
+
+`createPluginApi` prefixes `/api/plugins/<name>/` and sends cookies.
+
+```typescript
+const api = createPluginApi('my-plugin');
+
+const hello = await api.get<{ message: string }>('hello');
+const created = await api.post('items', { name: 'map' });
+await api.put('items/1', { name: 'map2' });
+await api.patch('items/1', { name: 'map3' });
+await api.del('items/1'); // api.delete is the same call
+```
+
+A response is `{ success, data?, error? }`. HTTP failures come back as
+`{ success: false, error }` rather than throwing. Paths are relative to the
+plugin prefix — pass `'hello'`, not `'/api/plugins/my-plugin/hello'`.
+
+Wrap tab trees in `PluginErrorBoundary` from the same module so a render
+error in your component does not blank the page around it:
+
+```typescript
+import { PluginErrorBoundary } from '@catalyst/plugin-sdk/frontend';
+
+export function AdminTab() {
+  return (
+    <PluginErrorBoundary pluginName="my-plugin">
+      {/* tab body */}
+    </PluginErrorBoundary>
+  );
+}
+```
+
+## The runtime bundle
+
+Marketplace UI that is not compiled into the panel needs `frontend/frontend.mjs`
+inside the package. Five official plugins ship one (ai-assistant, cs16-admin,
+discord-oauth, fastdl-sync, oidc-sso), each with a `vite.config.mts` that
+builds it. egg-explorer, example-plugin, and ticketing-plugin do not, so their
+UI only renders when the panel compiled them in.
+
+Build with Vite in library mode:
+
+```javascript
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+
+export default defineConfig({
+  plugins: [react()],
+  define: { 'process.env.NODE_ENV': '"production"' },
+  build: {
+    lib: {
+      entry: 'frontend/index.ts',
+      formats: ['es'],
+      fileName: () => 'frontend.mjs',
+    },
+    outDir: 'dist',
+    emptyOutDir: true,
+    rollupOptions: { output: { inlineDynamicImports: true } },
+  },
+});
+```
+
+Then move `dist/frontend.mjs` to `frontend/frontend.mjs` before packing. The
+bundle must inline every dependency, including React, and must not contain a
+bare import. The
+[catalyst-plugins build script](https://github.com/catalystctl/catalyst-plugins/blob/main/scripts/build-bundles.mjs)
+does this for every plugin that has a `vite.config.mts`.
+
+:::caution
+`frontend.mjs` cannot call React hooks. `useState`, `useEffect`, and context
+hooks throw because the bundle's React is not the panel's React. Interactive
+UI belongs in a plugin the panel compiles, which is the official-repository
+path.
+:::
+
+Backend-only plugins omit `frontend` entirely.
