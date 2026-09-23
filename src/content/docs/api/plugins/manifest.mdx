@@ -62,6 +62,7 @@ A plugin that fails validation does not load.
 | `authProviders` | no | Up to 8 sign-in buttons. See [Sign-in plugins](/api/plugins/auth/). |
 | `storageEngine` | no | `"legacy"` (default) or `"dedicated"`. See [Data](/api/plugins/data/). |
 | `runtime` | no | `"legacy"` (default) or `"isolated"`. `"isolated"` is accepted and then forced in-process. Do not depend on it. |
+| `licensing` | no | Vendor-owned licensing declaration. Presence of the block declares the phone-home and is disclosed before enable. See [Plugin licensing](/api/plugins/licensing/). |
 
 Unknown top-level keys are stripped by the schema. Do not hide required
 settings there.

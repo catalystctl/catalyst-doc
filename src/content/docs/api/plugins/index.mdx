@@ -33,6 +33,7 @@ instead.
 | Events | Host lifecycle (`server:started`) and your own events |
 | Storage | Key-value plus document collections, scoped to the plugin |
 | Sign-in | "Continue with …" buttons on the login page |
+| License validation | Vendor-owned license checks and encrypted payloads |
 | Plugin-to-plugin calls | Named functions another plugin can invoke |
 
 Plugins run **in the panel process**. A thrown error in your code can take the
@@ -87,7 +88,8 @@ free of hooks.
 4. [Frontend](/api/plugins/frontend/) — tabs, pages, slots.
 5. [Data & permissions](/api/plugins/data/) — config, storage, what you may read.
 6. [Sign-in plugins](/api/plugins/auth/) — OAuth and SSO.
-7. [Packaging & marketplace](/api/plugins/packaging/) — `.catpkg.zip` and indexes.
+7. [Plugin licensing](/api/plugins/licensing/) — vendor-owned license validation and encrypted payloads.
+8. [Packaging & marketplace](/api/plugins/packaging/) — `.catpkg.zip` and indexes.
 
 ## Rules
 

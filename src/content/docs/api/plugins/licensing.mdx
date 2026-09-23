@@ -1,0 +1,300 @@
+---
+title: Plugin Licensing
+description: Sell plugins with vendor-owned license validation and encrypted payloads.
+audience:
+  - developer
+features:
+  - plugins
+sources:
+  - packages/plugin-sdk/src/licensing.ts
+  - catalyst-backend/src/plugins/validator.ts
+  - catalyst-backend/src/plugins/licensing.ts
+  - catalyst-plugins/tools/license-server/
+  - catalyst-plugins/licensed-example/
+last_verified: '2026-09-22'
+---
+
+A plugin can declare that it uses **vendor-owned licensing**: you issue and
+validate license keys on your own license server, and you can ship the
+plugin's valuable code encrypted so it only runs after activation. This page
+is the contract for doing that — the manifest block, the activation wire
+protocol, and the crypto, specified exactly so you can reimplement the server
+side in any language.
+
+## What Catalyst does and does not do
+
+Catalyst is deliberately **not** a licensing authority. It never issues keys,
+never validates them, and never sees one. Its jobs are exactly three:
+
+1. Declare the phone-home in `plugin.json` so admins see it before enabling.
+2. Hand the plugin a stable `ctx.installId`.
+3. Refuse to install a package marked `licensing.encrypted` that ships no
+   `backend/*.enc` payload.
+
+| Catalyst does | Catalyst does not |
+| --- | --- |
+| Disclose the declared license server and contact hosts before enable | Issue, validate, or see license keys |
+| Provide a stable per-panel `ctx.installId` for seat binding | Decrypt payloads or hold any vendor key |
+| Enforce `licensing.encrypted` at install time | Guarantee the encrypted code never leaks (see [Threat model](/api/plugins/licensing/#threat-model)) |
+
+Everything else — key issuance, seat accounting, revocation, payment — is
+your code on your server.
+
+## Manifest block
+
+The block lives in `plugin.json` and is validated by the `PluginLicensingSchema`
+in `catalyst-backend/src/plugins/validator.ts`. It is optional. **Presence of
+the block is the flag** that the plugin contacts an external license server
+and may ship an encrypted payload.
+
+```json
+"licensing": {
+  "licenseServer": "https://licenses.vendor.example/v1/activate",
+  "buyUrl": "https://vendor.example/buy",
+  "contact": ["licenses.vendor.example"],
+  "encrypted": true,
+  "failMode": "closed",
+  "cacheTtlHours": 168
+}
+```
+
+| Field | Required | Default | Rule |
+| --- | --- | --- | --- |
+| `licenseServer` | yes, when `licensing` is present | — | Must be `https`. Exception: `http` is accepted only for `127.0.0.1`, `localhost`, and `::1` (any port) — local development only. Max 500 chars. |
+| `buyUrl` | no | — | Same URL rule as `licenseServer`. Shown to admins when activation fails. |
+| `contact` | no | the `licenseServer` hostname | Array of bare hostnames matching `^[a-z0-9.-]{1,253}$i`, max 8. This is what the consent dialog discloses. |
+| `encrypted` | no | `false` | When `true`, the package MUST ship at least one `backend/*.enc` file or install fails with `PAYLOAD_MISSING`. |
+| `failMode` | no | `closed` | One of `closed`, `open`. **Only meaningful when `encrypted` is false** — an encrypted plugin structurally cannot fall open (there is no key). `closed` throws on activation failure (the plugin stays disabled); `open` resolves `{ enabled: false }` so the plugin can degrade. |
+| `cacheTtlHours` | no | `168` (7 days) | Integer 1–8760. |
+
+## Consent disclosure
+
+The panel's safety-consent dialog (shown before first enable) now includes a
+**Network & licensing** section whenever `licensing` is present. It shows:
+
+- "Contacts `licenses.vendor.example` to validate a license" — the `contact`
+  hosts.
+- "Encrypted payload — decrypted after activation" — when `encrypted` is set.
+- A `buyUrl` button — when `buyUrl` is set.
+
+This rides the existing consent machinery (`permissionDescriptions` and the
+`SAFETY_CONSENT_REQUIRED` response of `POST /api/plugins/:name/enable`).
+Nothing about consent semantics changed.
+
+## `ctx.installId`
+
+The plugin backend context carries `installId`: a stable, opaque identity for
+the panel install.
+
+- Format: `inst_` plus 24 hex characters (12 random bytes), for example
+  `inst_4f8a1c2e9b03d6a75c1e8f20`.
+- Generated once, persisted in the `PanelIdentity` table, never rotates.
+  It survives restarts and plugin reinstalls.
+- It is an **identifier, not a secret**. Vendors bind seats to it. Do not
+  derive anything sensitive from it, and do not treat it as one.
+
+If a database is copied between panels, the id travels with it. License
+caches keyed on an install id are rejected when the id no longer matches, so a
+copied install re-activates instead of silently reusing someone else's cache.
+
+## Wire protocol
+
+Your license server implements `POST` at `licensing.licenseServer` with
+`Content-Type: application/json`. The plugin sends:
+
+```json
+{
+  "licenseKey": "VND1-K4M2Q-8XR7P-3TN9W-B5HD2",
+  "installId": "inst_4f8a1c2e9b03d6a75c1e8f20",
+  "pluginName": "licensed-example",
+  "pluginVersion": "1.0.0"
+}
+```
+
+`200 OK`:
+
+```json
+{
+  "ok": true,
+  "wrappedDek": "<base64url of nonce(12) ‖ ciphertext ‖ tag(16)>",
+  "expiresAt": "2026-09-29T12:00:00.000Z",
+  "entitlements": ["bzip2", "multi-node"],
+  "seats": { "used": 1, "max": 1 }
+}
+```
+
+Errors are all `{"ok":false,"code":"…"}`:
+
+| Status | Code | Meaning |
+| --- | --- | --- |
+| 401 | `INVALID_KEY` | Key unknown or hash mismatch |
+| 403 | `REVOKED` | Key explicitly revoked |
+| 409 | `SEAT_EXHAUSTED` | Install not bound and no free seat |
+| 409 | `VERSION_MISMATCH` | Key not entitled for this `pluginVersion` |
+| 400 | `BAD_REQUEST` | Missing or invalid fields |
+| 503 | `UNAVAILABLE` | Transient failure |
+
+Other endpoints your server should implement:
+
+| Endpoint | Body | Job |
+| --- | --- | --- |
+| `POST /v1/deactivate` | `{licenseKey, installId}` | Frees a seat |
+| `POST /v1/revoke` | `{licenseKey, reason}` | Revokes a key |
+| `POST /v1/issue` | `{customerEmail, seats, entitlements, versions}` | Issues a key; the response contains the key **once** and it is never retrievable again |
+| `GET /healthz` | — | Liveness probe |
+
+## Crypto contract
+
+This is exact. Reimplement it in any language from this section alone.
+
+```text
+KEK = HKDF-SHA256(
+        ikm  = UTF-8(licenseKey),
+        salt = UTF-8(installId),
+        info = UTF-8("catalyst-catpkg-dek-wrap-v1"),
+        len  = 32)
+
+wrap = AES-256-GCM(KEK, DEK)
+       AAD = UTF-8(pluginName + "\u0000" + pluginVersion)
+       output = nonce(12) ‖ ciphertext ‖ tag(16), base64url-encoded
+```
+
+- The DEK is 32 random bytes, **one per plugin version**, rotated each
+  release. It encrypts the payload at build time.
+- The DEK travels to the plugin **wrapped**, never in the clear. A log leak or
+  a MITM on the activation call cannot recover it.
+- AES-GCM's auth tag is the integrity check: a forged `wrappedDek` fails to
+  unwrap. No response signing is needed for the key path.
+- A MITM on activation can only deny service, never forge an entitlement.
+
+## Payload format
+
+`backend/payload.enc` is one AES-256-GCM envelope. Key = the DEK.
+
+| Offset | Length | Content |
+| --- | --- | --- |
+| 0 | 12 | GCM nonce, random per build |
+| 12 | n | ciphertext |
+| end−16 | 16 | GCM auth tag |
+
+- AAD = `UTF-8(pluginName ‖ "\0" ‖ pluginVersion)` — the same AAD as the wrap,
+  so a payload cannot be transplanted across versions.
+- The plaintext is **one bundled ESM module** with no bare imports (the same
+  constraint as `frontend.mjs`, for the same reason: it is loaded from a
+  `data:` URL).
+- Export shape: `default` is the normal plugin object with `onLoad`,
+  `onEnable`, `onDisable`, and `onUnload`.
+- It is loaded via `import('data:text/javascript;base64,…')` so **plaintext
+  never lands on disk** — the panel's hot-reload staging directory
+  `…/.cache/backend/…` never sees the decrypted module.
+- `plugin.json` is **always** plaintext. The panel must validate the manifest
+  before anything runs.
+
+## SDK
+
+`@catalyst/plugin-sdk/licensing` is backend-only (it uses `node:crypto`).
+**Bundle it into your bootstrap at build time** — plugin backends are
+self-contained bundles (the same contract as `frontend.mjs`), so the SDK is
+not a runtime dependency of the panel.
+
+| Export | Job |
+| --- | --- |
+| `defineLicensing(def)` | Build the manifest block |
+| `deriveKek(licenseKey, installId)` | 32-byte KEK |
+| `licensingAad(pluginName, pluginVersion)` | AAD bytes |
+| `wrapDek(kek, dek, aad)` / `unwrapDek(kek, wrappedDek, aad)` | Vendor side / plugin side |
+| `decryptPayload(dek, payloadBytes, aad)` | Decrypt `backend/*.enc` to an ESM source string |
+| `importPayload(code)` | Dynamic-import the module from a `data:` URL |
+| `activateLicense(ctx, opts)` | The whole flow: read `config.licenseKey`, use the cached activation if fresh, else POST to `licenseServer`, unwrap, cache. Returns `{ enabled, dek, entitlements, expiresAt, cached, error? }` |
+| `loadLicensedModule(ctx, { payload, … })` | One call: activate, decrypt, import, return the plugin object |
+
+Types: `PluginLicensing`, `PluginRuntimeContext`, `ActivateOptions`,
+`Activation`. `@catalyst/plugin-sdk/testing` also exports
+`createMockLicense(opts)` for plugin tests.
+
+A minimal bootstrap looks like this:
+
+```javascript
+// backend/index.js (built bootstrap)
+import { readFileSync } from 'node:fs';
+import { loadLicensedModule } from '@catalyst/plugin-sdk/licensing';
+
+let real;
+async function boot(ctx) {
+  if (!real) {
+    real = await loadLicensedModule(ctx, {
+      payload: new Uint8Array(readFileSync(new URL('./payload.enc', import.meta.url))),
+    });
+  }
+  return real;
+}
+export default {
+  async onLoad(ctx) { (await boot(ctx))?.onLoad?.(ctx); },
+  // …onEnable / onDisable / onUnload
+};
+```
+
+`activateLicense` reads the license key from `config.licenseKey` by default
+(override with the `keyField` option), so declare a config field of type
+`password` with that key and document it for the operator.
+
+## Caching & outages
+
+The activation is cached in the plugin's own storage at key
+`licensing.activation` as
+`{ installId, wrappedDek, expiresAt, entitlements, activatedAt }`.
+
+- A cache record is **rejected when `installId` differs** from `ctx.installId`.
+- It is **rejected when `expiresAt` is past** — then `activateLicense`
+  reactivates against `licenseServer`.
+- The plaintext DEK is **never** persisted. Only the wrapped key is stored.
+
+Because the wrapped key is cached, a vendor outage does not become a panel
+incident: the plugin keeps working until the cached activation expires
+(`cacheTtlHours`, default 168). When activation does fail and there is no
+fresh cache:
+
+- `closed` (the default, and the only mode for an encrypted plugin) throws on
+  activation failure — the plugin stays disabled.
+- `open` (non-encrypted plugins only) resolves `{ enabled: false }` so the
+  plugin can degrade gracefully.
+
+## Threat model
+
+**This is a deterrent, not DRM.** It deters package copying between panels,
+key sharing across installs, casual patching, and unlicensed redistribution.
+
+One sentence of rationale, because it shapes the whole design: plugins
+already have unrestricted outbound network access (discord-oauth calls
+Discord, ai-assistant calls OpenAI/Anthropic), so "let the plugin phone home"
+required no new capability. What was missing is that it happened *silently*.
+This feature makes it declared and disclosable.
+
+:::caution
+**What this does NOT defend against:** an admin with database access, or a
+determined cracker who dumps the decrypted module from the process. Plaintext
+exists in memory and in the module cache. Importing via a `data:` URL avoids
+*disk* exposure, which raises the bar from "read the staging directory" to
+"attach a debugger" — that is the ceiling, and it is the right trade-off for
+the goal.
+:::
+
+**Frontend cannot be meaningfully encrypted.** `frontend.mjs` is served to the
+browser; any key handed to the browser is the attacker's. Encrypt the
+*backend* (the valuable logic) and ship a thin frontend shell that calls
+backend routes. Do not spend effort encrypting the frontend.
+
+## Reference implementations
+
+Both live in the
+[catalyst-plugins](https://github.com/catalystctl/catalyst-plugins) repository
+and are meant to be copied:
+
+- [tools/license-server](https://github.com/catalystctl/catalyst-plugins/tree/main/tools/license-server)
+  — zero-dependency `node:http` reference vendor license server: issue,
+  activate, deactivate, revoke, and healthz, with keys stored SHA-256-hashed,
+  seat binding, and version matching.
+- [licensed-example](https://github.com/catalystctl/catalyst-plugins/tree/main/licensed-example)
+  — the working client plugin: a plaintext `backend/index.js` bootstrap, an
+  encrypted `backend/payload.enc`, and a `/premium-report` route that only
+  exists after activation.

@@ -114,6 +114,7 @@ export default defineConfig({
             { label: 'Plugin Frontend', slug: 'api/plugins/frontend' },
             { label: 'Plugin Data & Permissions', slug: 'api/plugins/data' },
             { label: 'Sign-in Plugins', slug: 'api/plugins/auth' },
+            { label: 'Plugin Licensing', slug: 'api/plugins/licensing' },
             { label: 'Packaging & Marketplace', slug: 'api/plugins/packaging' },
             { label: 'API Reference', slug: 'api/reference' },
           ],

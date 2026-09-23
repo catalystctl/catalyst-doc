@@ -43,6 +43,15 @@ ship in a package. Official plugins author `backend/index.js` directly and set
 `entry` to that path. If you did compile TypeScript, copy the output to
 `backend/index.js` and point the manifest there before packing.
 
+## Encrypted payloads
+
+A package whose `plugin.json` sets `licensing.encrypted: true` must ship at
+least one `backend/*.enc` payload. The installer refuses the package with
+`PAYLOAD_MISSING` otherwise, so a mispackaged plugin fails at install time
+instead of in front of an admin at enable time. `plugin.json` itself stays
+plaintext — the panel validates it before anything runs. See
+[Plugin licensing](/api/plugins/licensing/).
+
 ## Build the archive
 
 The CLI ships in the Catalyst repository, not on npm. From a checkout where
