@@ -1,6 +1,6 @@
 ---
 title: Installation
-description: Install the Catalyst panel with the Docker installer.
+description: Install the Catalyst panel on a Linux host with the released installer.
 audience:
   - admin
 features:
@@ -8,88 +8,118 @@ features:
   - docker
 sources:
   - install.sh
-  - catalyst-docker/
-last_verified: '2026-09-17'
+  - catalyst-docker/docker-compose.yml
+  - catalyst-docker/update.sh
+last_verified: '2026-09-28'
 ---
 
-The supported path is the Docker installer: one script installs Docker if
-needed, downloads the compose stack, and writes a fully configured `.env`
-with generated secrets. You start the stack yourself afterwards.
+The supported path is the released Docker installer: one command installs
+Docker if needed, downloads the compose stack, and writes a fully configured
+`.env` with generated secrets. It does **not** start the stack — you review the
+result and start it yourself.
 
-## 1. Get the installer
+## Prerequisites
 
-Every release publishes `install.sh` plus a `install.sh.sha256` checksum.
-Download both from the release you want and verify before running:
+- A Linux host (Ubuntu/Debian, RHEL/CentOS, Fedora, Arch, Alpine, or openSUSE)
+  with `curl`, `tar`, and `openssl`.
+- Docker (or Podman) with Compose, or permission for the installer to install
+  Docker for you.
+- Root access — the one-liner below runs the installer through `sudo bash`.
+
+## Install
+
+On the panel host, from a root shell:
 
 ```bash
-VERSION=v1.60.3  # replace with the release you want
+curl -fsSL https://github.com/catalystctl/catalyst/releases/latest/download/install.sh | sudo bash
+```
+
+The installer reads its prompts from `/dev/tty`, so the piped form stays
+interactive. It checks the container runtime and Compose, offers to install
+Docker when missing, warns when the target ports are already in use or disk
+space is low, then prompts for the panel URL and panel name. It generates every
+required secret (`POSTGRES_PASSWORD`, `BETTER_AUTH_SECRET`, `REDIS_PASSWORD`,
+`API_KEY_SECRET`, `BACKUP_CREDENTIALS_ENCRYPTION_KEY`) and writes `.env` with
+`chmod 600`.
+
+To pin a specific release instead of tracking the newest one, swap `latest` for
+a tag:
+
+```bash
+curl -fsSL https://github.com/catalystctl/catalyst/releases/download/v1.66.3/install.sh | sudo bash
+```
+
+That pins the installer script; the stack files still come from `main` unless
+you also set `INSTALL_VERSION` (see below).
+
+### Verify the download (recommended for production)
+
+Every release publishes `install.sh` plus an `install.sh.sha256` checksum. If
+your policy is to inspect a script before running it, download both, check the
+checksum, then run the file:
+
+```bash
+VERSION=v1.66.3  # replace with the release you want
 curl -fsSL -o install.sh "https://github.com/catalystctl/catalyst/releases/download/${VERSION}/install.sh"
 curl -fsSL -o install.sh.sha256 "https://github.com/catalystctl/catalyst/releases/download/${VERSION}/install.sh.sha256"
 sha256sum -c install.sh.sha256
+sudo bash install.sh
 ```
 
-To have the script verify itself as well, export the hash before running it
-(the raw hex or the whole `.sha256` line both work):
+The installer can also check itself while it runs. Pass the expected hash in
+its environment when running the downloaded file — the raw hex or the whole
+`.sha256` line both work:
 
 ```bash
-export INSTALL_SHA256="$(awk '{print $1}' install.sh.sha256)"
+INSTALL_SHA256="$(awk '{print $1}' install.sh.sha256)" sudo bash install.sh
 ```
 
-A mismatch aborts the install before anything runs.
+A mismatch aborts the install before anything runs. The self-check hashes the
+script file, so it applies to the downloaded `install.sh`, not to the piped
+one-liner above.
 
-## 2. Run the installer
+## Options
 
-On the panel host, as root (or with sudo):
+Run `--help` for the full list. Useful flags:
 
-```bash
-bash install.sh
-```
-
-The installer checks the container runtime and Compose, offers to install
-Docker when missing, warns when the target ports are already in use or disk
-space is low, then prompts for the panel URL and name. It generates every
-required secret (`POSTGRES_PASSWORD`, `BETTER_AUTH_SECRET`, `REDIS_PASSWORD`,
-`API_KEY_SECRET`, `BACKUP_CREDENTIALS_ENCRYPTION_KEY`) and writes `.env`
-with `chmod 600`.
-
-Useful flags:
-
-- `-y` — non-interactive (accept defaults / environment overrides).
-- `--set KEY=VALUE` — set any `.env` variable (repeatable). Applied on top
-  of the prompts, so it also overrides the environment. Secret-looking
-  values are never echoed.
-- `--env-file FILE` — read `KEY=VALUE` overrides from a file, applied
-  before `--set` (a later `--set` wins).
+- `-y`, `--yes`, `--non-interactive` — accept defaults / use environment
+  overrides without prompting.
+- `--set KEY=VALUE` — set any `.env` variable (repeatable). Applied on top of
+  the prompts, so it also overrides the environment. Secret-looking values are
+  never echoed.
+- `--env-file FILE` — read `KEY=VALUE` overrides from a file, applied before
+  `--set` (a later `--set` wins).
 - `--dry-run` — show what would happen without changing anything.
-- `--reconfigure` — re-run the `.env` prompts (secrets are preserved so they
-  stay in sync with existing volumes).
-- `--update` — refresh the compose stack files, keeping `.env`.
+- `--reconfigure` — re-run the `.env` prompts (existing secrets are preserved
+  so they stay in sync with already-initialized volumes).
+- `--update` — refresh the compose stack files in `./catalyst-docker`, keeping
+  `.env`.
 - `--uninstall` — remove the stack (data volumes are kept unless
   `REMOVE_VOLUMES=1` is set with `-y`).
-- `--help` — all options.
+- `-h`, `--help` — all options.
 
-Environment overrides:
+Environment overrides (used with `-y`, or as prompt defaults):
 
-- `PUBLIC_URL`, `APP_NAME` — pre-answer the prompts (or supply defaults with `-y`).
+- `PUBLIC_URL`, `APP_NAME` — pre-answer the prompts.
+- `REMOVE_VOLUMES=1` — with `--uninstall -y`, also delete compose volumes.
 - `INSTALL_VERSION` — git ref for the stack files. Defaults to `main`; a
-  release tag like `v1.60.1` pins `catalyst-docker/` to that release so a
+  release tag such as `v1.66.3` pins `catalyst-docker/` to that release so a
   verified installer from release X installs stack X.
 - `INSTALL_SHA256` — expected checksum of `install.sh` itself (see above).
-- `REMOVE_VOLUMES=1` — with `--uninstall -y`, also delete data volumes.
 
-Example — non-interactive, pinned to a release, custom port and timezone:
+Example — non-interactive, pinned stack files, custom port and timezone:
 
 ```bash
-INSTALL_VERSION=v1.60.3 bash install.sh -y \
+INSTALL_VERSION=v1.66.3 bash install.sh -y \
   --set PUBLIC_URL=https://panel.example.com \
   --set FRONTEND_PORT=0.0.0.0:8081 \
   --set TZ=Europe/Berlin
 ```
 
-## 3. Start the stack
+## Start the stack
 
-The installer configures but does not start anything. Review the result,
-then bring it up:
+The installer configures the stack but does not start it. Review the generated
+`.env`, then bring it up:
 
 ```bash
 cd catalyst-docker
@@ -97,17 +127,30 @@ nano .env   # optional — check everything the installer wrote
 docker compose up -d
 ```
 
-## 4. Finish setup in the browser
+If the installer detected `PUBLIC_URL` over HTTPS, start the TLS overlay
+instead (Caddy issues the certificate; ports 80/443 must be reachable):
 
-Open the panel URL and complete the setup wizard
-([first-time setup](/admin/first-time-setup/)): admin account, panel URL, and
-basic settings.
+```bash
+cd catalyst-docker
+docker compose -f docker-compose.yml -f docker-compose.caddy.yml up -d
+```
+
+Check the containers are up with `docker ps`, then open the panel URL in a
+browser.
+
+## Finish setup in the browser
+
+Opening the panel URL shows the setup wizard. Complete it
+([first-time setup](/admin/first-time-setup/)) — panel name, admin account, and
+appearance. The first registered user becomes the administrator.
 
 ## After installing
 
 - [Configure TLS and networking](/admin/networking/).
 - [Install a node](/admin/nodes/installing/) — the panel alone runs no games.
 - [Update safely](/admin/updating/) when new releases arrive.
+- The installer writes `catalyst-docker/diagnose.sh` for support bundles and
+  `catalyst-docker/update.sh` to refresh the stack files later.
 
 ## Troubleshooting
 

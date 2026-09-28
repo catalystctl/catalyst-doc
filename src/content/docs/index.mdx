@@ -5,12 +5,12 @@ template: splash
 hero:
   tagline: Run game servers without the guesswork. Create servers, manage files and backups, and automate everything through the API.
   actions:
+    - text: Install Catalyst
+      link: /admin/installation/
+      icon: rocket
     - text: Manage a game server
       link: /users/overview/
       icon: right-arrow
-    - text: Administer Catalyst
-      link: /admin/overview/
-      icon: open-book
       variant: secondary
     - text: Use the API
       link: /api/overview/
@@ -23,6 +23,22 @@ hero:
 ---
 
 import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## Install the panel
+
+On a fresh Linux host, run this from a root shell. The installer installs Docker
+when needed, writes a configured `.env` with generated secrets, and leaves the
+stack ready to start:
+
+```bash
+curl -fsSL https://github.com/catalystctl/catalyst/releases/latest/download/install.sh | sudo bash
+```
+
+Then [bring the stack up and finish setup](/admin/installation/). Check
+[system requirements](/admin/requirements/) first, and add a
+[node](/admin/nodes/installing/) before you create game servers. To pin a
+release, replace `latest` in the URL with a release tag; the installer can also
+[verify its own checksum](/admin/installation/).
 
 ## Start here
 

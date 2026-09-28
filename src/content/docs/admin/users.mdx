@@ -9,15 +9,39 @@ features:
 sources:
   - catalyst-frontend/src/pages/admin/UsersPage.tsx
   - catalyst-backend/src/routes/admin.ts
-last_verified: '2026-09-15'
+last_verified: '2026-09-28'
 ---
 
-## Accounts and invites
+Manage accounts under **Admin → Users**.
 
-- Users sign up themselves (if registration is open) or are created/invited by
-  staff under **Admin → Users** and the **Invites** view.
-- Server sharing between players does **not** need admin help — owners add
-  [subusers](/users/subusers/) themselves.
+## Create an account
+
+You need `user.create`. Select **Create user** and work through the wizard:
+
+1. **Account** — **Username**, **Email**, **Password** (minimum 8 characters).
+2. **Roles & Servers** — assign one or more **Role**s and, optionally, direct
+   server access.
+3. **Node Access** — grant the account scoped access to specific nodes, or skip.
+4. Select **Create user**.
+
+**Edit user** reopens the same form with an extra **Security** step for the
+account's two-factor state; leaving the password blank keeps the current one.
+
+## Find and act on users
+
+- Search by name, email, or ID, and filter by **Role** or **Status** (**Active**,
+  **Banned**, **Unverified**).
+- **View details** shows the account, roles, server access, **Two-Factor
+  Authentication**, **Passkeys**, and **Linked Accounts** state, with actions to
+  **Wipe 2FA**, **Wipe all** passkeys, **Unlink** an SSO account, or **Enforce**
+  2FA.
+- Select users to act in bulk: **Ban**, **Unban**, **Verify Emails**, or delete.
+  Banning and deleting are destructive; a user who still owns servers cannot be
+  deleted.
+
+Server sharing between players does **not** need admin help — owners send
+invites and add [subusers](/users/subusers/) themselves from the server's
+**Users & Access** view.
 
 ## Admin discipline
 
@@ -32,7 +56,10 @@ last_verified: '2026-09-15'
 
 ## When users cannot log in
 
-1. Confirm the account exists and is not suspended.
-2. Check mail delivery if invites or resets never arrive (see
+1. Confirm the account exists and is not suspended; check **Status** in
+   **Admin → Users**.
+2. Reset the password or **Verify email** from the user's detail view.
+3. Check mail delivery if invites or resets never arrive (see
    [panel issues](/troubleshooting/panel/)).
-3. Look at the audit log for lockouts before resetting anything.
+4. In **Admin → Audit Logs**, filter the action **Sign-in failed** or the
+   resource type **Login lockout** before resetting anything.

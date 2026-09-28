@@ -9,7 +9,11 @@ sources:
   - packages/plugin-sdk/src/frontend/
   - catalyst-frontend/src/plugins/loader.ts
   - catalyst-frontend/src/plugins/PluginSlot.tsx
-last_verified: '2026-09-22'
+  - catalyst-frontend/vite.config.ts
+  - catalyst-frontend/src/pages/PluginTabPage.tsx
+  - catalyst-frontend/src/pages/PluginRoutePage.tsx
+  - catalyst-plugins/scripts/build-bundles.mjs
+last_verified: '2026-09-28'
 ---
 
 `frontend.entry` in `plugin.json` points at an ES module. The panel loads it
@@ -91,7 +95,7 @@ plugins all do.
 | `label` | yes | Sidebar label. |
 | `component` | yes | React component. |
 | `location` | yes | `'admin'` or `'server'`. |
-| `icon` | no | [Lucide](https://lucide.dev/) icon name, for example `'Puzzle'`. |
+| `icon` | no | Accepted for compatibility, but the panel does not render it: admin and server tabs always draw a fixed plug icon. |
 | `order` | no | Lower comes first. Default 50. |
 | `requiredPermissions` | no | Hidden unless the signed-in user holds them. Default is `admin.read` for admin tabs and `server.read` for server tabs. |
 | `templateFilter` | no | Server tabs only. Hides the tab unless the server matches. |
@@ -125,12 +129,11 @@ Only these names render today:
 | Slot | Rendered in |
 | --- | --- |
 | `dashboard-widgets` | Dashboard, below the activity list |
-| `sidebar-bottom` | Bottom of the sidebar, above the version line (hidden while the sidebar is collapsed) |
-| `profile-connections` | Profile page, under linked accounts |
+| `profile-connections` | Profile page, below the linked-accounts card |
 
 [discord-oauth](https://github.com/catalystctl/catalyst-plugins/tree/main/discord-oauth)
-uses `profile-connections` for its link/unlink card. Anything else is stored
-and never mounted.
+uses `profile-connections` for its link/unlink card. Any other slot name is
+accepted, stored, and never mounted — `sidebar-bottom` is one of those.
 
 ## Calling your backend
 
@@ -168,20 +171,35 @@ export function AdminTab() {
 ## The runtime bundle
 
 Marketplace UI that is not compiled into the panel needs `frontend/frontend.mjs`
-inside the package. Five official plugins ship one (ai-assistant, cs16-admin,
-discord-oauth, fastdl-sync, oidc-sso), each with a `vite.config.mts` that
-builds it. egg-explorer, example-plugin, and ticketing-plugin do not, so their
-UI only renders when the panel compiled them in.
+inside the package. `frontend/frontend.mjs` is generated, not committed: any
+plugin with a `vite.config.mts` (ai-assistant, cs16-admin, discord-oauth,
+fastdl-sync, licensed-example, oidc-sso) gets one from
+[`scripts/build-bundles.mjs`](https://github.com/catalystctl/catalyst-plugins/blob/main/scripts/build-bundles.mjs)
+before packing. egg-explorer, example-plugin, and ticketing-plugin have no Vite
+config, so their UI only renders when the panel compiled it in.
 
 Build with Vite in library mode:
 
 ```javascript
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import path from 'path';
+
+const repoRoot = path.resolve(import.meta.dirname, '..');
 
 export default defineConfig({
   plugins: [react()],
   define: { 'process.env.NODE_ENV': '"production"' },
+  resolve: {
+    alias: [
+      // @catalyst/plugin-sdk is not on npm: the SDK's frontend entry is
+      // vendored in catalyst-plugins/sdk-frontend and aliased here.
+      {
+        find: '@catalyst/plugin-sdk/frontend',
+        replacement: path.resolve(repoRoot, 'sdk-frontend/index.ts'),
+      },
+    ],
+  },
   build: {
     lib: {
       entry: 'frontend/index.ts',
@@ -197,9 +215,8 @@ export default defineConfig({
 
 Then move `dist/frontend.mjs` to `frontend/frontend.mjs` before packing. The
 bundle must inline every dependency, including React, and must not contain a
-bare import. The
-[catalyst-plugins build script](https://github.com/catalystctl/catalyst-plugins/blob/main/scripts/build-bundles.mjs)
-does this for every plugin that has a `vite.config.mts`.
+bare import. `scripts/build-bundles.mjs` does both steps for every plugin that
+has a `vite.config.mts`.
 
 :::caution
 `frontend.mjs` cannot call React hooks. `useState`, `useEffect`, and context

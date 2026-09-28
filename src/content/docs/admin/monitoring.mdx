@@ -7,38 +7,82 @@ features:
   - monitoring
   - logging
 sources:
-  - catalyst-frontend/src/pages/admin/SystemPage.tsx
+  - catalyst-frontend/src/pages/admin/AdminDashboardPage.tsx
+  - catalyst-frontend/src/pages/admin/SystemErrorsPage.tsx
+  - catalyst-frontend/src/pages/admin/AuditLogsPage.tsx
+  - catalyst-frontend/src/pages/admin/AlertsPage.tsx
+  - catalyst-backend/src/routes/alerts.ts
   - catalyst-backend/src/routes/metrics.ts
-last_verified: '2026-09-15'
+  - catalyst-backend/src/routes/dashboard.ts
+last_verified: '2026-09-28'
 ---
 
 ## What to watch
 
-| Layer | Signals |
-| --- | --- |
-| Panel | HTTP errors, login failures, queue depth, DB/Redis health |
-| Nodes | Reachability, CPU/memory/disk, agent version drift |
-| Servers | Crash loops, backup failures, quota usage |
-| Platform | Disk free everywhere, certificate expiry, backup age |
+| Layer | Signals | Where |
+| --- | --- | --- |
+| Panel | HTTP errors, login failures, DB/Redis health | Admin dashboard (`/admin`) **System Health**, **System Errors** |
+| Nodes | Reachability, CPU/memory/disk, agent version drift | **Admin → Nodes**, node detail stats |
+| Servers | Crash loops, backup failures, quota usage | **Admin → Servers**, per-server **Metrics** and **Backups** tabs |
+| Platform | Disk free everywhere, certificate expiry, backup age | Dashboard, alerts, host monitoring |
 
-The admin dashboard and system views surface most of this; export it to your
-existing monitoring (Prometheus/Grafana, Uptime Kuma, plain log shipping)
-rather than living in the panel UI.
+The admin dashboard shows **System Health** (**Database**, **Cluster Nodes**)
+and the cluster resource chart. Export the same numbers to your existing
+monitoring (Prometheus/Grafana, Uptime Kuma, plain log shipping) rather than
+living in the panel UI.
+
+## System Errors
+
+Open **Admin → System Errors** (`/admin/system-errors`). This is the panel's
+own error log: exceptions captured from the backend, agents, and frontend. The
+header shows **Live** when the realtime stream is connected (otherwise
+**Offline**) plus the current error count.
+
+1. Filter with **Level** (**All levels**, **Warning**, **Error**, **Critical**),
+   **Component** (for example `auth, server...`), **Node**, **Status** (**All**,
+   **Resolved**, **Unresolved**), **From**/**To**, and **Quick range**
+   (**Custom**, **Last 1h/6h/24h/7d**). Active filters show as chips; **Clear**
+   resets them.
+2. Per row, **View details** opens the stack trace and metadata, **Copy for AI**
+   copies a Markdown report, and **Resolve** marks one error handled.
+3. **Resolve all** marks every error matching the current filters resolved
+   (disabled while you are filtering to resolved errors).
+4. **Export** downloads the filtered errors as JSON or Markdown — Markdown is
+   the better format for pasting into an assistant.
+5. **Download diagnostics** captures panel, node, server, and config data for a
+   time window as one redacted ZIP — see
+   [diagnostics bundle](/troubleshooting/diagnostics-bundle/).
+
+Triage here first when a page 500s or a background job misbehaves, then read
+**Audit Logs** (`/admin/audit-logs`) for who triggered the action. Audit logs
+are your source of truth for staff actions; export CSV and protect retention
+under **Admin → Security**.
+
+## Set up alerting
+
+1. Open **Admin → Alerts** and select **Create Rule**.
+2. **Details** — name the rule, pick a **Rule type**: **Resource threshold**
+   (CPU/memory/disk percentages), **Node offline** (offline threshold in
+   minutes), or **Server crashed**; choose a **Target** (**Global**, **Node**,
+   or **Server**).
+3. **Conditions** — set the thresholds the rule type exposes.
+4. **Notifications** — add **Email recipients**, **Webhook URLs**, a **Cooldown
+   (minutes)**, and optionally **Notify server owner**.
+5. Select **Create rule**. Incidents appear under **Alert history**; use
+   **Resolve** or **Resolve all** once handled.
+
+At minimum, page on: panel down, node unreachable > 5 min, disk > 85%,
+database backup older than expected, and certificate expiring < 14 days.
+Everything else can stay a dashboard. Prune stale rules quarterly — they train
+people to ignore the channel.
 
 ## Logs that matter
 
-- **Backend container logs** — API errors, auth failures, background jobs.
-- **Agent logs on each node** — lifecycle actions, update stages, connectivity.
-- **Audit log (Admin → Audit Logs)** — who changed what in the panel. This is
-  your source of truth for staff actions; protect its retention.
+- **Backend container logs** — API errors, auth failures, background jobs:
+  `docker compose logs backend`.
+- **Agent logs on each node** — lifecycle actions, update stages, connectivity:
+  `journalctl -u catalyst-agent`.
 - **System errors view** — persisted application errors worth triaging regularly.
-
-## Alerting minimum
-
-Page (or at least notify) on: panel down, node unreachable > 5 min, disk > 85%,
-database backup older than expected, certificate expiring < 14 days. Everything
-else can be a dashboard. Review and prune alerts quarterly — stale alerts train
-people to ignore the channel.
 
 ## When something fires
 

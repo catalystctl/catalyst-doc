@@ -7,14 +7,58 @@ features:
   - api
 sources:
   - catalyst-backend/src/index.ts
+  - catalyst-backend/src/lib/rate-limiter.ts
+  - catalyst-backend/src/lib/rate-limit-store.ts
+  - catalyst-backend/src/services/api-key-service.ts
 api_tags:
   - rate-limits
-last_verified: '2026-09-15'
+last_verified: '2026-09-28'
 ---
 
-The API rate-limits globally (on the order of 1,200 requests per minute under
-default configuration), bucketed by client identity — authenticated callers get
-their own budget rather than sharing one IP pool.
+## The limits
+
+The panel applies a **global limit of 1,200 requests per minute**, bucketed per
+client rather than per IP: the bucket key combines the connection, the API key
+(hashed), or the authenticated user ID. Two integrations behind one NAT gateway
+do not share a budget.
+
+On top of that, each API key has its **own request budget**, set when the key is
+created:
+
+| Setting | Default | Allowed range |
+| --- | --- | --- |
+| Rate limit | 100 requests | 1–10000 |
+| Time window | 60 s | 1 s–3600 s (1000–3600000 ms) |
+
+Edit the budget later with **Edit key** in **Admin → Access Control → API
+Keys**. When a key exhausts its budget, requests made with it fail
+authentication with `401` until the window refills.
+
+Some areas are not on the global bucket:
+
+- **SSE streams** (`/api/servers/:id/console/stream`, `/events`,
+  `/metrics/stream`, `/api/admin/events`) set `rateLimit: false` — they are
+  long-lived connections, not polled requests.
+- **Agent-internal endpoints** (`/api/internal/*`, `/api/agent/*`, `/ws`,
+  `/api/sftp/*`, file-tunnel traffic) bypass rate limiting, since nodes have
+  their own message-level limits.
+- **Sign-in and auth routes** (`/api/auth/*`) carry a separate
+  operator-configured limit (default 60 requests per minute).
+- Individual routes may set tighter limits — for example, listing backups is
+  capped at 30 requests per minute.
+
+## Response headers
+
+Throttled and successful responses carry the standard rate-limit headers:
+
+| Header | Meaning |
+| --- | --- |
+| `x-ratelimit-limit` | Maximum requests in the window. |
+| `x-ratelimit-remaining` | Requests left in the current window. |
+| `x-ratelimit-reset` | Seconds until the window resets. |
+| `retry-after` | Seconds to wait, present on a `429`. |
+
+A `429` carries code `RATE_LIMITED`.
 
 ## Stay friendly
 
@@ -22,9 +66,8 @@ their own budget rather than sharing one IP pool.
   budget and get throttled. Prefer 10–30 s intervals, and use
   [event streams](/api/websockets/) for live data instead of polling (streams
   are long-lived and not counted like REST calls).
-- **Back off on 429.** The response carries code `RATE_LIMITED` with
-  `X-RateLimit-*` headers (and `Retry-After` where offered); honor them, then
-  retry with exponential backoff.
+- **Back off on 429.** Honor `retry-after` and the `x-ratelimit-*` headers,
+  then retry with exponential backoff.
 - **Batch and cache.** Fetch lists once and derive views client-side; cache
   slow-moving data (templates, nests, permissions catalog).
 
@@ -32,5 +75,5 @@ their own budget rather than sharing one IP pool.
 
 1. Reduce poll frequency and parallel fan-out first.
 2. Move live views to event streams.
-3. Talk to the panel administrator — limits are operator-configured, and a
-   legitimate integration with a sensible pattern can get headroom.
+3. Raise the key's own rate limit, and talk to the panel administrator — the
+   global limit is operator-configured.

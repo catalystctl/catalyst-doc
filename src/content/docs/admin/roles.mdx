@@ -10,11 +10,36 @@ features:
 sources:
   - catalyst-frontend/src/pages/admin/RolesPage.tsx
   - catalyst-backend/src/routes/roles.ts
-last_verified: '2026-09-15'
+  - catalyst-backend/src/shared-types.ts
+last_verified: '2026-09-28'
 ---
 
 **Roles** are named bundles of permissions; users get powers through roles, not
 one-off grants. Manage them under **Admin → Roles**.
+
+## Create a role
+
+1. Open **Admin → Roles** and select **Create role**.
+2. On **Details**, set a **Name** (for example `Support L1`) and a
+   **Description**.
+3. On **Permissions**, optionally start from a **Quick start from a preset** —
+   **Administrator**, **Moderator**, **Support**, or **User** — then tick the
+   individual permissions. They are grouped by category (Server, Node, File
+   Management, Console, Backup, User Management, and so on), and the search box
+   filters by name.
+4. On **Node Access**, choose which nodes members of this role can see. This is
+   visibility, not permission.
+5. On **Scoped Access**, leave **No scoped access** for a global role, or grant
+   the selected permissions only **By node** or **By server**, so members act
+   like bulk subusers on those targets.
+6. Select **Save changes**. The role is listed immediately; assign it to a user
+   under **Admin → Users**.
+
+**Edit role** reopens the same form. Deleting a role removes its permissions
+from every member, so reassign affected users first.
+
+The **Full Administrator Access** card marks a role whose wildcard permission
+grants everything; do not hand that out casually.
 
 ## Design principles
 

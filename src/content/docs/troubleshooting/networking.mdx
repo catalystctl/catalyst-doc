@@ -9,22 +9,26 @@ features:
   - troubleshooting
 sources:
   - catalyst-docker/
-  - catalyst-docker/
-last_verified: '2026-09-15'
+  - catalyst-agent/src/network_manager.rs
+  - catalyst-agent/src/runtime_manager/cni_network.rs
+last_verified: '2026-09-28'
 ---
 
 ## Players cannot reach a game server
 
 1. Is the server **running**? A stopped server refuses everything.
 2. Is the address right — IP **and** port? Retype it; do not trust memory.
+   The **Address** column in **All Servers** and the server's
+   **Administration** tab show its allocations.
 3. Is the port reachable from outside? Test from a different network (mobile
    data works). "Works on my LAN, not from outside" means NAT/firewall, not
    the game.
 4. **UDP vs TCP**: many games need UDP. A TCP-only port check passing proves
    nothing for a UDP game.
-5. Host firewall, cloud security group, Docker port publishing, and any NAT
-   rule must all agree. Check each layer; the missing one is usually the one
-   "nobody changed".
+5. Host firewall, cloud security group, and any NAT rule must all agree, and the
+   allocation must be published on the node. The node agent creates the port
+   mapping and firewall rule for each server allocation; a rule that failed to
+   apply looks exactly like a closed firewall.
 
 ## Node cannot reach the panel
 
@@ -34,14 +38,16 @@ first, then TLS (cert valid for that name?), then HTTP. See
 
 ## TLS warnings in browsers
 
-- Name mismatch: the certificate must cover exactly the host users type.
-- Expired: renewal failed — port 80 reachable? DNS unchanged? Check the
-  proxy (Caddy/Traefik) logs, not the backend.
-- Mixed setups: after moving TLS to the proxy, the panel setting for the
-  public URL must still be `https://…`.
+- Name mismatch: the certificate must cover exactly the host users type. Set
+  `PUBLIC_URL` in the install `.env` to that `https://` URL.
+- Expired: renewal failed — port 80 reachable? DNS unchanged? Check the TLS
+  overlay's logs (`docker compose logs caddy` or `traefik`), not the backend.
+- Mixed setups: after moving TLS to the proxy, `PUBLIC_URL` must still be
+  `https://…`.
 
 ## SFTP times out
 
-The SFTP port is separate from game ports and the panel. Confirm it is
-published and allowed through every firewall layer, and that the client uses
-SFTP (port 22-style SSH transport), not FTP. Details: [SFTP](/users/sftp/).
+SFTP runs on the **node agent** (default port **2022**), not on the panel, and
+is separate from game ports. Confirm the port is written into the agent config
+on the node, reachable through every firewall layer, and that the client uses
+SFTP (SSH transport), not FTP. Details: [SFTP](/users/sftp/).

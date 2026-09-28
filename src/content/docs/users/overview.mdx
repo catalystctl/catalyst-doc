@@ -7,28 +7,44 @@ features:
   - servers
 sources:
   - catalyst-frontend/src/pages/servers/ServerDetailsPage.tsx
-last_verified: '2026-09-15'
+  - catalyst-frontend/src/components/servers/ServerTabBar.tsx
+  - catalyst-frontend/src/components/servers/ServerControls.tsx
+last_verified: '2026-09-28'
 ---
 
-Open a server and you will see its management tabs. Each tab has its own guide:
-
-| Tab | What it is for |
-| --- | --- |
-| [Console](/users/console/) | Live logs, commands, start/stop/restart. |
-| [Power](/users/power/) | Start, stop, restart, and kill a stuck server. |
-| [Files](/users/files/) | Browse, edit, upload, download, archive. |
-| [SFTP](/users/sftp/) | Connect with FileZilla or WinSCP for big transfers. |
-| [Backups](/users/backups/) | Create and restore snapshots of your files. |
-| [Databases](/users/databases/) | Databases for plugins and mods. |
-| [Tasks](/users/tasks/) | Scheduled restarts, backups, and commands. |
-| [Networking](/users/networking/) | Allocations (IP + port) for players. |
-| [Startup](/users/startup/) | Startup command and variables. |
-| [Users](/users/subusers/) | Give friends limited access. |
-| [Activity](/users/activity/) | Who did what, and when. |
-| [Metrics & Alerts](/users/metrics/) | CPU, memory, disk graphs and alerts. |
-| [Mods & Plugins](/users/mods-plugins/) | One-click mod and plugin managers. |
-| [Reinstalling](/users/reinstalling/) | Start over without losing everything. |
-
-What you see depends on your permissions. Owners see everything; subusers only
-see the tabs the owner enabled. If a tab is missing, ask the server owner —
+Open a server from the **Servers** page and you land on its tab bar. The tabs
+you see depend on the permissions you have; owners see everything, subusers
+only the tabs the owner enabled. If a tab is missing, ask the server owner —
 nothing is broken.
+
+| Tab | What it is for | Guide |
+| --- | --- | --- |
+| **Console** | Live output and commands. | [Console](/users/console/) |
+| **Files** | Browse, edit, upload, download, archive. | [Files](/users/files/) |
+| **SFTP** | Connect with FileZilla or WinSCP for big transfers. | [SFTP](/users/sftp/) |
+| **Backups** | Create, restore, download, and prune snapshots. | [Backups](/users/backups/) |
+| **Tasks** | Scheduled restarts, backups, and commands. | [Tasks](/users/tasks/) |
+| **Databases** | Databases for plugins and mods. | [Databases](/users/databases/) |
+| **Metrics** | CPU, memory, disk, and network graphs. | [Metrics & Alerts](/users/metrics/) |
+| **Alerts** | Notifications when a metric crosses a threshold. | [Metrics & Alerts](/users/metrics/) |
+| **Activity** | Who did what, and when. | [Activity](/users/activity/) |
+| **Mod Manager** | Curated mod installs for supported templates. | [Mods & Plugins](/users/mods-plugins/) |
+| **Plugin Manager** | Curated plugin installs for supported templates. | [Mods & Plugins](/users/mods-plugins/) |
+| **Configuration** | Startup command, variables, and config files. | [Startup & Variables](/users/startup/) |
+| **Users** | Give friends limited access. | [Users & Subusers](/users/subusers/) |
+| **Settings** | Server name, maintenance, and reinstall. | [Reinstalling](/users/reinstalling/) |
+| **Admin** | Admin-only: allocations, image, resources, owner transfer. | — |
+
+Power controls — **Start**, **Stop**, **Restart**, and **Kill** — sit in the
+server header, above the tabs. See [Power controls](/users/power/).
+
+## Beyond the tabs
+
+- [Networking](/users/networking/) — how players reach your server through its
+  allocations.
+- [Cloning](/users/cloning/) — copy a server's settings, or its whole world.
+
+:::note
+Tab labels on this page are the English names. Your panel may be translated,
+and a plugin can add its own tabs next to the built-in ones.
+:::

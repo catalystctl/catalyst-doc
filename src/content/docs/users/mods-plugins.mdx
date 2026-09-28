@@ -8,34 +8,72 @@ features:
   - mods
   - plugins
 sources:
-  - catalyst-frontend/src/pages/servers/
-  - catalyst-backend/src/routes/plugins.ts
-last_verified: '2026-09-15'
+  - catalyst-frontend/src/components/servers/tabs/ServerModManagerTab.tsx
+  - catalyst-frontend/src/components/servers/tabs/ServerPluginManagerTab.tsx
+  - catalyst-frontend/src/components/servers/tabs/UpdateConfirmModal.tsx
+  - catalyst-backend/src/routes/servers/mod-plugins.ts
+last_verified: '2026-09-28'
 ---
 
-Servers based on supported templates offer **Mod Manager** and **Plugin
-Manager** tabs: curated installers for popular mods and plugins without manual
-jar wrangling.
+Servers based on supported templates get a **Mod Manager** or **Plugin Manager**
+tab: a one-click catalogue that searches the mod and plugin providers, installs
+what you pick, and tracks updates — no manual jar wrangling. You need file write
+permission on the server; the tabs are hidden when the template has no manager
+configured.
 
-## Install a mod or plugin
+## Install a mod
 
-1. Open the **Mod Manager** or **Plugin Manager** tab.
-2. Find what you want and select **Install**.
-3. [Restart](/users/power/) the server so the game loads it.
-4. Check the console for load errors — a red stack trace on boot usually names
-   the incompatible mod and the version it wants.
+1. Open the **Mod Manager** tab. It opens on the **Browse** sub-tab.
+2. Type a name in the search box (for example `jei`) and either press Enter or
+   select **Search**. Narrow the results with the provider, loader, target
+   (**Mods**, **Datapacks**, or **Modpacks**) and game version filters.
+3. Pick a result and choose the **Version** you want in **Select version**.
+4. Select **Install**.
+5. [Restart](/users/power/) the server so the game loads it.
+6. Check the [console](/users/console/) for load errors. A red stack trace on
+   boot usually names the incompatible mod and the version it wants.
+
+The **Installed** sub-tab lists every file the manager tracks and moves it to the
+right folder for you.
+
+## Install a plugin
+
+1. Open the **Plugin Manager** tab and its **Browse** sub-tab.
+2. Search, optionally filtering by game version and sorting by **Newest**,
+   **Popular**, **Top rated**, **Trending**, or **Recently updated**.
+3. Pick the plugin and its **Version**, then select **Install**.
+4. [Restart](/users/power/) the server so the game loads it.
+
+## Keep mods and plugins up to date
+
+1. Open the manager's **Installed** sub-tab.
+2. Select **Check Updates**. Anything with a newer release is flagged, and the
+   tab badge and **Has Updates** filter show the count.
+3. Select the items you want (or leave the selection empty to update everything
+   with an update), then select **Update**. The confirmation dialog warns that
+   an update can break compatibility — back up first
+   ([backups](/users/backups/)).
+4. Restart the server.
+
+A mod the panel did not install shows as **untracked**; it has no version
+metadata, so you update it manually through [Files](/users/files/). If every
+provider needs an API key that is not configured, the tab tells you to ask an
+administrator to add one under **Admin → System → Mod Manager API Keys**.
+
+## Remove a mod or plugin
+
+In the **Installed** sub-tab, tick the files (or use **Select all**) and select
+**Remove**, then confirm. Restart the server. Leftover configs in `config/` or
+`plugins/` are harmless but can confuse replacements.
 
 ## Rules for a stable server
 
 1. **Backup first.** Mods touch worlds and configs; see [backups](/users/backups/).
 2. **Match versions.** A plugin built for game version X on server version Y is
-   the top cause of boot failures. The manager usually filters this — manual
-   uploads via [Files](/users/files/) do not.
+   the top cause of boot failures. The manager filters versions for you —
+   manual uploads via [Files](/users/files/) do not.
 3. **Add one at a time** and restart between additions. Ten mods at once means
    ten suspects when it crashes.
-4. **Remove cleanly:** uninstall from the manager (or delete the jar) and
-   restart; leftover configs in `config/` or `plugins/` are harmless but can
-   confuse replacements.
 
 ## When it breaks
 

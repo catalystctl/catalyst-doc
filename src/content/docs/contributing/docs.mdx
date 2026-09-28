@@ -9,7 +9,7 @@ features:
 sources:
   - tools/docs-agent/
   - scripts/
-last_verified: '2026-09-15'
+last_verified: '2026-09-28'
 ---
 
 ## Edit
@@ -22,10 +22,13 @@ Docs are Markdown/MDX under `src/content/docs/`, organized by audience:
 ---
 title: Creating Backups
 description: One line saying what the page teaches.
-audience: [user]        # user, admin, developer (one or more)
-features: [backups]     # product area tagssources:                # repo paths whose changes should trigger review
+audience:              # user, admin, developer (one or more)
+  - user
+features:              # product area tags
+  - backups
+sources:               # repo paths whose changes should trigger review
   - catalyst-backend/src/routes/backups.ts
-last_verified: '2026-09-15'
+last_verified: '2026-09-28'   # bump only when you verify against source
 ---
 ```
 
@@ -37,15 +40,19 @@ See `AGENTS.md` for the full conventions.
 
 ```bash
 pnpm install
+pnpm dev          # preview at http://localhost:4321
 pnpm validate     # links, slugs, frontmatter, assets, OpenAPI, terminology
+pnpm test         # docs-agent unit tests
 pnpm run build    # the same command Cloudflare Pages runs
 ```
 
 Fix every failure — CI runs the same checks on every pull request.
+`pnpm validate` is the fastest gate while editing.
 
 ## API reference
 
-Never hand-edit `api/openapi.json`. Regenerate it from a Catalyst checkout:
+Never hand-edit `api/openapi.json`. Regenerate it from a Catalyst checkout
+(`--from-checkout` runs that repo's `openapi:export` script):
 
 ```bash
 pnpm sync-openapi --from-checkout ../catalyst
@@ -56,9 +63,18 @@ committed.
 
 ## The docs agent
 
-For larger sync work, use the docs agent (`tools/docs-agent/`) in `audit`,
-`diff`, `feature`, `validate`, or `api` mode — it maps Catalyst changes to
-affected pages and opens reviewable changes. Details in its README.
+For larger sync work, run the docs agent (`tools/docs-agent/`) in `audit`,
+`diff`, `feature`, `validate`, or `api` mode. It maps Catalyst changes to
+affected pages and opens reviewable changes:
+
+```bash
+pnpm docs-agent audit --source-repo ../catalyst --docs-repo .
+pnpm docs-agent diff --source-repo ../catalyst --docs-repo . \
+  --base origin/main --head HEAD --dry-run
+```
+
+`diff` and `feature` write proposed changes into the working tree without
+committing; `--dry-run` writes nothing. Details in its README.
 
 ## Publish
 

@@ -6,27 +6,54 @@ audience:
 features:
   - console
 sources:
-  - catalyst-frontend/src/pages/servers/ServerConsolePage.tsx
+  - catalyst-frontend/src/components/servers/ServerConsoleTab.tsx
+  - catalyst-frontend/src/hooks/useSseConsole.ts
   - catalyst-backend/src/routes/console-stream.ts
-last_verified: '2026-09-15'
+last_verified: '2026-09-28'
 ---
 
 The **Console** tab shows everything your game server prints — startup messages,
-player joins, errors — as it happens. It keeps the last 2,000 lines on screen;
+player joins, errors — as it happens. It keeps up to 2,000 lines in its buffer;
 older output scrolls away.
+
+The status pill at the top left tells you where the live stream stands:
+**Live**, **Connecting**, **Reconnecting**, or **Disconnected**.
 
 ## Run a command
 
-Type into the input at the bottom and press Enter. Commands run as the server
-itself, exactly as if you typed them into the server's own terminal:
+1. Type into the command box at the bottom (`$`) and press Enter, or select
+   **Send**.
+2. Commands run as the server itself, exactly as if you typed them into its own
+   terminal:
+   - Minecraft: `say Hello`, `whitelist add Notch`, `tps`
+   - Source games: `status`, `changelevel de_dust2`
 
-- Minecraft: `say Hello`, `whitelist add Notch`, `tps`
-- Source games: `status`, `changelevel de_dust2`
+The box is disabled unless the server is running, the stream is connected, and
+you have the `console.write` permission. Press the **Up** and **Down** arrows to
+step through recent commands, or **Tab** to complete from history.
 
 :::caution
 Console commands bypass most safety rails. A wrong command can ban players or
 delete data. When in doubt, [make a backup](/users/backups/) first.
 :::
+
+## Console controls
+
+The toolbar above the output has one control per stream plus a few view tools:
+
+- **stdout / stderr / system / stdin** — toggle which streams are shown. On a
+  narrow screen they collapse into a **Streams** menu with the active count.
+- **Find** (the magnifier, or **Ctrl+F** while the console has focus) — search
+  the visible output; Enter jumps to the next match, Shift+Enter to the previous
+  one.
+- **Buffer size** — how many lines the terminal keeps in view: `500`, `1K`, or
+  `2K` (1K by default).
+- **Follow** — auto-scroll as new output arrives. Scrolling up turns it off and
+  shows a **Follow** button to resume.
+- **Copy output** and **Download output** — copy the visible lines, or save them
+  as a `.log` file.
+- **Clear console** — clears the view (it does not delete stored logs).
+- **Expand** — full-screen the console; **Esc** or **Collapse** returns.
 
 ## Read a crash
 
@@ -34,15 +61,17 @@ When a server will not stay up:
 
 1. Press **Start** and watch the first 50 lines — the real error is usually
    near the top, not at the end.
-2. Look for `ERROR`, `Exception`, `missing`, or `port already in use`.
+2. Use **Find** to jump to `ERROR`, `Exception`, `missing`, or `port already in
+   use`.
 3. Common causes and fixes live in [server issues](/troubleshooting/server/).
 
 ## Console vs. logs
 
 The console is a live view, not permanent storage. For history, use the
-**Activity** tab (who did what) or download log files from the **Files** tab
-(usually under `logs/`). Realtime integrations should use the
-[event streams API](/api/websockets/) rather than scraping the console.
+**Activity** tab (who did what), **Download output** for the current buffer, or
+download log files from the **Files** tab (usually under `logs/`). Realtime
+integrations should use the [event streams API](/api/websockets/) rather than
+scraping the console.
 
 ## Related
 

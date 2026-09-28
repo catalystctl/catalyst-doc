@@ -1,6 +1,6 @@
 ---
 title: First-Time Setup
-description: Create the admin account and configure the panel on first launch.
+description: Create the admin account and brand the panel on first launch.
 audience:
   - admin
 features:
@@ -8,21 +8,41 @@ features:
   - setup
 sources:
   - catalyst-frontend/src/pages/setup/SetupPage.tsx
+  - catalyst-frontend/src/i18n/locales/en/setup.json
   - catalyst-backend/src/routes/setup.ts
-last_verified: '2026-09-15'
+last_verified: '2026-09-28'
 ---
 
 After [installation](/admin/installation/), opening the panel URL shows the
-setup wizard. It runs once and locks itself afterwards.
+setup wizard. It runs once and locks itself afterwards. The wizard has three
+steps, and the panel URL itself was already set by the installer.
 
 ## Complete the wizard
 
-1. **Admin account.** Create the first administrator. Use a strong, unique
-   password and a real email address (used for notifications and recovery).
-2. **Panel URL.** Set the public URL players and staff use (for example,
-   `https://panel.example.com`). This URL appears in emails, invites, and API
-   responses — changing it later is possible but annoying, so get it right now.
-3. **Basic settings.** Defaults are sane; review them and finish.
+1. **Welcome.** Set the **Panel Name** (default `Catalyst`) and optionally
+   upload a **Panel Logo**. The logo must be a square image at least 128×128px
+   and no larger than 512KB. Select **Next**.
+2. **Admin Account.** Create the first administrator:
+   - **Email** — used for notifications and recovery.
+   - **Username** — at least 3 characters.
+   - **Password** and **Confirm Password** — at least 8 characters. A strength
+     meter shows how the password scores.
+   Use a strong, unique password. This account is created with the
+   **Administrator** role and marked verified automatically.
+3. **Appearance.** Pick a **Seed Color** and a **Color Harmony** rule; the
+   wizard generates a full palette with a **Live Preview**. Choose whether the
+   default theme is **Dark** or **Light**. Select **Complete Setup**.
+
+The wizard signs you in and opens the dashboard. If your browser cannot keep
+the new session cookie (common behind a reverse proxy), it sends you to the
+sign-in page instead — sign in with the account you just created.
+
+:::note
+Completing setup also switches **open self-registration off** and creates the
+built-in **Administrator** and **User** roles. To allow public sign-ups again,
+set `REGISTRATION_ENABLED=true` on the backend container
+([configuration](/admin/configuration/)).
+:::
 
 ## Immediately afterwards
 

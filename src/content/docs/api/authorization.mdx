@@ -1,28 +1,83 @@
 ---
 title: Authorization & Permissions
-description: How Catalyst decides what an identity may do.
+description: How Catalyst resolves what an identity may do, and the permission strings you can request.
 audience:
   - developer
 features:
   - api
   - permissions
 sources:
+  - catalyst-backend/src/lib/permissions.ts
+  - catalyst-backend/src/lib/permissions-catalog.ts
   - catalyst-backend/src/routes/roles.ts
   - catalyst-backend/src/routes/api-keys.ts
-  - catalyst-backend/src/lib/error-codes/
 api_tags:
   - auth
-last_verified: '2026-09-15'
+last_verified: '2026-09-28'
 ---
 
 ## The model
 
 - **Users** get powers through [roles](/admin/roles/). A request is allowed
-  when any of the caller's roles grants the required permission.
-- **API keys** carry their own scoped permissions, chosen at creation from the
-  permissions catalog (`GET /api/admin/api-keys/permissions-catalog`).
-- **Subusers** are limited twice: by the permissions the server owner gave them
-  and by what the API exposes for their role.
+  when the caller's effective permission set satisfies the permission the route
+  requires. Roles may also carry server-scoped and node-scoped grants, which are
+  merged in for the specific server being touched.
+- **API keys** carry their own scopes, chosen at creation, but can never exceed
+  their owner's permissions — see
+  [Expiry and live permission checks](/api/authentication/#expiry-and-live-permission-checks).
+- **Subusers** are granted a subset of the server-scoped permission list by the
+  server owner.
+
+## Admin bits
+
+Three permission values have implied meaning:
+
+| Value | Grants |
+| --- | --- |
+| `*` | Everything (Super Admin). |
+| `admin.write` | Every concrete permission, read or write. |
+| `admin.read` | Every read permission: anything ending in `.read`, plus `node.view_stats` and `backup.download`. |
+
+A resource-scoped admin bit (`admin.read:<id>`) does **not** widen to all
+resources.
+
+## Permission catalog
+
+These are the exact permission strings the panel offers in the API key and role
+editors. Fetch the live catalog from
+`GET /api/admin/api-keys/permissions-catalog`.
+
+| Category | Permissions |
+| --- | --- |
+| Administration | `*`, `admin.read`, `admin.write` |
+| Servers | `server.read`, `server.create`, `server.start`, `server.stop`, `server.delete`, `server.suspend`, `server.transfer`, `server.schedule`, `server.update`, `server.install`, `server.reinstall`, `server.rebuild` |
+| Nodes | `node.read`, `node.create`, `node.update`, `node.delete`, `node.view_stats`, `node.manage_allocation`, `node.assign` |
+| Locations | `location.read`, `location.create`, `location.update`, `location.delete` |
+| Templates | `template.read`, `template.create`, `template.update`, `template.delete` |
+| Users | `user.read`, `user.create`, `user.update`, `user.delete`, `user.ban`, `user.unban`, `user.set_roles` |
+| Roles | `role.read`, `role.create`, `role.update`, `role.delete` |
+| Backups | `backup.read`, `backup.create`, `backup.delete`, `backup.restore`, `backup.download` |
+| Files | `file.read`, `file.write` |
+| Console | `console.read`, `console.write` |
+| Databases | `database.read`, `database.create`, `database.delete`, `database.rotate` |
+| Alerts | `alert.read`, `alert.create`, `alert.update`, `alert.delete` |
+| API keys | `apikey.manage` |
+
+### Server-scoped permissions
+
+The grantable set for a specific server — subuser grants and the role wizard's
+scoped-access step — is the server permission list returned by
+`GET /api/permissions/server`:
+
+`server.read`, `server.start`, `server.stop`, `server.install`,
+`server.reinstall`, `server.rebuild`, `server.update`, `server.transfer`,
+`server.delete`, `server.schedule`, `console.read`, `console.write`,
+`file.read`, `file.write`, `backup.read`, `backup.create`, `backup.restore`,
+`backup.delete`, `backup.download`, `database.read`, `database.create`,
+`database.rotate`, `database.delete`, `alert.read`, `alert.create`,
+`alert.update`, `alert.delete`.
+
+Server owners and full admins implicitly hold the whole set for their servers.
 
 ## What to do when you get 403
 
@@ -33,6 +88,8 @@ identity lacks the permission — not that the endpoint is wrong:
 2. Compare its permissions against the endpoint's requirement in the
    [API reference](/api/reference/).
 3. Ask an administrator to widen the role/scope, or use a better-scoped key.
+   Remember that an API key is also rejected when the owner no longer holds a
+   scope the key was granted.
 
 ## Design guidance for integrators
 

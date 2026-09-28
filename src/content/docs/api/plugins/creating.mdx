@@ -6,10 +6,13 @@ audience:
 features:
   - plugins
 sources:
-  - packages/plugin-sdk/cli/
+  - packages/plugin-sdk/cli/src/index.ts
   - packages/plugin-sdk/templates/
+  - packages/plugin-sdk/package.json
+  - catalyst-frontend/vite.config.ts
   - catalyst-plugins/example-plugin/
-last_verified: '2026-09-22'
+  - catalyst-plugins/sdk-frontend/
+last_verified: '2026-09-28'
 ---
 
 ## Prerequisites
@@ -23,45 +26,66 @@ last_verified: '2026-09-22'
 
 ## 1. Scaffold
 
-From a Catalyst checkout:
+The SDK is a workspace project; the CLI is not, so build it by path. From the
+Catalyst checkout root:
 
 ```bash
 pnpm --filter @catalyst/plugin-sdk run build
-pnpm --filter @catalyst/plugin-sdk-cli run build
-pnpm --filter @catalyst/plugin-sdk-cli exec catalyst-plugin create my-plugin --template fullstack
+pnpm --dir packages/plugin-sdk/cli run build
+node packages/plugin-sdk/cli/dist/index.js create my-plugin --template fullstack
 cd my-plugin
 ```
 
-The CLI binary is `catalyst-plugin`. `--template` is one of:
+There is no `catalyst-plugin` on `PATH`: nothing in the workspace depends on
+`@catalyst/plugin-sdk-cli`, so pnpm never links its binary, and
+`pnpm --filter @catalyst/plugin-sdk-cli …` silently matches no project. Run the
+CLI through `node <checkout>/packages/plugin-sdk/cli/dist/index.js`, or alias
+that. `npx catalyst-plugin` does not work either, because the package is not on
+npm.
+
+`create` options are `--template`/`-t`, `--path`/`-p` (parent directory,
+default `.`), and `--typescript`/`-ts`. The default template is
+`backend-only`; `--template` is one of:
 
 | Template | What you get |
 | --- | --- |
 | `fullstack` | `plugin.json`, a TypeScript backend, and a React frontend with an admin tab and a server tab. |
 | `backend-only` | `plugin.json` and a TypeScript backend that registers one route. No UI. |
-| `minimal` | `plugin.json` and a JavaScript entry with empty lifecycle hooks. No `backend` or `frontend` key. |
+| `minimal` | `plugin.json` and a JavaScript entry with two lifecycle hooks. No `backend` or `frontend` key, no `package.json`, no `tsconfig.json`. |
 
-The plugin name must match `^[a-z0-9-]+$` and be at most 50 characters. The
-scaffold writes that name into `plugin.json` and into the route and tab ids.
+The plugin name must match `^[a-z0-9-]+$`. The schema additionally caps it at
+50 characters; the CLI itself only checks the pattern. The scaffold writes the
+name into `plugin.json` and into the route and tab ids, and runs `git init` in
+the new directory when git is available.
 
-Other commands, run from the plugin directory with the built CLI:
+Other commands, run from the plugin directory. Substitute the absolute path to
+your checkout, or `alias catalyst-plugin='node "$CATALYST_REPO/packages/plugin-sdk/cli/dist/index.js"'`:
 
 ```bash
-catalyst-plugin build          # validate plugin.json, then npx tsc if tsconfig.json exists
-catalyst-plugin test           # npx vitest run
-catalyst-plugin pack           # write my-plugin-1.0.0.catpkg.zip + .sha256
-catalyst-plugin pack --out dist
+CATALYST_REPO=/path/to/catalyst
+node "$CATALYST_REPO/packages/plugin-sdk/cli/dist/index.js" build   # parse plugin.json, then npx tsc if tsconfig.json exists
+node "$CATALYST_REPO/packages/plugin-sdk/cli/dist/index.js" test    # npx vitest run
+node "$CATALYST_REPO/packages/plugin-sdk/cli/dist/index.js" pack    # write my-plugin-1.0.0.catpkg.zip + .sha256
+node "$CATALYST_REPO/packages/plugin-sdk/cli/dist/index.js" pack --out dist
 ```
 
-`build` ignores `--watch`. `create` always copies the TypeScript templates;
-`--typescript` does not switch them off.
+`build` accepts `--watch` but ignores it; use `npm run dev` (`tsc --watch`) in a
+TypeScript scaffold instead. It only JSON-parses `plugin.json` and echoes
+`name`/`version` — it does not run schema validation, so a manifest that would
+be rejected at install time still "builds". `create` always copies the
+TypeScript templates; `--typescript` does not switch them off. `pack` needs
+`archiver` resolvable (it is a devDependency of `packages/plugin-sdk`, hoisted
+to the workspace root).
 
 The scaffold is a starting point, not the layout the official repository
-ships. Its `backend.entry` is `dist/src/index.js`, which `tsc` emits, and a
-marketplace zip is not allowed to contain `dist/` — see
-[Packaging](/api/plugins/packaging/). Every plugin in
+ships. Its `backend.entry` points into `dist/`, and a marketplace zip is not
+allowed to contain `dist/` — see [Packaging](/api/plugins/packaging/). Every
+plugin in
 [catalyst-plugins](https://github.com/catalystctl/catalyst-plugins) instead
-commits `backend/index.js` and points the manifest at that file, so there is
-no compile step to forget. Do that before you publish.
+authors `backend/index.js` directly and points the manifest at that file, so
+there is no compile step to forget. If you did compile TypeScript, copy the
+compiled entry to `backend/index.js` and repoint `backend.entry` before you
+publish.
 
 ## 2. What the scaffold looks like
 
@@ -73,7 +97,7 @@ my-plugin/
   plugin.json
   package.json          "type": "module", build = tsc
   tsconfig.json
-  src/index.ts          backend; compiled to dist/src/index.js
+  src/index.ts          backend; compiled under dist/
   frontend/index.ts     UI entry
   frontend/components.tsx
 ```
@@ -127,15 +151,29 @@ A server tab component receives `{ serverId: string }`.
 
 ## 3. Install it on a panel
 
-**As a marketplace package** (the path third parties use):
+Installing is an operator action in the panel, not a CLI step on the server. On
+the target panel:
+
+1. Open **Admin → Plugins**.
+2. Click **Marketplace**.
+3. Find your plugin in the list and click **Install**.
+4. Close the dialog. The plugin now shows in the list, disabled.
+
+That is the whole install. The panel downloads the `.catpkg.zip`, checks its
+`sha256` when the index provides one, extracts it, and validates `plugin.json`.
+The code is on disk and **not running** until you enable it.
+
+For the panel to see your plugin, publish the package first:
 
 ```bash
-npx catalyst-plugin pack
+node "$CATALYST_REPO/packages/plugin-sdk/cli/dist/index.js" pack
 ```
 
-That writes `my-plugin-1.0.0.catpkg.zip` and a `.sha256` sidecar. Put both
-behind HTTPS and add an index entry — see [Packaging](/api/plugins/packaging/).
-An admin then installs from **Admin → Plugins → Marketplace**.
+That writes `my-plugin-1.0.0.catpkg.zip` and a `.sha256` sidecar in the plugin
+directory. Put both behind HTTPS and add an index entry — see
+[Packaging](/api/plugins/packaging/). Add your index under **Marketplace →
+Marketplaces** (or with `PLUGIN_MARKETPLACE_URLS`) if it is not the official
+one.
 
 **As a local checkout** (the path the official repository uses): drop the
 directory into a checkout of `catalyst-plugins` and rebuild the panel image.
@@ -145,9 +183,9 @@ not compile it in.
 
 ## 4. Enable it
 
-1. Open **Admin → Plugins**.
-2. Enable the plugin. The panel asks you to accept the safety disclaimer and
-   lists every permission the manifest declares.
+1. On **Admin → Plugins**, click **Enable** on the plugin row.
+2. The safety-consent dialog opens. Tick the acknowledgement and click
+   **Accept & Enable**. It lists every permission the manifest declares.
 3. Confirm the route:
 
 ```bash
@@ -168,21 +206,36 @@ do not trust.
 
 ## 5. Develop against the SDK
 
-The scaffold depends on `@catalyst/plugin-sdk` via the workspace. From a
-Catalyst checkout that package resolves; from a standalone directory it does
-not, because the package is not on the public npm registry. Official plugins
-do not import the SDK from their backend at all — `backend/index.js` calls
-`ctx.registerRoute` directly. Frontends import `@catalyst/plugin-sdk/frontend`,
-which the panel and the plugin repository both alias to the SDK source.
+The SDK and its CLI are in the [Catalyst](https://github.com/catalystctl/catalyst)
+repository under `packages/plugin-sdk` and are **not** on the public npm
+registry, so `npm install @catalyst/plugin-sdk` fails. A scaffold's
+`package.json` declares `"@catalyst/plugin-sdk": "workspace:*"`, which only
+resolves when the plugin directory is itself a workspace package of that
+checkout. In practice:
+
+- The **frontend** import works without installing anything. The panel's
+  `catalyst-frontend/vite.config.ts` aliases `@catalyst/plugin-sdk/frontend`
+  to `packages/plugin-sdk/src/frontend/index.ts`, and the
+  [catalyst-plugins](https://github.com/catalystctl/catalyst-plugins) repo
+  aliases it to its vendored `sdk-frontend/` copy so bundles build without the
+  panel checkout.
+- The **backend** entry cannot import the SDK package at runtime. Official
+  plugins do not try: `backend/index.js` calls `ctx.registerRoute` directly and
+  imports only `node:*` builtins and its own sibling files. The panel stages the
+  plugin directory and imports the entry as plain ESM — there is no bare-import
+  resolution for the SDK. If you want the SDK helpers in a backend, bundle them
+  into your entry at build time (the same rule as `frontend.mjs`).
 
 | Import | Use it for |
 | --- | --- |
 | `@catalyst/plugin-sdk` | `defineRoutes`, `defineConfig`, `definePermissions`, `createTypedCollection`, `createTypedContext` |
 | `@catalyst/plugin-sdk/frontend` | `createFrontendPlugin`, `createPluginApi`, `PluginErrorBoundary` |
-| `@catalyst/plugin-sdk/testing` | `createMockContext`, `createTestPlugin` |
-| `@catalyst/plugin-sdk/config` | Config helpers alone |
-| `@catalyst/plugin-sdk/routes` | Route builder alone |
-| `@catalyst/plugin-sdk/storage` | Typed collections alone |
+| `@catalyst/plugin-sdk/testing` | `createMockContext`, `createTestPlugin`, `createMockLicense` |
+| `@catalyst/plugin-sdk/config` | `defineConfig`, `configField`, `createConfigSchema` |
+| `@catalyst/plugin-sdk/routes` | `defineRoutes`, `PluginRouteBuilder` |
+| `@catalyst/plugin-sdk/storage` | `createTypedCollection` |
+| `@catalyst/plugin-sdk/context` | `createTypedContext`, `defineTypedContext` |
+| `@catalyst/plugin-sdk/licensing` | Backend-only vendor licensing helpers (uses `node:crypto`) |
 
 `fastify` and `react` are optional peer dependencies. The backend entry the
 panel loads must be plain ESM JavaScript — TypeScript sources are not executed.

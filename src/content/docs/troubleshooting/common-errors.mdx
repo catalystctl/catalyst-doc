@@ -10,7 +10,7 @@ features:
 sources:
   - catalyst-backend/src/lib/error-codes/
   - catalyst-frontend/src/i18n/api-errors.ts
-last_verified: '2026-09-15'
+last_verified: '2026-09-28'
 ---
 
 Copy the `code` from your error (API consumers) or match the message below.
@@ -24,11 +24,15 @@ API codes are stable identifiers — see [errors](/api/errors/).
 | `CONFLICT` | Duplicate or state clash. | Rename, or stop/delete the conflicting resource first. |
 | `RATE_LIMITED` / "Too many requests" | Over the limit. | Slow down, back off, stop polling ([rate limits](/api/rate-limits/)). |
 | `INSUFFICIENT_RESOURCES` | Node lacks memory/disk/ports. | Free capacity or ask the administrator for a bigger node. |
-| `port already in use` | Allocation clash. | [Server issues](/troubleshooting/server/) — free or reassign the port. |
-| `eula=false` / server stops instantly (Minecraft) | EULA not accepted. | Set `eula=true` in `eula.txt`, restart ([first server](/getting-started/first-server/)). |
+| `PORT_ALREADY_IN_USE` / "Port N is already in use on this node" | Allocation clash. | [Server issues](/troubleshooting/server/) — free or reassign the port. |
+| `SERVER_NOT_STOPPED` / "Server must be stopped ..." | The action needs the server off. | **Stop** the server, then retry (some actions, like restore, require it). |
+| `NODE_OFFLINE` | The node's agent is not reachable. | Check the agent on the node ([node issues](/troubleshooting/node/)). |
+| Minecraft **Minecraft EULA** prompt | The EULA is not accepted yet. | In the **Console**, select **I Agree**, then start the server ([first server](/getting-started/first-server/)). |
 | SFTP "authentication failed" | Stale or mistyped credentials. | Copy fresh credentials from the SFTP tab ([SFTP](/users/sftp/)). |
 | Setup wizard missing on fresh install | Setup already ran, or backend still migrating. | Sign in; if erroring, check container logs ([panel issues](/troubleshooting/panel/)). |
 
-If your message is not here, search the page text in the main Catalyst
-repository issues — and consider contributing the fix back to this page (see
+If your message is not here, open **Admin → System Errors** to see the persisted
+exception, or capture a [diagnostics bundle](/troubleshooting/diagnostics-bundle/).
+You can also search the page text in the main Catalyst repository issues — and
+consider contributing the fix back to this page (see
 [docs contributor guide](/contributing/docs/)).

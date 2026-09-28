@@ -6,9 +6,11 @@ audience:
 features:
   - databases
 sources:
-  - catalyst-frontend/src/pages/servers/
-  - catalyst-backend/src/routes/servers/
-last_verified: '2026-09-15'
+  - catalyst-frontend/src/components/servers/tabs/ServerDatabasesTab.tsx
+  - catalyst-frontend/src/components/servers/tabs/DatabaseCredentialsDialog.tsx
+  - catalyst-backend/src/routes/servers/databases.ts
+  - catalyst-backend/prisma/schema.prisma
+last_verified: '2026-09-28'
 ---
 
 Many plugins (permissions, economy, logging, Dynmap) need a database. The
@@ -17,31 +19,58 @@ database server.
 
 ## Create a database
 
-1. Open **Databases** and select **Create Database**.
-2. Note the connection details shown afterwards: host, port, database name,
-   username, and password.
-3. Paste those details into your plugin's config file (via the **Files** tab).
-4. Restart the server.
+1. Open **Databases**. If the creation controls are not shown, you do not have
+   database access on this server.
+2. Choose a host from the **Select host** dropdown. Each option is listed as
+   `name (host:port)`.
+3. Type a database name (for example `dynmap`), then select **Create**.
+   - The name must start with a letter and use only lowercase letters, numbers,
+     and underscores, up to 32 characters.
+   - Leave it blank (or use fewer than three characters) and the panel generates
+     a safe name for you.
+4. The **Database credentials** dialog opens. Copy the **Host** (shown as
+   `host:port`), **Database**, **Username**, and **Password**.
+5. Paste those values into your plugin's config file (via the
+   [Files](/users/files/) tab), then restart the server.
 
-## Rules
+:::caution
+The dialog warns that the password *"is shown only once and cannot be displayed
+again."* Copy it before you select **Done** — if you lose it, rotate it.
+:::
 
-- Each database belongs to exactly one server. It is removed if the server is deleted.
-- Treat the password like any other secret: it is shown once for a reason.
-  If you lose it, rotate it (see below) rather than sharing workarounds.
-- Database size counts against your server's overall disk quota on most hosts.
+## Limits
+
+- Each server has a database allocation. The tab header shows how many you have
+  used (for example, *2 / 3 databases used*); **Create** is disabled once you
+  reach the limit.
+- If the allocation is disabled, the tab reports *"Database allocation
+  disabled"* / *"Database allocation is not available for this server."* — ask
+  your administrator to raise the per-server database limit.
+- Each database belongs to exactly one server. Deleting the server also removes
+  its database records.
 
 ## Rotate credentials
 
 If a password leaks (pasted into chat, committed to a public repo):
 
-1. Open **Databases**, select the database, and rotate/reset the password.
-2. Update every plugin config that uses it.
-3. Restart the server and check the logs for successful connections.
+1. Open **Databases** and select **Rotate** on the database.
+2. The **Database credentials** dialog opens with a fresh password. Copy it
+   immediately — it is shown once.
+3. Update every plugin config that uses it.
+4. Restart the server and check the logs for successful connections.
+
+## Delete a database
+
+Select **Delete** and confirm. The dialog warns that this *"will permanently
+drop the database and its credentials"* and cannot be undone.
 
 ## Troubleshooting
 
-- **Plugin cannot connect:** double-check host/port (not `localhost` — the
-  database usually runs on shared infrastructure), then confirm the credentials
-  and that the server was restarted after the config change.
-- **Access denied after rotation:** one of your configs still has the old password.
-- **Limit reached:** ask your administrator to raise the per-server database limit.
+- **Plugin cannot connect:** double-check the host and port from the credentials
+  dialog (not `localhost` — the database usually runs on shared infrastructure),
+  then confirm the username and password and that the server was restarted after
+  the config change.
+- **Access denied after rotation:** one of your configs still has the old
+  password.
+- **Limit reached:** ask your administrator to raise the per-server database
+  limit, or delete a database you no longer need.

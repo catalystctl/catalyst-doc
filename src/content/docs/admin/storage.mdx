@@ -8,32 +8,51 @@ features:
   - database
   - redis
 sources:
-  - catalyst-docker/
+  - catalyst-docker/docker-compose.yml
   - docs/redis.md
-last_verified: '2026-09-15'
+  - catalyst-agent/src/storage_manager.rs
+  - catalyst-agent/src/websocket_handler/backup.rs
+last_verified: '2026-09-28'
 ---
 
 ## Panel host
 
-- **PostgreSQL** holds everything the panel knows (users, servers, audit logs).
-  Back it up continuously — see [backups](/admin/backups/) and
+The bundled stack keeps four named Docker volumes: `catalyst-postgres-data`
+(the database), `catalyst-server-data`, `catalyst-backup-data` (backups), and
+`catalyst-plugin-data`.
+
+- **PostgreSQL** is the system of record — users, servers, audit logs, settings.
+  Back it up continuously; see [backups](/admin/backups/) and
   [disaster recovery](/admin/disaster-recovery/).
-- **Redis** holds sessions, rate-limit counters, caches, and queues. Losing it
-  is an inconvenience (logins drop, jobs retry), not data loss — but size and
-  persist it sanely anyway.
+- **Backups** are stored in the `catalyst-backup-data` volume
+  (`/var/lib/catalyst/backups`) by default, or in S3 when
+  `BACKUP_STORAGE_MODE=s3`.
+- **Redis** is an ephemeral cache and coordination layer: config caches,
+  cross-instance invalidation, realtime fan-out, agent command relay, shared
+  rate-limit counters, and locks. It has **no volume, no AOF/RDB, and no
+  persistence by design** — sessions live in PostgreSQL, not Redis. Losing
+  Redis means slower requests and degraded realtime, never lost data; the
+  backend falls back to the database when it is down (`docs/redis.md`).
 - Keep database volumes on fast, monitored disks separate from bulk backup
   storage.
 
 ## Nodes
 
-Node disk fills with, in rough order: game servers, backups, container images,
-and logs. Plan for it:
+Each server's data lives in a per-server loop-mounted disk image whose size is
+the server's disk allocation — that is how Catalyst enforces a per-server disk
+quota. A node that cannot mount images (an unprivileged LXC, for example) falls
+back to plain data directories with **no quota enforcement**
+([requirements](/admin/requirements/)).
+
+Node disk fills with, in rough order: game server images and data, container
+images, logs, and temporary backup staging. Plan for it:
 
 1. **Separate filesystems** (or at least quotas) for server data vs. images/logs,
    so a log flood cannot wedge game I/O.
 2. **Image pruning** on a schedule — old game images accumulate silently.
-3. **Backup retention** that matches disk: user backups count against quotas,
-   but node-level snapshots need their own policy ([backups](/admin/backups/)).
+3. **Backup retention** that matches disk. Backups are staged under the agent's
+   data root and stored on the panel host (or S3), so their long-term footprint
+   is the panel's, not the node's, but large transfers still need node headroom.
 4. **Alert at 80%, act at 90%.** A full disk stops servers ugly. Wire node disk
    into [monitoring](/admin/monitoring/).
 

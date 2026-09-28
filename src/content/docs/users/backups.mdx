@@ -1,14 +1,18 @@
 ---
 title: Backups
-description: Create, restore, download, and lock backups of your server.
+description: Create, restore, download, and prune backups of your server.
 audience:
   - user
 features:
   - backups
 sources:
   - catalyst-frontend/src/components/backups/BackupSection.tsx
+  - catalyst-frontend/src/components/backups/CreateBackupModal.tsx
+  - catalyst-frontend/src/components/backups/RestoreBackupDialog.tsx
+  - catalyst-frontend/src/components/backups/DeleteBackupDialog.tsx
   - catalyst-backend/src/routes/backups.ts
-last_verified: '2026-09-15'
+  - catalyst-backend/src/services/backup-retention.ts
+last_verified: '2026-09-28'
 ---
 
 A backup is a restorable snapshot of your server's files. Make one before every
@@ -16,31 +20,63 @@ risky change — updates, new plugins, world edits, reinstalls.
 
 ## Create a backup
 
-1. Open **Backups** and select **Create Backup**.
-2. Give it a descriptive name, for example `before-1.21-update`.
-3. Optional: **lock** the backup so automatic cleanup never deletes it.
-4. Wait for the status to finish before stopping the server or making changes.
-
-Backup limits and automatic retention are set by your administrator. If creation
-fails with a quota error, delete or download old backups first.
+1. Open **Backups** and select **Create backup**. The same button appears when
+   the list is empty.
+2. Optionally give it a name, for example `before-1.21-update`. Leave the name
+   blank and the panel generates one from the current timestamp.
+3. Select **Create backup** in the dialog and wait for the status to reach
+   **Completed** before stopping the server or making changes.
 
 ## Restore a backup
 
-1. Open **Backups**, find the snapshot, and select **Restore**.
-2. Restoring **overwrites current files**. Download anything you want to keep first.
-3. The server is stopped during the restore and must be started afterwards.
-4. Verify the world loads correctly before deleting the backup you restored from.
+1. **Stop the server first.** **Restore** stays disabled until the server is
+   stopped.
+2. Open **Backups**, find the snapshot, and select **Restore**.
+3. Confirm the dialog. It names the backup and warns that *"the server must be
+   stopped before restoring and current files will be overwritten."*
+4. Wait for the restore to finish, then start the server and verify the world
+   loads correctly before deleting the backup you restored from.
 
 :::caution
-Restore is destructive to current state. When in doubt, download a fresh backup
-of the *current* files first, so you can go back either way.
+Restore overwrites the server's current files. When in doubt, download a fresh
+backup of the *current* files first, so you can go back either way.
 :::
+
+## Download and delete
+
+- **Download** saves the snapshot as a `.tar.gz` file — keep critical backups
+  off-site, since a backup on the same node does not survive node loss.
+- **Delete** removes a snapshot. The confirmation names the backup and warns
+  *"This action cannot be undone."*
+
+## Backup settings
+
+The **Backup settings** card controls where backups go and how long they are
+kept. You need the `backup.create` permission to change it.
+
+- **Storage mode** — **Local** or **Stream (backend-local)** use the storage
+  space your administrator allocated to the server. **S3** and **SFTP** store
+  backups on infrastructure you provide, and work even when no local allocation
+  is available.
+- **Keep last N** — keep at most N backups (0 = unlimited, up to 1000).
+- **Max age (days)** — delete backups older than N days (0 = unlimited, up to
+  3650).
+- **Save settings** applies the change.
+
+A background job enforces these rules roughly every six hours. Backups that fall
+outside the rules are deleted automatically — there is no "keep forever" flag,
+so download anything you need to preserve permanently.
+
+When the server has no provider allocation, the tab shows a warning: *"Provider
+backup allocation is not available for this server. Local and Stream storage
+modes require an allocation. Configure your own S3 or SFTP storage to enable
+backups."* Configure S3 or SFTP above, or ask your administrator for an
+allocation.
 
 ## Good habits
 
 - Backup cadence: before changes (manual) plus a recurring [Task](/users/tasks/)
   for daily/weekly safety nets.
-- Keep at least one locked backup from before major version upgrades.
 - Download critical backups off-site — a backup on the same node does not
   protect against node loss. Administrators handle node-level disaster recovery
   ([admin backups](/admin/backups/)).

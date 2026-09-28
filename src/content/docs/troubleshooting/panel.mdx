@@ -8,24 +8,28 @@ features:
   - administration
 sources:
   - catalyst-backend/src/index.ts
+  - catalyst-frontend/src/pages/admin/SystemErrorsPage.tsx
   - catalyst-docker/
-last_verified: '2026-09-15'
+last_verified: '2026-09-28'
 ---
 
 ## Panel will not start after an update
 
-1. Read the backend container logs first (`docker compose logs backend`).
-   Most failures announce themselves: a migration waiting on a lock, a renamed
-   environment variable (check the release notes), or an unreachable database.
-2. Confirm PostgreSQL and Redis containers are up before blaming the backend.
+1. Read the backend container logs first (`docker compose logs backend` from the
+   install directory). Most failures announce themselves: a migration waiting on
+   a lock, a renamed environment variable (check the release notes), or an
+   unreachable database.
+2. Confirm the PostgreSQL and Redis containers are up (`docker compose ps`)
+   before blaming the backend.
 3. Roll back per [updating Catalyst](/admin/updating/) if the cause is not
    obvious within minutes — a down panel blocks all management.
 
 ## HTTP 500s in the UI
 
-- One page broken, rest fine: note the exact page + action and check backend
-  logs at that timestamp. A missing column after a partial migration looks
-  exactly like this — never interrupt migrations.
+- One page broken, rest fine: open **Admin → System Errors** and filter by
+  **Component** to see the persisted exception, then check backend logs at that
+  timestamp. A missing column after a partial migration looks exactly like this
+  — never interrupt migrations.
 - Everything broken: database or Redis connectivity. Verify credentials,
   connectivity, and free disk on the database host.
 
@@ -34,7 +38,8 @@ last_verified: '2026-09-15'
 1. Can you reach the panel URL at all? If not, this is
    [networking](/troubleshooting/networking/), not auth.
 2. Wrong-password for everyone including admins: check the backend logs for
-   auth/database errors rather than resetting passwords blindly.
+   auth/database errors rather than resetting passwords blindly. Sign-in
+   failures also appear in **Admin → Audit Logs**.
 3. Invites/resets never arrive: mail configuration ([configuration](/admin/configuration/)),
    spam folders, then mail provider logs.
 
@@ -48,4 +53,6 @@ like frozen data while REST keeps working.
 
 Panel version, browser + version, exact steps, backend log lines for the
 incident window, and whether the problem survives a private window
-(rules out extensions/cookies).
+(rules out extensions/cookies). **Admin → System Errors → Download diagnostics**
+captures the panel logs and system errors in one redacted ZIP — see
+[diagnostics bundle](/troubleshooting/diagnostics-bundle/).

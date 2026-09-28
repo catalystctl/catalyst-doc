@@ -7,17 +7,24 @@ features:
   - installation
 sources:
   - install.sh
-  - install.sh
-last_verified: '2026-09-15'
+  - catalyst-agent/src/storage_manager.rs
+  - catalyst-agent/src/runtime_manager/image_and_spec.rs
+  - catalyst-docker/README.md
+last_verified: '2026-09-28'
 ---
 
 ## Panel host
 
 - **OS:** a current Linux distribution (Ubuntu/Debian, RHEL/CentOS, Fedora,
   Arch, Alpine, or openSUSE).
-- **Docker** (or Podman) with Compose, installed or installable by `install.sh`.
+- **Docker** 20.10+ (or **Podman** 4.0+) with Compose. The installer can
+  install Docker for you when it is missing.
 - **Resources:** at least 2 CPU cores, 4 GB RAM, and 20 GB free disk for the
-  panel, PostgreSQL, and Redis. Production panels serving many servers want more.
+  panel, PostgreSQL, and Redis. Production panels serving many servers want
+  more. The installer warns when fewer than 5 GB are free under the install
+  directory.
+- **Dependencies:** `curl`, `tar`, and `openssl` on the host — the installer
+  stops if any is missing.
 - **Network:** a public IP or LAN address, plus a DNS name if you want TLS
   (recommended — see [installation](/admin/installation/)).
 - Outbound HTTPS to pull container images.
@@ -27,6 +34,16 @@ last_verified: '2026-09-15'
 Each node runs game containers through the Catalyst agent (containerd-based):
 
 - **OS:** Linux with systemd (or OpenRC on Alpine).
+- **Kernel and cgroups:** cgroup v2 with the **`io` controller** available to
+  the agent, and permission to mount loop devices. The agent uses both: the `io`
+  controller for per-server IO weight, and loop-mounted disk images for
+  per-server disk quotas.
+- **If a requirement is missing, the node still runs servers with reduced
+  guarantees.** When the agent cannot loop-mount (an unprivileged LXC
+  container, for example), it falls back to plain data directories and **disk
+  quota is not enforced**. When the `io` controller is absent, the agent skips
+  the container's IO weight instead of failing to start it. See
+  [node issues](/troubleshooting/node/).
 - **Resources:** whatever your game servers need, plus ~1 GB RAM overhead for
   the agent and system. CPU and memory are the usual bottlenecks; disk fills up
   with backups and images.

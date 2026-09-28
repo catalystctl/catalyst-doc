@@ -6,21 +6,29 @@ audience:
 features:
   - api
 sources:
+  - catalyst-backend/scripts/export-openapi.ts
   - catalyst-backend/src/routes/
 api_tags:
   - rest
   - reference
-last_verified: '2026-09-15'
+last_verified: '2026-09-28'
 ---
 
 import ScalarReference from '../../../components/ScalarReference.astro';
 
 This reference is **generated** from the backend's route definitions
 (`catalyst-backend/scripts/export-openapi.ts` → `api/openapi.json`), so it
-tracks the code instead of drifting from it. Each operation links back to its
-source file. Conceptual guides live under [API & Developers](/api/overview/).
+tracks the code instead of drifting from it. Each operation carries an
+`x-catalyst.source` pointer back to the route file and line, plus the
+permission guards it enforces.
 
 <ScalarReference />
+
+:::note
+The generated contract covers the REST endpoints. The long-lived SSE streams
+(`/api/servers/:id/console/stream`, `/events`, `/metrics/stream`) are not listed
+in it — see [Realtime events](/api/websockets/) for those.
+:::
 
 :::note
 The viewer loads from a CDN with JavaScript enabled. Offline or script-blocked

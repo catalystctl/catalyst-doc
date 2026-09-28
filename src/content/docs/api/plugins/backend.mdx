@@ -9,8 +9,13 @@ sources:
   - catalyst-backend/src/plugins/types.ts
   - catalyst-backend/src/plugins/context.ts
   - catalyst-backend/src/plugins/host-events.ts
+  - catalyst-backend/src/plugins/loader.ts
+  - catalyst-backend/src/plugins/registry.ts
+  - catalyst-backend/src/plugins/runtime/request-gate.ts
+  - catalyst-backend/src/services/file-tunnel.ts
+  - packages/plugin-sdk/src/types.ts
   - catalyst-plugins/example-plugin/backend/index.js
-last_verified: '2026-09-22'
+last_verified: '2026-09-28'
 ---
 
 The backend entry (`backend.entry` in `plugin.json`) is an ES module. The panel
@@ -42,19 +47,22 @@ Every hook receives the same context.
 | Member | What it does |
 | --- | --- |
 | `manifest` | The validated manifest. |
+| `originalConfig` | The `config` block exactly as declared in `plugin.json`, before admin values were merged in. |
+| `installId` | Stable, opaque identity for this panel install. See [Plugin licensing](/api/plugins/licensing/). |
 | `logger` | Pino logger, child-bound to the plugin name. |
+| `wsGateway` | The raw WebSocket gateway, for code that needs it directly. |
 | `db` | Scoped database. See [Data](/api/plugins/data/). |
 | `registerRoute(options)` | Mount a route under `/api/plugins/<name>`. |
-| `registerMiddleware(handler, { scope })` | `scope` is `'global'` or `'route'`. |
+| `registerMiddleware(handler, { scope })` | `scope` is `'global'` (default) or `'route'`. |
 | `requirePermission(...tokens)` | Returns a `preHandler` that 403s unless the **caller** holds a token. |
 | `hasPermission(request, ...tokens)` | Soft check. `*` on the user satisfies it. |
-| `getUserId(request)` | `request.user.userId`, or `null`. |
+| `getUserId(request)` | `request.user.userId` (falling back to `.id`), or `null`. |
 | `getConfig(key)` / `setConfig(key, value)` | Plugin config values. See [Data](/api/plugins/data/). |
 | `getStorage` / `setStorage` / `deleteStorage` | Plugin-scoped key-value store. |
 | `collection(name)` | Document collection. |
 | `scheduleTask(cron, handler)` | Scheduled work. Host clears it on disable. |
 | `on(event, handler)` / `emit(event, data)` | Event bus shared by plugins and the host. |
-| `emitTyped(event, data)` | Same as `emit`, plus a warning if `events[event].payload` does not match. |
+| `emitTyped(event, data)` | Same as `emit`, plus a warning when a declared payload field is missing or the event is undeclared. It never rejects the emit. |
 | `onWebSocketMessage(type, handler)` | Handle `plugin:<name>:<type>`. |
 | `sendWebSocketMessage(target, message)` | `target` is a client id, or `'*'` to broadcast. |
 | `exposeApi(name, handler)` / `callPluginApi(plugin, api, params)` | Plugin-to-plugin calls. Caller needs `plugin.rpc`. |
@@ -184,9 +192,10 @@ const count = await ctx.callPluginApi('ticketing-plugin', 'getOpenCount', {
 });
 ```
 
-The grant is checked on every call. Calls time out at 10 seconds. After
-repeated consecutive failures the host opens a circuit for about 30 seconds
-and further calls throw; handle that error instead of retrying in a loop.
+The grant is checked on every call. Calls time out at 10 seconds. After 5
+consecutive failures the host opens a circuit for about 30 seconds and further
+calls throw; one probe is then allowed through. Handle that error instead of
+retrying in a loop.
 
 ## File tunnel
 
@@ -229,6 +238,29 @@ ctx.registerMiddleware(async (request, reply, done) => {
 
 The handler is Fastify-shaped: `(request, reply, done)`. Pass an error to
 `done(err)`. Register it from `onEnable` if it should only run while enabled.
+
+Only the `'global'` scope runs today: the loader collects `scope: 'global'`
+middleware and runs it before the enabled check on every route of the plugin.
+`scope: 'route'` is accepted and stored but never applied, so treat `'global'`
+as the only working value.
+
+## Request limits
+
+Every plugin route is wrapped in a gate with three limits:
+
+| Limit | Value today | Effect |
+| --- | --- | --- |
+| Request timeout | 30 s | The handler is abandoned and the caller gets `504`. |
+| Concurrent requests | 10 per plugin | Further calls get `503` until one finishes. |
+| Heap pressure | 1024 MB process-wide | Warn-only: the process heap is compared to this threshold and a throttle-logged warning is emitted. It never rejects a request, and it is not per-plugin usage. |
+
+These are the built-in defaults and they are what runs: the loader reads
+`config.requestTimeoutMs`, `config.maxConcurrentRequests`, and
+`config.memoryLimitMb` from a point where `manifest.config` already holds
+runtime *values*, not the field schemas, so a `config` entry of the same name
+does not change them. Treat the numbers above as fixed. The heap threshold is
+the only one with a working override: the `PLUGIN_PROCESS_HEAP_LIMIT_MB`
+environment variable on the backend.
 
 ## Testing without a panel
 

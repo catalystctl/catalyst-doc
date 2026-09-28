@@ -23,7 +23,7 @@ export default defineConfig({
       head: [
         {
           tag: 'meta',
-          attrs: { name: 'theme-color', content: '#0a0908' },
+          attrs: { name: 'theme-color', content: '#161412' },
         },
         {
           tag: 'link',
@@ -59,6 +59,7 @@ export default defineConfig({
             { label: 'Networking', slug: 'users/networking' },
             { label: 'Startup & Variables', slug: 'users/startup' },
             { label: 'Reinstalling', slug: 'users/reinstalling' },
+            { label: 'Cloning', slug: 'users/cloning' },
             { label: 'Users & Subusers', slug: 'users/subusers' },
             { label: 'Activity', slug: 'users/activity' },
             { label: 'Metrics & Alerts', slug: 'users/metrics' },
@@ -77,8 +78,8 @@ export default defineConfig({
               label: 'Nodes',
               items: [
                 { label: 'Overview', slug: 'admin/nodes/overview' },
-                { label: 'Installing a Node', slug: 'admin/nodes/installing' },
                 { label: 'Registering a Node', slug: 'admin/nodes/registering' },
+                { label: 'Installing a Node', slug: 'admin/nodes/installing' },
                 { label: 'Updating a Node', slug: 'admin/nodes/updating' },
               ],
             },
@@ -126,6 +127,7 @@ export default defineConfig({
             { label: 'Server Issues', slug: 'troubleshooting/server' },
             { label: 'Node Issues', slug: 'troubleshooting/node' },
             { label: 'Panel Issues', slug: 'troubleshooting/panel' },
+            { label: 'Diagnostics Bundle', slug: 'troubleshooting/diagnostics-bundle' },
             { label: 'Networking Issues', slug: 'troubleshooting/networking' },
             { label: 'Common Errors', slug: 'troubleshooting/common-errors' },
           ],

@@ -6,12 +6,13 @@ audience:
 features:
   - security
 sources:
-  - docs/SECURITY.md
+  - catalyst-frontend/src/pages/admin/SecurityPage.tsx
   - catalyst-backend/src/routes/admin.ts
   - catalyst-backend/src/routes/mcp.ts
   - catalyst-backend/src/mcp/tools.ts
   - catalyst-backend/src/services/mcp-settings.ts
-last_verified: '2026-09-17'
+  - docs/SECURITY.md
+last_verified: '2026-09-28'
 ---
 
 ## Panel
@@ -20,7 +21,9 @@ last_verified: '2026-09-17'
 - Keep the panel updated — security fixes ship in releases ([updating](/admin/updating/)).
 - Restrict who can reach the admin UI by network (VPN, allowlist) in addition
   to passwords.
-- Never expose the database or Redis ports to the internet.
+- Never expose the database or Redis ports to the internet. The bundled compose
+  stack publishes PostgreSQL on `127.0.0.1` only and leaves Redis internal to
+  the Docker network by default.
 
 ## Accounts and access
 
@@ -29,6 +32,29 @@ last_verified: '2026-09-17'
   [API keys](/api/authentication/) for integrations.
 - Treat node API keys and backup encryption keys as crown jewels: generated
   randomly, stored once, rotated on suspicion.
+
+## Security settings
+
+Open **Admin → Security**. Settings take effect when you select **Save** in
+each section.
+
+- **Rate Limits** — per-category request and message budgets: **Auth requests**,
+  **File operations**, **Console input**, **Console output lines / sec**,
+  **Console output bytes / sec**, **Agent messages / sec**, **Agent metrics /
+  sec**, **Server metrics / sec**, and **Max buffer (MB)**. Each rate limit has
+  a count and a time window (second, minute, hour, day, or month).
+- **Email Verification** — **Require verified email before sign-in**.
+- **Lockout Policy** — **Max attempts**, **Window (minutes)**, **Duration
+  (minutes)**, and **Audit retention (days)**. Failed sign-ins lock out per
+  email + IP combination.
+- **File Uploads** — **Tunnel requests**, **Max upload size (MB)** (up to
+  10240 MB), **Max pending per node**, and **Max concurrent (agent)**. The
+  upload size applies to the file browser and SFTP on every node; **Max
+  concurrent** needs an agent restart to take effect.
+- **Auth Lockouts** — recent lockout entries with a **Clear lockout** action.
+
+Registrations are governed by the `REGISTRATION_ENABLED` environment variable
+and the stored security setting ([configuration](/admin/configuration/)).
 
 ## Panel MCP endpoint (AI assistants)
 
@@ -40,11 +66,17 @@ default**.
 Prerequisites: an admin account, and a panel API key for the assistant
 (Profile > API keys) scoped to only the permissions it needs.
 
-1. Go to Admin **Security** and turn on **Panel MCP access**. It takes
-   effect immediately — no restart.
-2. Point the MCP client at `https://panel.example.com/api/mcp` with the
-   dedicated API key as the Bearer credential.
-3. Verify with a read-only call first (for example `whoami`), then try one
+1. In **Admin → Security**, find the **Panel MCP access** section.
+2. Turn on **Enable panel MCP endpoint**. A confirmation dialog explains the
+   risks; select **I understand, enable anyway**. It takes effect immediately —
+   no restart.
+3. Optionally set the **Tool budget (per key / min)** (10–5000, default 300).
+   The **MCP endpoint** field shows the exact URL to copy —
+   `https://panel.example.com/api/mcp`.
+4. Select **Save**.
+5. Point the MCP client at that endpoint with the dedicated API key as the
+   Bearer credential.
+6. Verify with a read-only call first (for example `whoami`), then try one
    `list_servers` before granting broader scopes.
 
 :::caution

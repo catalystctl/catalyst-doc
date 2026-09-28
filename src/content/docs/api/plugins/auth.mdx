@@ -9,9 +9,13 @@ features:
 sources:
   - catalyst-backend/src/plugins/types.ts
   - catalyst-backend/src/plugins/context.ts
+  - catalyst-backend/src/plugins/auth-providers.ts
+  - catalyst-backend/src/index.ts
+  - catalyst-frontend/src/pages/auth/LoginPage.tsx
+  - catalyst-frontend/src/i18n/locales/en/auth.json
   - catalyst-plugins/discord-oauth/
   - catalyst-plugins/oidc-sso/
-last_verified: '2026-09-22'
+last_verified: '2026-09-28'
 ---
 
 A sign-in plugin puts a button on the login page and, after the external
@@ -44,13 +48,19 @@ Say what you use them for in `permissionDescriptions`.
 ]
 ```
 
-While the plugin is enabled, each entry becomes a "Continue with `{label}`"
-button. The button links to `/api/plugins/<name>/<authorizePath>`.
-`authorizePath` defaults to `authorize`. `id` is 1–32 characters, `label` is
-1–64, and you may declare at most 8 providers.
+While the plugin is **enabled**, each entry becomes a
+"Continue with `{label}`" button on the login page (`auth` namespace key
+`sso.continueWithProvider`). The button links to
+`/api/plugins/<name>/<authorizePath>`. `authorizePath` defaults to
+`authorize`. `id` is 1–32 characters, `label` is 1–64, and you may declare at
+most 8 providers. Enable the plugin from **Admin → Plugins** and the buttons
+appear — there is no separate sign-in settings screen.
 
 The list is public (`GET /api/auth/oauth-providers`) so the login page can
-render it before anyone has a session.
+render it before anyone has a session. It returns
+`{ success: true, providers: [{ plugin, id, label, authorizeUrl }] }`, and only
+enabled plugins are listed because a disabled plugin's authorize route
+answers `503`.
 
 ## 2. Register public routes
 
@@ -117,8 +127,9 @@ const session = await ctx.auth.createSession(created.id, { reply, rememberMe: tr
 through your plugin. Duplicate email or username throws.
 
 `createSession` writes a real session cookie, the same one password login
-sets. Refuse banned users and users with a `lockedUntil` in the future before
-you call it.
+sets. `rememberMe` defaults to `true`; pass `rememberMe: false` for a
+browser-session cookie. Refuse banned users and users with a `lockedUntil` in
+the future before you call it.
 
 On failure, redirect to:
 

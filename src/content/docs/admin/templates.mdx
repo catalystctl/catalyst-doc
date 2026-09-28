@@ -7,36 +7,64 @@ features:
   - templates
 sources:
   - catalyst-frontend/src/pages/templates/
+  - catalyst-frontend/src/components/templates/
   - catalyst-backend/src/routes/templates.ts
-last_verified: '2026-09-15'
+last_verified: '2026-09-28'
 ---
 
 **Templates** define installable games: container image, install script,
 startup command, variables, and defaults. Users pick a template when creating a
-server; everything else flows from it.
+server; everything else flows from it. Manage them under **Admin → Templates**.
 
-## Offer a game
+## Add a template
 
-1. Open **Admin → Templates** and review what exists.
-2. Import from a Pterodactyl egg ([importing eggs](/admin/importing-eggs/)) or
-   create a template for your game.
-3. Test it end to end: create a real server, install, start, join, stop,
-   backup, restore. A template you have not installed from scratch is untested.
-4. Publish it to the nests your users browse.
+You need `template.create` (or full admin). From **Admin → Templates**:
+
+1. Select **New Template**.
+2. **Nest** step: choose the nest that should group the template, or select
+   **Skip — no nest**. Select **Continue**.
+3. **Details** step: set **Name**, **Version**, **Author**, **Container
+   image**, **Startup command**, the optional **Install script** and resource
+   defaults (**Allocated memory (MB)**, **Allocated CPU cores**, **Ports**).
+4. Select **Create template**. The template is available immediately and users
+   can create servers from it.
+
+To bring in an existing game definition instead, select **Import** on the same
+page:
+
+- **From URL** — paste a direct link to a Pterodactyl egg (`.json`/`.yaml`).
+- **From Local File** — **Choose file** on your computer.
+- **Import All Pterodactyl Eggs** — imports the full `pterodactyl/game-eggs`
+  collection and creates nests from the egg categories. This takes a minute or
+  two.
+
+## Verify before you publish
+
+A template you have not installed from scratch is untested. Create a real
+server from it, install, start, join, stop, back up, and restore. Only then
+offer it to users.
 
 ## Maintain templates
 
+- **Edit** on a template card opens the same form; **Save changes** applies
+  immediately to future servers.
 - **Pin versions** in install scripts where stability matters; `latest` moves
   under you on the worst possible day.
 - **Keep variables minimal.** Every variable is support surface — expose what
   users actually change, hide the rest in sane defaults.
 - **Version your changes.** When a template update changes behavior, note what
-  and when; existing servers usually keep their old effective config until
-  reinstalled, so document whether users must act.
+  and when; existing servers usually keep their old effective config until they
+  are reinstalled, so say whether users must act.
 - **Retire broken templates** instead of leaving them for users to discover.
+  Select the templates and use the bulk delete action; a template in use by an
+  existing server cannot be deleted.
 
 ## Nests
 
 Nests group templates (Minecraft, Source, and so on). Keep the nest list short
 and obvious — it is the first choice users make, and twenty near-identical
 entries help nobody.
+
+Select **Nests** on the Templates page to open **Manage nests**, then **New
+nest**; give it a **Name**, optional **Description**, and optional **Icon URL**.
+Deleting a nest leaves its templates ungrouped rather than deleting them.

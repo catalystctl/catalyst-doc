@@ -8,48 +8,113 @@ features:
   - websockets
   - console
 sources:
-  - catalyst-backend/src/websocket/gateway.ts
   - catalyst-backend/src/routes/console-stream.ts
   - catalyst-backend/src/routes/sse-events.ts
   - catalyst-backend/src/routes/metrics-stream.ts
+  - catalyst-backend/src/routes/admin-events.ts
+  - catalyst-backend/src/websocket/gateway.ts
+  - catalyst-frontend/src/services/api/sse-hub.ts
 api_tags:
   - websockets
   - console
   - events
-last_verified: '2026-09-15'
+last_verified: '2026-09-28'
 ---
 
 Polling the REST API for live state is wasteful. For anything realtime — console
-output, power transitions, metric ticks — subscribe to a stream. Browser-facing
-realtime is **Server-Sent Events (SSE)**; the true WebSocket gateway carries
-the agent control plane (node traffic), not browser clients.
+output, power transitions, metric ticks — subscribe to a stream.
+
+Browser-facing realtime is **Server-Sent Events (SSE)**. The panel's WebSocket
+gateway at `/ws` carries the node-agent control plane and plugin clients, not
+the console or metrics views.
 
 ## Channels
 
 | Channel | Transport | Endpoint |
 | --- | --- | --- |
-| Console output | SSE | `GET /api/servers/:serverId/console/stream` (25 s heartbeats) |
+| Console output | SSE | `GET /api/servers/:serverId/console/stream` |
 | Console input | REST | `POST /api/servers/:serverId/console/command` |
-| Server events | SSE | `GET /api/servers/:serverId/events` (state, backups, alerts) |
-| Metrics stream | SSE/WebSocket metrics endpoints | CPU/memory/disk ticks |
-| Node updates | Panel WebSocket gateway | Node health, agent update progress |
+| Server events (state, backups, tasks, alerts) | SSE | `GET /api/servers/:serverId/events` |
+| All user servers | SSE | `GET /api/servers/all-servers/events` |
+| Server metrics | SSE | `GET /api/servers/:serverId/metrics/stream` |
+| Admin entity events | SSE | `GET /api/admin/events` |
+| Node agents and plugins | WebSocket | `GET /ws` |
 
-Authenticate stream requests the same way as REST (session or API key).
-Unauthenticated or unauthorized subscribers are rejected before any data flows.
+The three console/event/metrics streams send a `: heartbeat` comment every 25 s
+to keep proxies from closing idle connections. Their routing is server-scoped:
+you must be the owner, hold the relevant permission on that server, or be an
+admin.
 
-## Message shape
+## Authentication
 
-Frames are JSON with a `type` discriminator (`console`, `node_updated`,
-`resource_stats`, `error`, …). Always switch on `type` and ignore unknown
-types — new event types are added over time and must not break your client.
+- **Console stream, console command, and metrics stream** accept a session
+  cookie or an API key (`Authorization: Bearer`) — the same auth as REST.
+- **Server events** (`/events`, `/all-servers/events`) and **admin events**
+  require a **session cookie**; an API key is not accepted on those two
+  channels.
+- **Admin events** additionally requires `admin.read`.
+
+Unauthenticated or unauthorized subscribers are rejected with an HTTP status
+before any data flows.
+
+## Access limits
+
+Long-lived streams are capped per server. Over the cap, the connection is
+refused with `503`:
+
+| Code | Cap |
+| --- | --- |
+| `CONSOLE_VIEWER_LIMIT_REACHED` | 50 concurrent console viewers per server |
+| `SSE_SUBSCRIBER_LIMIT_REACHED` | 100 concurrent event subscribers per server |
+
+## Console events
+
+The console stream emits four named SSE events:
+
+| Event | Payload |
+| --- | --- |
+| `connected` | `{ serverId, timestamp }` |
+| `console_output` | `{ serverId, stream, data, timestamp, logId }` — `stream` is `stdout`/`stderr` |
+| `eula_required` | `{ serverId, serverUuid, eulaText }` |
+| `error` | `{ serverId?, error }` |
+
+## Server and admin events
+
+The event stream uses the SSE **event name** (what `addEventListener` receives)
+as its type discriminator; most payloads also carry a `type` field. Switch on
+the event name and ignore unknown names — new event types are added over time
+and must not break your client.
+
+Server event names include:
+
+- `server_state_update`, `server_state` — power/state transitions
+- `resource_stats` — CPU, memory, disk, network tick
+- `backup_started`, `backup_complete`, `backup_restore_started`,
+  `backup_restore_complete`, `backup_delete_started`, `backup_delete_complete`
+- `task_progress`, `task_complete`
+- `server_operation_progress` — dense install/transfer/clone progress
+- `server_files_changed`, `storage_resize_complete`, `eula_required`,
+  `server_log`, `alert`
+- `server_created`, `server_updated`, `server_deleted`, `server_suspended`,
+  `server_unsuspended`
+- `mod_install_complete`, `mod_uninstall_complete`, `mod_update_complete` and
+  the matching `plugin_*` events
+
+The admin stream (`/api/admin/events`) carries entity-level create/update/delete
+events (`user_*`, `node_*`, `template_*`, `alert_*`, `role_*`, `api_key_*`,
+`task_*`, `database_*`, `agent_update_*`, `node_metrics_updated`,
+`audit_log_created`, `auth_lockout_created`/`auth_lockout_cleared`, …).
 
 ## Client rules
 
-1. **Reconnect with backoff** and resume from the last seen marker where the
-   channel offers one (`resume_console` and friends).
-2. **Handle `error` frames** (`auth_failed`, `auth_lockout` with
-   `retryAfterSeconds`, connection limits) instead of reconnect-spinning.
-3. **One connection per view**, not per widget — fan out locally.
+1. **Let EventSource reconnect.** The browser retries the connection
+   automatically. There is no server-side resume cursor: treat every reconnect
+   as fresh and re-fetch authoritative state over REST to close any gap.
+2. **Handle the HTTP failures** (`401`, `403`, `503` above) instead of
+   reconnect-spinning; a refused stream will not recover without a change on
+   your side.
+3. **One connection per view**, then fan out locally. The panel's own SSE hub
+   already shares one `EventSource` per URL across all widgets.
 4. Fall back to REST polling only when streams are unavailable, and say so in
    your UI.
 
@@ -60,8 +125,11 @@ const src = new EventSource(
   `/api/servers/${serverId}/console/stream`,
   { withCredentials: true },
 );
-src.addEventListener('console', ({ data }) => {
-  appendOutput(JSON.parse(data).line);
+src.addEventListener('console_output', ({ data }) => {
+  appendOutput(JSON.parse(data).data);
+});
+src.addEventListener('eula_required', ({ data }) => {
+  showEula(JSON.parse(data).eulaText);
 });
 src.addEventListener('error', handleStreamError);
 
@@ -73,6 +141,20 @@ await fetch(`/api/servers/${serverId}/console/command`, {
 });
 ```
 
-Exact paths, parameters, and event types are pinned in the
-[API reference](/api/reference/) — treat this page as concepts, the reference
-as contract.
+The command body is `{ "command": "..." }` (max 4096 characters) and requires
+`console.write`.
+
+## The WebSocket gateway
+
+`GET /ws` is the bidirectional channel:
+
+- **Nodes** connect as `/ws?nodeId=<id>` and authenticate with the node's agent
+  API key in the handshake.
+- **Plugin/browser clients** connect to the same path and authenticate with the
+  session cookie on the upgrade, or by sending a `client_handshake` message with
+  a session token within the first 3 seconds. Plugin traffic is addressed by
+  message type `plugin:{pluginName}:{eventType}` with a `data` payload.
+
+The generated [API reference](/api/reference/) covers the REST endpoints the
+streams pair with (console command, power actions, lists). The long-lived SSE
+paths above are the contract for the streams themselves.

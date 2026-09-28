@@ -7,23 +7,51 @@ features:
   - files
 sources:
   - catalyst-frontend/src/components/files/FileManager.tsx
-  - catalyst-backend/src/routes/servers/
-last_verified: '2026-09-15'
+  - catalyst-frontend/src/components/files/FileList.tsx
+  - catalyst-frontend/src/components/files/FileEditor.tsx
+  - catalyst-frontend/src/components/files/FileUploader.tsx
+  - catalyst-backend/src/routes/servers/files.ts
+last_verified: '2026-09-28'
 ---
 
 The **Files** tab is a file manager for your server: configs, worlds, plugins,
-and logs. For large transfers (whole world folders, modpacks), use
-[SFTP](/users/sftp/) instead.
+and logs. It is the right tool for small, targeted changes. For large transfers
+(whole world folders, modpacks), use [SFTP](/users/sftp/) instead.
+
+The left rail is the **Directory Tree**; the breadcrumb and filter box above the
+list move around the current folder. You need the `file.read` permission to
+browse and `file.write` to change anything.
 
 ## Everyday tasks
 
-- **Edit a config:** click the file, edit in the built-in editor, save, then
-  [restart](/users/power/) the server so the game re-reads it.
-- **Upload:** use the upload button for small files (jars, zips, single configs).
-- **Download:** select files or folders and download them as an archive.
-- **Create/rename/move/delete:** right-click (or the action menu) on any entry.
+- **Open or edit a file:** click a file (or **Open File** in its menu). Config
+  files open in the built-in editor with syntax highlighting. Select **Save**
+  (or **Ctrl+S**), then [restart](/users/power/) the server so the game re-reads
+  the file. **Revert** undoes your changes; closing with unsaved edits asks
+  first.
+- **Upload:** select **Upload**, then **Choose Files** or drag files into the
+  dialog. You can also drop files straight onto the file list. Files larger than
+  the upload limit your administrator set are rejected with the limit shown.
+- **Download:** open a file's menu (the **⋯** button or right-click) and choose
+  **Download**. Directories cannot be downloaded as a batch in the browser —
+  use [SFTP](/users/sftp/) to pull a whole folder.
+- **Create:** select **New File** or **New Folder**.
+- **Rename:** choose **Rename** from a file's menu and type the new name.
+- **Copy a path:** choose **Copy Path** to put the full server path on your
+  clipboard — handy when pasting into a command or a support thread.
+- **Permissions:** choose **Permissions** to set the octal mode (for example
+  `644` for files, `755` for folders).
+- **Delete:** select one or more entries and choose **Delete**, then confirm.
+- **Compress / Extract:** select entries and choose **Compress**, or open a
+  `.zip` / `.tar.gz` to preview its contents read-only and **Extract** it to a
+  target path.
 - **Find an error:** game logs usually live under `logs/` — open the latest log
   after a crash before asking for help.
+
+:::caution
+Delete, rename, and extract all act immediately once confirmed. There is no
+undo in the file manager — [a backup](/users/backups/) is the undo.
+:::
 
 ## Rules that prevent data loss
 

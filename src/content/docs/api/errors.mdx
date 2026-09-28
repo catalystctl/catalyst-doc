@@ -8,47 +8,66 @@ features:
 sources:
   - catalyst-backend/src/lib/error-codes/
   - catalyst-backend/src/lib/http-error.ts
+  - catalyst-backend/src/shared-types.ts
   - catalyst-frontend/src/i18n/api-errors.ts
 api_tags:
   - errors
-last_verified: '2026-09-15'
+last_verified: '2026-09-28'
 ---
 
 ## Shape
 
-Error responses carry a stable machine-readable `code` plus a human message:
+Coded error responses carry a stable machine-readable `code`, a human-readable
+English `error` message, and optional extras:
 
 ```json
 {
-  "error": "Server not found",
-  "code": "NOT_FOUND"
+  "error": "Insufficient memory. Available: 4096, Required: 8192MB",
+  "code": "INSUFFICIENT_RESOURCES",
+  "params": { "available": 4096, "required": 8192 }
 }
 ```
 
+- `params` — values the panel interpolates into the localized message for that
+  code. Treat them as display data, not as a stable schema.
+- `details` — present on `VALIDATION_ERROR`; an array of
+  `{ field, message, code?, params? }` entries describing each rejected field.
+
 **Branch on `code`, never on the message.** Messages are localized and may
 change; codes are versioned identifiers — renaming one is a breaking change.
+
+:::note
+A few early failures return only `{ "error": "..." }` with no code (for example
+an invalid API key returns `401 Invalid API key`). Check for `code`, but do not
+assume it is always present.
+:::
 
 ## Codes you will meet
 
 | Code | HTTP | Meaning |
 | --- | --- | --- |
-| `VALIDATION_ERROR` | 400 | Request shape or values rejected. Check field details. |
+| `VALIDATION_ERROR` | 400 | Request shape or values rejected. Read `details` for fields. |
+| `INSUFFICIENT_RESOURCES` | 400 | Node lacks memory/CPU/disk/allocations for the request. |
+| `UNAUTHORIZED` / `AUTH_REQUIRED` | 401 | No valid session or API key. |
 | `PERMISSION_DENIED` | 403 | Authenticated but not allowed ([authorization](/api/authorization/)). |
 | `NOT_FOUND` | 404 | No such resource (or hidden from this identity). |
 | `CONFLICT` | 409 | State conflict — duplicate name, already exists, busy. |
+| `SERVER_SUSPENDED` | 423 | The server is suspended; the body adds `suspendedAt` and `suspensionReason`. Some routes return it as 403. |
 | `RATE_LIMITED` | 429 | Slow down ([rate limits](/api/rate-limits/)). |
-| `INSUFFICIENT_RESOURCES` | 422/400 | Node lacks memory/disk/allocations for the request. |
-| `CONTAINER_ERROR` | 502/500 | The runtime failed the operation — retry may help. |
 | `INTERNAL_ERROR` | 500 | Panel-side failure. Retry with backoff, then report. |
+| `NODE_OFFLINE`, `AGENT_COMMAND_FAILED`, `NODE_AGENT_UNREACHABLE` | 503/504 | The node's agent could not be reached or did not answer in time. |
+| `FRAMEWORK_*`, `IMPORT_FETCH_FAILED` | 502 | An upstream fetch (framework download, template import) failed. |
 
-Domain codes (servers, auth, infrastructure) extend this set — the
-[API reference](/api/reference/) lists per-endpoint errors.
+Every code the panel can emit lives in `catalyst-backend/src/lib/error-codes/`
+(common, auth, servers, infrastructure, admin). Domain codes extend the common
+set — the [API reference](/api/reference/) lists per-endpoint errors, and the
+frontend translates the same codes through its `errors` namespace.
 
 ## Handling guidance
 
 1. **Retry** on 429 (after `Retry-After`), 502/503/504, and network failures —
    with exponential backoff and a cap.
-2. **Do not blindly retry** 400/403/404/409 — the request itself must change.
+2. **Do not blindly retry** 400/403/404/409/423 — the request itself must change.
 3. **Surface the code to your users** alongside your own message; it is what
    support will ask for.
 4. **Log request ID, endpoint, code, and timestamp** on every failure. "It broke

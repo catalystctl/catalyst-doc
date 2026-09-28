@@ -1,45 +1,83 @@
 ---
 title: Migration
-description: Move servers into Catalyst from Pterodactyl or another panel.
+description: Move servers into Catalyst from Pterodactyl with tracked, resumable jobs.
 audience:
   - admin
 features:
   - migration
   - templates
 sources:
-  - catalyst-backend/src/routes/migration.ts
-  - catalyst-frontend/src/pages/admin/MigrationPage.tsx
   - catalyst-frontend/src/pages/admin/MigrationPage.tsx
   - catalyst-backend/src/routes/migration.ts
-last_verified: '2026-09-15'
+  - catalyst-backend/src/services/migration/index.ts
+last_verified: '2026-09-28'
 ---
 
-The migration center (**Admin → Migration**) imports servers from other panels
-with tracked jobs: test first, run, then pause, resume, retry, or cancel per step.
+The migration center (**Admin → Migration**) imports a Pterodactyl panel into
+Catalyst as a tracked job: test the connection first, map the target nodes, then
+run. Each job exposes phase- and step-level status, so you can retry a failed
+step, pause, resume, or cancel without starting over. Migration requires an
+administrator account.
 
-## Process
+## Before you start
 
-1. **Inventory the source.** List every server, its game, disk use, databases,
-   and custom config. Note anything exotic (custom images, sidecars) — those
-   need manual handling.
-2. **Prepare Catalyst.** Nodes with enough free capacity, matching
-   [templates](/admin/templates/) (import eggs first —
-   [importing eggs](/admin/importing-eggs/)), allocations, and raised limits
-   for the migration window.
-3. **Test the connection** from the migration center before starting anything.
-4. **Migrate one pilot server.** Full cycle: import → install → start → join →
-   backup. Fix the template from what you learn.
-5. **Migrate in batches**, biggest risk first, during low-traffic windows.
-6. **Verify each batch** with owners before moving on.
+- A Catalyst node that is **online** with enough free capacity for the servers
+  you are moving. Migration refuses to start with no online target node.
+- The source panel's **Application API Key** (`ptla_…`).
+- The source panel's **Client API Key** (`ptlc_…`) if you want backups and
+  server files migrated. Without it, those steps are skipped. Create it in
+  Pterodactyl under **API Credentials → Client API**.
+- Space for backup slots on the source panel; servers with none report it as a
+  skipped import.
+- Templates and nests are imported automatically by the job — you do not have to
+  run [egg imports](/admin/importing-eggs/) first, though doing so lets you fix a
+  template before a large run.
+
+## Run a migration
+
+1. Open **Admin → Migration**. The **New Migration** tab is the default.
+2. Under **Connect**, enter the source **Panel URL** and **Application API Key**,
+   plus the optional **Client API Key (for file migration)**.
+3. Select **Test Connection**. The panel reports the source's locations, nodes,
+   nests, users, and servers, and warns about servers with no backup slots.
+4. Choose the **Migration Scope**:
+   - **Full Migration** — every source node, mapped onto Catalyst nodes.
+   - **Node by Node** — only the source nodes you select.
+   - **Server by Server** — map individual servers to a Catalyst node.
+5. Under **Map Pterodactyl Nodes to Catalyst Nodes** (or **Map Pterodactyl
+   Servers…** for server scope), pick the target node for each entry. Click an
+   entry to preview what will be imported. The scope applies to the whole job,
+   so pick one before mapping.
+6. Select **Start Migration**. The **Start Migration** button stays disabled
+   until the connection test succeeds, every entry required by the scope is
+   mapped, and at least one target node is online.
+7. The view switches to the **Active Migration** tab. Work the phases top to
+   bottom: Validation, Locations, Templates (Nests & Eggs), Users, Servers,
+   Databases, Schedules, Backups, Server Files. Use **Pause** / **Resume** to
+   control the job, **Cancel** to stop it, and the retry button on a failed step
+   to re-run just that step. A failed step does not mean a failed migration.
+8. Finished jobs move to the **History** tab with their step counts.
+
+## Safest order of operations
+
+1. Run the connection test and read the warnings before starting anything; fix
+   backup slots or missing keys on the source panel first.
+2. Migrate a pilot server (or a small node) and complete the full cycle —
+   import, install, start, join, backup, restore — before a large run.
+3. Run the rest in batches, during low-traffic windows, biggest risk first.
+4. Verify each batch with server owners before moving on.
+5. Keep the source panel and servers stopped-but-present until owners confirm.
+   The rollback is to turn the old server back on.
 
 ## Per-server checklist
 
 - Files and worlds intact (compare sizes and spot-check).
-- Databases moved and plugins connecting.
+- Databases moved and plugins reconnecting.
 - Startup variables and schedules recreated ([tasks](/users/tasks/)).
-- Backups running on the new side before DNS/addresses switch.
-- Old server kept (stopped) until the owner confirms — the rollback is "turn
-  the old one back on".
+- Backups running on the new side before DNS or addresses switch.
 
-Migration jobs expose step-level status with retry — a failed step does not
-mean a failed migration. Work the steps, do not restart blindly.
+:::caution
+Do not delete or wipe the source panel while a migration is in progress or
+unverified. The migration is one-way; the source is your rollback until owners
+confirm the new servers.
+:::

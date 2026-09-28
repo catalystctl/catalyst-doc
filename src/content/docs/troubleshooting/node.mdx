@@ -8,17 +8,19 @@ features:
   - troubleshooting
 sources:
   - catalyst-agent/
+  - catalyst-agent/src/storage_manager.rs
+  - catalyst-agent/src/runtime_manager/
   - docs/agent.md
-  - catalyst-agent/
-last_verified: '2026-09-15'
+last_verified: '2026-09-28'
 ---
 
 ## Node shows unreachable
 
 Running servers keep running — only management is down. Check in order:
 
-1. **Agent process** on the node: running? (`systemctl status` / OpenRC
-   equivalent.) Restart it and watch its logs.
+1. **Agent process** on the node: `systemctl status catalyst-agent` (or the
+   OpenRC equivalent). Restart it and watch its logs:
+   `journalctl -u catalyst-agent -n 100 --no-pager`.
 2. **Node → panel path**: DNS resolves the panel URL from the node? Outbound
    HTTPS reaches it? A proxy or firewall change breaks this silently.
 3. **Panel side**: is the panel itself healthy ([panel issues](/troubleshooting/panel/))?
@@ -43,8 +45,37 @@ That is a node problem, not N server problems:
 3. Migrate critical servers to a healthy node while you investigate — the fleet
    exists for exactly this.
 
+## Servers fail to start on one node
+
+Creating and installing work, but every start fails on the same node. Check the
+agent log on the node for one of these:
+
+1. **`Cannot mount disk image for <server-uuid> ... Using the plain data
+   directory; disk quota will not be enforced.`** — the node cannot create loop
+   mounts (the underlying error contains `not permitted`, `Permission denied`,
+   or `EPERM`). The agent deliberately continues with a plain data directory
+   instead of refusing to start, so servers still run — but disk quota is
+   **not enforced** on this node. If a later start also logs
+   `Migration directory already exists: <path>`, remove the stale
+   `<data-dir>/migrate/<server-uuid>` directory (default data dir
+   `/var/lib/catalyst`) and start the server again.
+2. **`io.weight` / cgroup IO error from `runc`** — the `io` cgroup v2
+   controller is not delegated to the agent, so the runtime cannot apply the
+   server's IO weight. This is common inside an unprivileged container. Run the
+   node on a host (or a privileged container) whose cgroup v2 lists `io` in
+   `/sys/fs/cgroup/cgroup.controllers`. The agent omits the IO weight
+   automatically when the controller is absent, so keep the agent up to date.
+3. A `SERVER_NOT_STOPPED` / "Server must be stopped" message is **not** a node
+   fault — that check runs in the panel.
+
+An unprivileged LXC container is the usual cause of 1 and 2. It can host a node,
+but expect no disk quota and verify the `io` controller is available before
+offering the node to users.
+
 ## Data to collect before asking for help
 
-Agent version, agent log tail (50–100 lines around the failure), node OS and
-free resources (`df -h`, `free -m`), and whether the panel URL is reachable
-from the node with `curl`.
+Agent version (`catalyst-agent --version`), the agent log tail
+(`journalctl -u catalyst-agent -n 100 --no-pager`), node OS and free resources
+(`df -h`, `free -m`), and whether the panel URL is reachable from the node with
+`curl`. The host-level `diagnose.sh` collects all of this in one redacted file
+([diagnostics bundle](/troubleshooting/diagnostics-bundle/)).

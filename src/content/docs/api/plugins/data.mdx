@@ -9,7 +9,9 @@ sources:
   - catalyst-backend/src/plugins/context.ts
   - catalyst-backend/src/plugins/storage/
   - catalyst-backend/src/plugins/safety.ts
-last_verified: '2026-09-22'
+  - catalyst-backend/src/plugins/path-utils.ts
+  - catalyst-backend/src/routes/plugins.ts
+last_verified: '2026-09-28'
 ---
 
 A plugin has three stores, and a narrow window onto panel data. Use the
@@ -97,7 +99,7 @@ const tickets = createTypedCollection<Ticket>('tickets', ctx.collection('tickets
 
 | `storageEngine` | Behavior | Use when |
 | --- | --- | --- |
-| omitted or `"legacy"` | One JSON array per collection, loaded fully for every query | A few hundred documents at most |
+| omitted or `"legacy"` | One JSON array per collection, loaded fully for every query | Under about 1,000 documents |
 | `"dedicated"` | One database row per document | Anything you would paginate |
 
 [ticketing-plugin](https://github.com/catalystctl/catalyst-plugins/tree/main/ticketing-plugin)

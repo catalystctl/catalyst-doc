@@ -7,25 +7,49 @@ features:
   - templates
   - migration
 sources:
-  - catalyst-backend/src/routes/migration.ts
-  - docs/egg-migration-audit.md
-  - catalyst-backend/src/routes/migration.ts
-last_verified: '2026-09-15'
+  - catalyst-frontend/src/components/templates/TemplateCreateModal.tsx
+  - catalyst-frontend/src/components/templates/NestsManagerModal.tsx
+  - catalyst-frontend/src/utils/pterodactylImport.ts
+  - catalyst-backend/src/routes/templates.ts
+last_verified: '2026-09-28'
 ---
 
 Catalyst can import Pterodactyl eggs as templates, so a library built for
-Pterodactyl does not have to be rebuilt from scratch.
+Pterodactyl does not have to be rebuilt from scratch. Imports live on the
+templates page (**Admin → Templates**), not in the migration center — that page
+imports whole servers. Both JSON (Pterodactyl) and YAML (Pelican) eggs work.
 
-## Import
+## Import one egg
 
-1. Open **Admin → Migration** (the migration center also handles full-panel
-   imports — see [migration](/admin/migration/)).
-2. Provide the egg JSON and test the import — the panel validates structure
-   before committing.
-3. Review the generated template carefully: startup command, variables, image,
-   and install script. Automated conversion is faithful, not perfect.
-4. Create a test server from it and run the full lifecycle (install → start →
-   join → backup → restore) before publishing.
+1. Open **Admin → Templates**.
+2. Select **Import**.
+3. Choose **From URL** and paste a direct link to the egg file, or **From Local
+   File** and pick a `.json`, `.yaml`, or `.yml` file.
+4. The panel converts the egg and opens the **New template** form pre-filled.
+   Review the name, nest, runtime images, startup command, variables, and install
+   script.
+5. Select **Create template**.
+
+Selecting several files at once on the local-file route skips the review step and
+creates each template directly — a single file opens the editable form.
+
+## Import the whole Pterodactyl library
+
+1. Open **Admin → Templates** and select **Import**.
+2. Under **Import All Pterodactyl Eggs**, select **Import All**. The panel warns
+   this may take 1–2 minutes while it fetches the eggs from GitHub.
+3. The result reports how many templates were imported, skipped (already exist),
+   and failed. Expand **Error details** to see which eggs failed and why.
+4. **Nests are created automatically** from the egg categories in the repository,
+   so the imported library arrives pre-grouped.
+
+## Organize templates with nests
+
+Nests are the template categories. Open **Admin → Templates → Manage nests** to
+add, edit, or delete one; the dialog has **Add nest** and takes a name, optional
+author, description, and icon URL. Deleting a nest leaves its templates
+ungrouped. When you create a template by hand, the **New template** wizard asks
+which nest it belongs to (optional).
 
 ## What to check by hand
 
@@ -43,3 +67,11 @@ Imported install scripts execute code from the egg author. Review every script
 before publishing its template to users — this is a supply-chain boundary.
 See [security](/admin/security/).
 :::
+
+## Automation
+
+The batch button calls `POST /api/templates/import-pterodactyl-batch`; a single
+egg can be posted as JSON to `POST /api/templates/import-pterodactyl`. Both
+require the `template.create` permission and return structured validation errors
+(422) for eggs that cannot be converted. Full-panel migrations import nests and
+templates on their own — see [migration](/admin/migration/).

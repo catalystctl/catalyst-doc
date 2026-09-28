@@ -1,15 +1,17 @@
 ---
 title: Disaster Recovery
-description: Be able to rebuild the panel and restore service after serious failure.
+description: Rebuild the panel and restore service after serious failure.
 audience:
   - admin
 features:
   - disaster-recovery
   - backups
 sources:
-  - catalyst-docker/
-  - catalyst-docker/
-last_verified: '2026-09-15'
+  - catalyst-docker/docker-compose.yml
+  - catalyst-docker/.env.example
+  - catalyst-docker/update.sh
+  - install.sh
+last_verified: '2026-09-28'
 ---
 
 Disaster recovery is a tested procedure, not a backup job. If you have never
@@ -17,17 +19,90 @@ restored, you do not have recovery — you have a theory.
 
 ## What you must be able to rebuild
 
-1. **Panel database** — automated dumps, off-host, tested restores
-   ([backups](/admin/backups/)).
-2. **Panel configuration** — compose files, `.env`, proxy configs, TLS state:
-   version-controlled or copied with the dumps.
-3. **Nodes** — agents reinstall from the panel; game data restores from
-   node-level and user backups.
+1. **Panel database** — everything except the game files: users, servers, roles,
+   audit logs. It lives in the `catalyst-postgres-data` volume (Compose prefixes
+   the name with the project name).
+2. **Panel configuration** — the compose directory (default
+   `/opt/catalyst-docker`, or the `CATALYST_COMPOSE_DIR` value in `.env`) with
+   its `.env`. The `.env` holds `POSTGRES_PASSWORD`, `BETTER_AUTH_SECRET`,
+   `API_KEY_SECRET`, and `BACKUP_CREDENTIALS_ENCRYPTION_KEY`; losing them
+   invalidates sessions, API keys, and stored backup credentials even if the
+   database survives.
+3. **Node agents** — reproducible: reinstall from the panel with a fresh
+   **Deploy** command ([installing a node](/admin/nodes/installing/)). Node
+   game data restores from user backups ([user backups](/users/backups/)) and
+   any node-level copies you keep.
+4. **File volumes** — `catalyst-server-data`, `catalyst-backup-data`, and
+   `catalyst-plugin-data` on the panel host. Redis has **no** volume: it is an
+   ephemeral cache and is rebuilt from the database automatically.
+
+## Back up the panel
+
+Run these on the panel host, from the compose directory. `POSTGRES_USER` and
+`POSTGRES_DB` default to `catalyst` and `catalyst_db`; use your `.env` values.
+
+```bash
+cd /opt/catalyst-docker            # or your CATALYST_COMPOSE_DIR
+docker exec catalyst-postgres pg_dump -U catalyst -d catalyst_db \
+  > catalyst-panel-$(date +%F).sql
+tar czf catalyst-config-$(date +%F).tgz \
+  .env docker-compose.yml docker-compose.*.yml nginx caddy traefik
+```
+
+To capture the file volumes as well, archive each one with a throwaway
+container. Compose prefixes volume names with the project name (the compose
+directory name), so discover the real names first:
+
+```bash
+docker volume ls --format '{{.Name}}' | grep -E '_catalyst-(server|backup|plugin)-data$' \
+  | while read -r v; do
+      docker run --rm -v "$v":/data -v "$PWD":/backup alpine \
+        tar czf "/backup/${v}.tgz" -C /data .
+    done
+```
+
+Ship the dump, the config archive, and the file archives off the host. Check
+that the dump is non-empty before you trust it.
+
+## Restore the panel
+
+1. On the replacement host, install a fresh stack with the one-liner:
+   `curl -fsSL https://github.com/catalystctl/catalyst/releases/latest/download/install.sh | sudo bash`
+   ([installing Catalyst](/admin/installation/)). Stop it before importing:
+   `docker compose down` — never `down -v`, which deletes the volumes.
+2. Put the saved **`.env`** back into the compose directory. Restoring the
+   original secrets is what makes existing sessions, API keys, and backup
+   credentials valid again.
+3. Start PostgreSQL only, then restore the dump into it:
+   ```bash
+   docker compose up -d postgres
+   cat catalyst-panel-<date>.sql | docker exec -i catalyst-postgres \
+     psql -U catalyst -d catalyst_db
+   ```
+4. Restore the file volumes, if you captured them. The volume names must match
+   the ones Compose expects, which is why the compose directory keeps the same
+   name:
+   ```bash
+   shopt -s nullglob
+   for f in catalyst-*_catalyst-{server,backup,plugin}-data.tgz; do
+     v="${f%.tgz}"
+     docker run --rm -v "$v":/data -v "$PWD":/backup alpine \
+       sh -c "rm -rf /data/* && tar xzf /backup/$f -C /data"
+   done
+   ```
+5. Start the rest of the stack: `docker compose up -d`.
+6. Log in, open **Admin → Nodes**, and confirm each node reconnects. Nodes that
+   were wiped or rebuilt need a fresh agent install; their game data comes from
+   backups on the node or in the backup volume.
+
+`bash update.sh --restore <backup-dir>` restores the compose files from the
+backup `update.sh` takes before it rewrites them — useful if an update is what
+broke the stack.
 
 ## The recovery drill (quarterly)
 
-1. Restore the database dump into a scratch host.
-2. Start the panel stack against it.
+1. Take a fresh dump, config archive, and file archive.
+2. Restore them into a scratch host as above.
 3. Log in, open servers, list backups, check the audit log.
 4. Time the whole thing. If it takes six hours, your RTO is six hours — plan
    staffing and communication around the truth, not the hope.
@@ -36,7 +111,8 @@ restored, you do not have recovery — you have a theory.
 ## During a real incident
 
 1. Declare: who is in charge, where status is posted, when the next update lands.
-2. Protect the evidence: snapshot failing disks/containers before wiping.
+2. Protect the evidence: snapshot failing disks and volumes before wiping or
+   recreating anything.
 3. Restore in dependency order: database → panel → nodes → verify servers.
 4. Tell users what happened and what you changed — trust compounds.
 

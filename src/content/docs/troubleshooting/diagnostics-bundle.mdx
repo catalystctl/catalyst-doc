@@ -1,0 +1,157 @@
+---
+title: Diagnostics Bundle
+description: Export panel, node, and server logs into one redacted ZIP for support.
+audience:
+  - admin
+features:
+  - troubleshooting
+  - administration
+sources:
+  - catalyst-backend/src/routes/admin.ts
+  - catalyst-backend/src/services/diagnostics/
+  - catalyst-frontend/src/components/admin/DiagnosticsExportModal.tsx
+  - catalyst-frontend/src/pages/admin/SystemErrorsPage.tsx
+  - scripts/collect-diagnostics.sh
+  - catalyst-docker/diagnose.sh
+last_verified: '2026-09-28'
+---
+
+When a problem spans more than one layer — a panel error, a node that keeps
+disconnecting, and one misbehaving game server — collecting each log by hand is
+slow and easy to get wrong. The diagnostics bundle gathers everything for a
+time window into a single ZIP, with secret values redacted.
+
+## What the bundle contains
+
+| Path | Contents |
+| --- | --- |
+| `panel/logs.txt` | Panel container output for the window |
+| `panel/environment.txt` | Effective panel configuration, secrets redacted |
+| `panel/system-errors.json` | Persisted system errors for the window |
+| `nodes/<nodeId>.log` | Node agent logs for the window |
+| `servers/<serverId>/console.log` | Server console output for the window |
+| `servers/<serverId>/.env` | The server's `.env`, when present, secrets redacted |
+| `manifest.json` | Machine-readable index, counts, and collection warnings |
+| `README.txt` | Human-readable summary of the same |
+
+Every section is best-effort. A node that is offline, an agent that times out,
+or a panel deployed without a container runtime shows up as a warning in
+`manifest.json` instead of failing the whole export. Read the warnings before
+concluding that an empty file means "nothing happened".
+
+## Prerequisites
+
+- An account or API key with the `admin.read` permission. The bundle crosses
+  tenant boundaries by design, so it is admin-only.
+- For the script, `curl` and network access to the panel (or directly to the
+  backend when the frontend is down).
+
+## Export from the panel
+
+The panel is the shortest path. You need the `admin.read` permission.
+
+1. Open **Admin → System Errors** (`/admin/system-errors`).
+2. Select **Download diagnostics**. The dialog is also titled **Download diagnostics**.
+3. Pick a **Time range**: **Last 1 hour**, **Last 6 hours**, **Last 24 hours**
+   (default), **Last 7 days**, **Last 30 days**, or **Custom** (which reveals
+   **From**/**To** date-time fields).
+4. Under **Nodes** and **Servers**, leave **Select all** ticked to include
+   everything, or untick it to choose specific entities. The server list has a
+   search box and shows only the panel's servers.
+5. Under **Redaction**, choose **Standard — keep IPs and hostnames** (default)
+   or **Strict — mask IPs and hostnames**. Under **Sections**, leave the
+   defaults (**Panel logs**, **System errors**, **Node logs**, **Server logs**,
+   **Config & .env**) or untick what you do not need.
+6. Select **Download**. The browser saves a `catalyst-diagnostics-<timestamp>.zip`.
+
+## Export with the script
+
+Use this when the panel UI is broken or you are working from a terminal. It
+calls the API directly, so it does not need the frontend.
+
+```bash
+bash collect-diagnostics.sh \
+  --url https://panel.example.com \
+  --api-key catalyst_your_admin_key \
+  --hours 24
+```
+
+Without a checkout:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/catalystctl/catalyst/main/scripts/collect-diagnostics.sh \
+  | bash -s -- --url https://panel.example.com --api-key catalyst_your_admin_key
+```
+
+Useful flags:
+
+- `--hours N` — window size, 1 to 720. Default `24`.
+- `--servers a,b` / `--nodes a,b` — limit the export; pass `none` to omit.
+- `--sections panel,errors,nodes,servers,env` — include only what you need.
+- `--redaction strict` — also mask IPs and hostnames.
+- `--out FILE` — output path.
+- `-k` — skip TLS verification for a self-signed certificate.
+
+If the frontend container is down but the backend port is reachable on the
+host, target the backend directly:
+
+```bash
+bash collect-diagnostics.sh --url http://localhost:3000 --api-key catalyst_your_admin_key
+```
+
+### Equivalent raw API call
+
+```bash
+curl -fL \
+  -H "Authorization: Bearer catalyst_your_admin_key" \
+  "https://panel.example.com/api/admin/diagnostics/export?hours=24&redaction=standard" \
+  -o catalyst-diagnostics.zip
+```
+
+Accepted query parameters: `hours` (default `24`, clamped 1–720), `from` and
+`to` (ISO 8601; `from` overrides `hours`), `nodes`, `servers` (comma-separated
+IDs, or `all` / `none`), `redaction` (`standard` or `strict`), and `sections`
+(any of `panel,errors,nodes,servers,env`).
+
+## Host-level collection
+
+This bundle is assembled by the panel and reaches out to nodes and servers. It
+cannot see the host filesystem: the panel's own `.env`, Docker Compose status,
+install logs, and container runtime health all live on the host, outside the
+backend container.
+
+For that layer, run the diagnostics script that ships with the install
+directory, on the host. `install.sh` writes the stack to `catalyst-docker/` in
+the directory you ran it from (usually `~/catalyst-docker`); adjust the path if
+you installed elsewhere.
+
+```bash
+cd ~/catalyst-docker
+bash diagnose.sh --lines=500
+```
+
+The value flags use `=`: `--lines=500` (default 500, `--full` raises it to
+2000), `--out=DIR`, `--compose-dir=DIR`, plus `--mask-hosts` (also mask IPs and
+domains), `--full`, and `--skip-agent`. It writes
+`catalyst-diagnostics-<timestamp>/catalyst-diagnostics-<timestamp>.txt` and a
+matching `.tar.gz` — a single redacted text bundle, not the ZIP the panel
+produces.
+
+Attach both when the problem could be either the panel logic or the host
+configuration.
+
+## Redaction
+
+- **standard** (default) — secret values are replaced with `[REDACTED]`,
+  including passwords, tokens, API keys, license keys, and credentials inside
+  connection URLs. IPs and hostnames are **kept**, because routing, CORS, and
+  agent connectivity problems are much harder to diagnose without them.
+- **strict** — everything standard does, plus IPs and hostnames are masked.
+
+The host-level `diagnose.sh` strips secrets by default too, and its
+`--mask-hosts` flag plays the role of strict mode for IPs and domains.
+
+:::caution
+Redaction covers known secret patterns, not customer data. Review `manifest.json`
+and a few log lines before attaching the bundle to a public issue or ticket.
+:::

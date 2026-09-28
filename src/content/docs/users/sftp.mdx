@@ -9,21 +9,44 @@ features:
 sources:
   - catalyst-frontend/src/components/files/SftpConnectionInfo.tsx
   - catalyst-frontend/src/components/servers/tabs/ServerSftpTab.tsx
+  - catalyst-backend/src/index.ts
   - catalyst-agent/src/sftp_server.rs
-last_verified: '2026-09-15'
+last_verified: '2026-09-28'
 ---
 
 SFTP gives you a fast, resumable connection for big transfers — uploading a
-modpack, downloading a world, syncing with an external editor. Open the
-**SFTP** tab on your server to find your connection details.
+modpack, downloading a world, syncing with an external editor. For small edits,
+the built-in editor in the [Files tab](/users/files/) is faster; reach for SFTP
+when you are moving a lot of data.
+
+Open the **SFTP** tab on your server to find your connection details.
 
 ## Connect
 
-1. Open your server's **SFTP** tab and copy the host, port, username, and password.
+1. Open your server's **SFTP** tab. It shows **Host**, **Port**, **Username**,
+   and **Password**, each with a copy button, plus a **Quick Connect URI** you
+   can paste into a client that understands `sftp://` URLs.
 2. In your SFTP client (FileZilla, WinSCP, Cyberduck):
    - Protocol: **SFTP** (not plain FTP — Catalyst does not offer insecure FTP).
-   - Paste the host, port, username, and password exactly.
-3. You land in your server's root directory, same files as the **Files** tab.
+   - Paste the host, port, username, and password exactly as shown.
+3. You land in your server's root directory — the same files as the **Files**
+   tab.
+
+Two details worth knowing:
+
+- **The username is your server's ID**, and the **host and port belong to the
+  node** that runs your server.
+- **The password is a temporary token, not your panel password.** It expires;
+  the tab shows how long is left. Pick a **Token lifetime** and select **Rotate
+  password** (or **Generate new** once it has expired) to issue a fresh one.
+
+Every user gets their own credentials. If you are the owner, **Active SFTP
+Sessions** lists each user's session with its expiry and a revoke button, plus
+**Revoke all sessions**. Removing a user from the server revokes their SFTP
+session immediately.
+
+If the tab says *"SFTP is disabled on this server"*, SFTP has been turned off
+for the node — ask your administrator to enable it.
 
 ## Good practice
 
@@ -40,4 +63,9 @@ modpack, downloading a world, syncing with an external editor. Open the
 - **Connection refused/timed out:** the node may block the SFTP port, or your
   network may block outbound SSH. See [networking issues](/troubleshooting/networking/).
 - **Transfers stall on huge folders:** archive them first (zip), upload one file,
-  then extract via the **Files** tab.
+  then extract it in the **Files** tab.
+
+## Related
+
+- [Files](/users/files/) — browse, edit, and extract without a client
+- [Backups](/users/backups/) — download a full snapshot instead of copying files

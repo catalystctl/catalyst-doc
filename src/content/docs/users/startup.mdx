@@ -1,6 +1,6 @@
 ---
 title: Startup & Variables
-description: Change the startup command, version, and variables your server boots with.
+description: Change the startup command, variables, and config files your server boots with.
 audience:
   - user
 features:
@@ -8,35 +8,63 @@ features:
   - startup
 sources:
   - catalyst-frontend/src/components/servers/tabs/ServerConfigurationTab.tsx
-  - catalyst-backend/src/routes/servers/
-last_verified: '2026-09-15'
+  - catalyst-frontend/src/components/servers/tabs/ServerStartupVariablesSection.tsx
+  - catalyst-backend/src/routes/servers/core.ts
+  - catalyst-backend/src/routes/servers/variables.ts
+last_verified: '2026-09-28'
 ---
 
-The **Configuration** (startup) area controls how your server boots: which
-version runs, how much memory the game itself may use, and the command-line
-flags the template supports.
+The **Configuration** tab controls how your server boots: the startup command,
+the variables the template exposes (game version, memory, extra flags), and a
+form editor for the server's config files.
 
-## Change a variable
+## Change a startup variable
 
-1. Open your server's configuration/startup area.
-2. Edit the variable (for example, game version or extra Java flags).
-3. Save and [restart](/users/power/) — variables only take effect at boot.
+1. Open your server's **Configuration** tab and find the **Startup variables**
+   section.
+2. Edit the value. Variables render as a text box, a number box, or a toggle
+   depending on their type; required variables are marked with `*`.
+3. Select **Save**. A **Reset** button appears while you have unsaved changes
+   and discards them.
+4. [Restart](/users/power/) the server — startup variables only take effect at
+   boot.
+
+Values are validated as you type: a bad number, a missing required value, an
+out-of-range value, or a value outside the allowed list is flagged under the
+field, and the save is rejected with the offending fields marked.
+
+## Change the startup command
+
+1. In **Configuration**, edit the **Startup command** field. Templates use
+   placeholders such as `{{MEMORY}}` and `{{PORT}}` that the panel fills in at
+   boot.
+2. Select **Save**.
+3. Select **Reset to default** to restore the template's original command. When
+   your command differs from the template, the template default is shown below
+   the field as a clickable link that restores it.
+
+## Edit config files
+
+The **Config files** section loads the files the template declares (for example
+`server.properties`) and lets you edit them in a **Form** or **Raw** view, with a
+search box to jump to a key. Select **Save config** to write the file. Files not
+declared by the template are edited through [Files](/users/files/) instead.
 
 ## Rules
 
-- Only change variables you understand. A bad startup flag is the most common
-  self-inflicted reason a server enters a boot loop.
+- Only change what you understand. A bad startup flag or config value is the
+  most common self-inflicted reason a server enters a boot loop.
 - Memory variables must stay within the server's allocated limits — the game
-  cannot use more than the server owns, and the container will kill it if it tries.
+  cannot use more than the server owns.
 - If the server worked before your change and boot-loops now, revert the last
   edit first and ask questions later.
 
 ## Templates define what is editable
 
 Which variables exist, their defaults, and their allowed values come from the
-server's **template** (set by your administrator). If you need a variable the
-template does not expose, ask your administrator — editing the raw startup
-command is usually restricted for good reason.
+server's **template** (set by your administrator). If a template exposes no
+startup variables, the section stays empty. If you need a variable the template
+does not expose, ask your administrator.
 
 ## Related
 

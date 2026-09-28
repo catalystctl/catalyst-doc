@@ -7,35 +7,51 @@ features:
   - networking
   - allocations
 sources:
+  - catalyst-frontend/src/components/servers/tabs/ServerAdminTab.tsx
   - catalyst-frontend/src/pages/admin/NodeAllocationsPage.tsx
-  - catalyst-backend/src/routes/servers/
-last_verified: '2026-09-15'
+  - catalyst-backend/src/routes/servers/network.ts
+last_verified: '2026-09-28'
 ---
 
-An **allocation** is an IP address + port pair on your node. Your primary
-allocation is the address players join through; extra allocations serve extra
-ports (query, RCON, voice, Bedrock vs. Java).
+An **allocation** is an IP address + port pair on your node. Your **primary**
+allocation is the address players join through; additional allocations serve
+extra ports (query, RCON, voice, Bedrock vs. Java).
 
-## View your allocations
+## Find your server's address
 
-Open the server header or the **Networking**/**Settings** area to see:
+The address is shown in the server header and on the server card in your list —
+`IP:port`, using the primary allocation. Share it exactly as shown: if your host
+provides a hostname or does not require the default port, they will tell you —
+otherwise always include the port. Details:
+[connecting to your server](/getting-started/connecting/).
 
-- The **primary allocation** (default join address).
-- Any **additional allocations** assigned to the server.
+## See and manage allocations
 
-Most server owners never need to change these — allocations are assigned by the
-administrator when the server is created.
+Allocations are managed in the server's **Admin** tab under **Ports**, which is
+available to panel administrators (`admin.write`). The node owns the pool of
+addresses; if you need another port (for example, for a plugin's web map), ask
+your administrator.
 
-## What you can and cannot do
+What the **Ports** section does, when you have access:
 
-- You can see which ports belong to your server and which game services use them.
-- You generally **cannot** add or remove allocations yourself; ask your
-  administrator if you need another port (for example, for a plugin's web map).
-- Never point two servers at the same allocation — the second one will fail to
-  bind with `port already in use`. See [server issues](/troubleshooting/server/).
+1. Pick a free address from the **Select allocation** list and set the
+   **Container port** it maps to inside the server.
+2. Select **Add allocation**.
+3. Each row shows the host address (`IP:host port`) mapped to the
+   **container port**, and marks the **Primary** one with a star.
+4. **Set primary** promotes a secondary allocation; **Remove allocation**
+   deletes one. Removing an allocation from a running server closes its
+   firewall rule immediately and disconnects anyone using that port, so the
+   panel asks you to confirm first.
 
-## Giving players an address
+If the node's pool is empty, the section links straight to the node's
+allocations page.
 
-Share the primary allocation as `IP:port`. If your host provides a hostname or
-does not require the default port, they will tell you — otherwise always include
-the port. Details: [connecting to your server](/getting-started/connecting/).
+## Rules
+
+- Never point two servers at the same allocation — the second one fails to bind
+  with `port already in use`. See [server issues](/troubleshooting/server/).
+- Changing the network mode or primary port is part of the server's admin
+  configuration, not something you change from the game itself.
+- If players cannot connect, first confirm you are sharing the primary
+  allocation and the server is running.

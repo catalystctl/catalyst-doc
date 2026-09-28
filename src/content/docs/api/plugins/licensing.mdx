@@ -11,7 +11,7 @@ sources:
   - catalyst-backend/src/plugins/licensing.ts
   - catalyst-plugins/tools/license-server/
   - catalyst-plugins/licensed-example/
-last_verified: '2026-09-22'
+last_verified: '2026-09-28'
 ---
 
 A plugin can declare that it uses **vendor-owned licensing**: you issue and
@@ -69,13 +69,15 @@ and may ship an encrypted payload.
 
 ## Consent disclosure
 
-The panel's safety-consent dialog (shown before first enable) now includes a
+The panel's safety-consent dialog (shown before first enable) renders a
 **Network & licensing** section whenever `licensing` is present. It shows:
 
 - "Contacts `licenses.vendor.example` to validate a license" — the `contact`
   hosts.
-- "Encrypted payload — decrypted after activation" — when `encrypted` is set.
-- A `buyUrl` button — when `buyUrl` is set.
+- "Ships an encrypted payload. Its code is readable only after activation." —
+  when `encrypted` is set.
+- "Activation endpoint: `https://…`" — the `licenseServer`.
+- A "Get a license" button — when `buyUrl` is set.
 
 This rides the existing consent machinery (`permissionDescriptions` and the
 `SAFETY_CONSENT_REQUIRED` response of `POST /api/plugins/:name/enable`).
@@ -132,7 +134,10 @@ Errors are all `{"ok":false,"code":"…"}`:
 | 409 | `SEAT_EXHAUSTED` | Install not bound and no free seat |
 | 409 | `VERSION_MISMATCH` | Key not entitled for this `pluginVersion` |
 | 400 | `BAD_REQUEST` | Missing or invalid fields |
+| 413 | `PAYLOAD_TOO_LARGE` | Request body over 16 KB |
 | 503 | `UNAVAILABLE` | Transient failure |
+| 500 | `INTERNAL` | Unexpected error — never a stack trace |
+| 404 | `NOT_FOUND` | Unknown route |
 
 Other endpoints your server should implement:
 

@@ -9,18 +9,19 @@ features:
   - troubleshooting
 sources:
   - catalyst-backend/src/routes/servers/
-  - catalyst-backend/src/routes/servers/
-last_verified: '2026-09-15'
+  - catalyst-frontend/src/components/servers/EulaModal.tsx
+last_verified: '2026-09-28'
 ---
 
 ## Crash loop (starts, then stops)
 
-1. Read the **Console** from the top after pressing Start — the first error is
-   the cause; everything after is fallout.
+1. Open the server's **Console** tab and press **Start** — the first error after
+   start is the cause; everything after is fallout.
 2. Usual suspects in order:
    - A config or startup variable you just changed → revert it ([startup](/users/startup/)).
    - A new/updated mod or plugin → remove it and restart ([mods](/users/mods-plugins/)).
-   - Minecraft without accepted EULA → set `eula=true` and start again.
+   - Minecraft shows a **Minecraft EULA** prompt → select **I Agree**, then
+     start again.
    - Out of memory → the game asked for more than the server owns; lower the
      game's memory setting or raise the server limit.
 3. If nothing changed and it suddenly loops, check whether the **node** is
@@ -30,14 +31,16 @@ last_verified: '2026-09-15'
 ## Stuck "starting" or "stopping"
 
 1. Wait 60–90 seconds; large worlds save slowly.
-2. Use **Kill** if Stop hangs, then Start again ([power](/users/power/)).
+2. Use **Kill** if **Stop** hangs, then **Start** again
+   ([power controls](/users/power/)).
 3. Repeated hangs on stop point at a mod blocking shutdown — remove suspects
    one by one.
 
-## `port already in use`
+## Port already in use
 
 Two servers claim the same allocation, or a killed server did not release its
-port. Confirm no other server uses that IP + port
+port. The panel rejects the change with `PORT_ALREADY_IN_USE` ("Port N is
+already in use on this node"). Confirm no other server uses that IP + port
 ([networking](/users/networking/)), kill any ghost process via the node, and
 restart. If it persists, the administrator must free the allocation.
 

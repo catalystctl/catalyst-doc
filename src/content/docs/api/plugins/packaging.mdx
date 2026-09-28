@@ -8,9 +8,11 @@ features:
 sources:
   - catalyst-backend/src/plugins/marketplace/packaging.ts
   - catalyst-backend/src/plugins/marketplace/service.ts
+  - catalyst-backend/src/routes/plugins.ts
   - packages/plugin-sdk/cli/src/index.ts
   - catalyst-plugins/scripts/build-packages.sh
-last_verified: '2026-09-22'
+  - catalyst-plugins/scripts/build-bundles.mjs
+last_verified: '2026-09-28'
 ---
 
 Panels install plugins from a marketplace index. The official index is
@@ -37,11 +39,14 @@ directory are rejected before anything is written.
 
 Limits: 256 MB compressed, 512 MB extracted, 20,000 entries.
 
-`backend.entry` must name a JavaScript file under `backend/`. `dist/` is not
-an allowed top-level entry, so the scaffold default `dist/src/index.js` cannot
-ship in a package. Official plugins author `backend/index.js` directly and set
-`entry` to that path. If you did compile TypeScript, copy the output to
-`backend/index.js` and point the manifest there before packing.
+A packaged `backend.entry` has to live under `backend/`, because that is the
+only allowed top-level place for backend files — the installer drops the rest.
+`dist/` is not an allowed top-level entry, so a scaffold's `dist/...` entry
+cannot ship in a package. Official plugins author `backend/index.js` directly
+and set `entry` to that path. If you did compile TypeScript, copy the output to
+`backend/index.js` and point the manifest there before packing. (The loader
+itself only requires `backend.entry` to resolve inside the plugin directory;
+the top-level allowlist is what constrains the package.)
 
 ## Encrypted payloads
 
@@ -54,14 +59,26 @@ plaintext — the panel validates it before anything runs. See
 
 ## Build the archive
 
-The CLI ships in the Catalyst repository, not on npm. From a checkout where
-you have built `packages/plugin-sdk` (its `pack` command imports `archiver`
-from that package):
+The CLI ships in the Catalyst repository, not on npm, and nothing links its
+binary, so invoke it by path. Build it once, then `pack` from the plugin
+directory:
 
 ```bash
-catalyst-plugin pack
-catalyst-plugin pack --out dist
+# once, from the Catalyst checkout root
+pnpm --filter @catalyst/plugin-sdk run build
+pnpm --dir packages/plugin-sdk/cli run build
+
+# from the plugin directory ($CATALYST_REPO is your checkout)
+node "$CATALYST_REPO/packages/plugin-sdk/cli/dist/index.js" pack
+node "$CATALYST_REPO/packages/plugin-sdk/cli/dist/index.js" pack --out dist
 ```
+
+`catalyst-plugin` is not on `PATH` (`pnpm --filter @catalyst/plugin-sdk-cli …`
+matches no workspace project, and `npx catalyst-plugin` fails), so alias the
+`node …/dist/index.js` line if you prefer a short command. `pack` imports
+`archiver`, which is a devDependency of `packages/plugin-sdk` that
+`pnpm install` hoists to the workspace root; without an install it prints
+`archiver is unavailable`.
 
 `pack` writes `<name>-<version>.catpkg.zip` and `<name>-<version>.catpkg.zip.sha256`.
 It includes `plugin.json`, `README.md`, `LICENSE`, and the `backend/`,
@@ -129,15 +146,18 @@ When two sources list the same `name`, the newest `version` wins.
 
 ## Install, update, uninstall
 
-1. Admin opens **Marketplace**, picks the plugin, and installs.
+All three are clicks in **Admin → Plugins**:
+
+1. An admin clicks **Marketplace**, finds the plugin in the list, and clicks
+   **Install**.
 2. The panel downloads, checks `sha256` when present, extracts, and validates
    `plugin.json`. The code is on disk and **not running**.
-3. Admin enables it and accepts the safety disclaimer. See
-   [Data & permissions](/api/plugins/data/).
-4. A higher `version` in the index shows as an update. Installing it replaces
-   the directory. The version change forces the disclaimer again.
-5. Uninstall removes the directory. Pass `purgeData: true` only when the
-   stored keys and collections should go too.
+3. The admin clicks **Enable** on the row and accepts the safety disclaimer
+   (**Accept & Enable**). See [Data & permissions](/api/plugins/data/).
+4. A higher `version` in the index shows an **Update** badge; **Update**
+   replaces the directory. The version change forces the disclaimer again.
+5. **Uninstall…** removes the directory. Tick **Also delete stored data** only
+   when the stored keys, collections, and consent history should go too.
 
 `POST /api/plugins/install` with `{ "url", "sha256"? }` is the same flow.
 `POST /api/plugins/:name/reload` re-reads the directory without a panel

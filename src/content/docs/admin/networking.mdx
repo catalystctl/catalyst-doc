@@ -7,23 +7,51 @@ features:
   - networking
   - tls
 sources:
-  - catalyst-docker/
-  - catalyst-docker/
-last_verified: '2026-09-15'
+  - catalyst-docker/docker-compose.caddy.yml
+  - catalyst-docker/docker-compose.traefik.yml
+  - catalyst-docker/caddy/Caddyfile
+  - catalyst-docker/.env.example
+  - catalyst-agent/src/config.rs
+last_verified: '2026-09-28'
 ---
 
 ## Panel access (HTTPS)
 
-Serve the panel behind **Caddy** (automatic certificates) or **Traefik**
-(compose profiles for both ship in `catalyst-docker/`). Requirements:
+Serve the panel behind **Caddy** (automatic certificates) or **Traefik**. Both
+ship as overlay compose files in `catalyst-docker/`; you layer one on top of the
+base stack with `-f`.
 
-- A DNS name pointing at the panel host.
-- Ports 80/443 reachable for issuance and traffic.
-- The panel URL in settings must exactly match what users type (scheme + host).
+For Caddy, the fastest path:
+
+1. Set a DNS A record pointing your domain at the panel host.
+2. In `catalyst-docker/.env`, set `DOMAIN=panel.example.com` (required) and
+   `ACME_EMAIL=admin@example.com` (optional, for certificate notifications).
+3. Start the stack with both files:
+
+   ```bash
+   cd catalyst-docker
+   docker compose -f docker-compose.yml -f docker-compose.caddy.yml up -d
+   ```
+
+Caddy obtains and renews the Let's Encrypt certificate, redirects HTTP → HTTPS,
+and proxies to the frontend. Ports 80 and 443 must be reachable from the
+internet for the ACME challenge — the overlay publishes them as
+`HTTP_PORT=0.0.0.0:80` and `HTTPS_PORT=0.0.0.0:443`.
+
+For Traefik, use `docker-compose.traefik.yml` the same way. It discovers the
+frontend through Docker labels and exposes its dashboard on
+`TRAEFIK_DASHBOARD_PORT` (`127.0.0.1:8080` by default).
 
 Terminating TLS at the proxy and running the panel behind it over plain HTTP is
-the normal layout — but then only the proxy may reach the panel port. Never
-expose the backend container directly alongside the proxy.
+the normal layout — but then only the proxy may reach the panel port. The
+overlays remove the frontend's direct host exposure; if you use `podman-compose`
+(which merges port lists instead of replacing them), also set
+`FRONTEND_PORT=127.0.0.1:8080` in `.env` to keep direct access off the public
+interface.
+
+Set `PUBLIC_URL` to the exact URL users type (scheme + host) — it is the single
+source of truth for CORS, auth, and email links. `PASSKEY_RP_ID` is derived from
+its hostname automatically.
 
 ## Node ↔ panel
 
@@ -39,6 +67,12 @@ be reachable from the internet (or your LAN): firewall rules, security groups,
 and NAT forwards all have to agree. UDP matters — many games use UDP, and a
 TCP-only test will mislead you. Debugging steps live in
 [networking issues](/troubleshooting/networking/).
+
+## SFTP
+
+SFTP is served by the node agent, not the panel — the default port is `2022`.
+The per-node port is configured in **Admin → Nodes** and written into the
+agent's config; open it on the node if you offer SFTP to users.
 
 ## Checklist for a new site
 

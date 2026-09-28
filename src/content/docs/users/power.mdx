@@ -7,24 +7,38 @@ features:
   - servers
   - power
 sources:
-  - catalyst-frontend/src/pages/servers/
-  - catalyst-backend/src/routes/servers/
-last_verified: '2026-09-15'
+  - catalyst-frontend/src/components/servers/ServerControls.tsx
+  - catalyst-backend/src/routes/servers/power.ts
+last_verified: '2026-09-28'
 ---
 
-Power controls sit in the server header and in the **Console** tab.
+Power controls sit in the server header on the server page, and on the card or
+row for each server on the **Servers** page.
 
 | Action | What it does | When to use it |
 | --- | --- | --- |
 | **Start** | Boots the server. | After creating, editing configs, or a crash. |
 | **Restart** | Stops gracefully, then starts. | After config or plugin changes. |
 | **Stop** | Asks the game to shut down cleanly. | Before editing world files or upgrading. |
-| **Kill** | Force-stops the container immediately. | Only when Stop/Restart hang (world may not save). |
+| **Kill** | Force-stops the server immediately. | Only when Stop/Restart hang (the world may not save). |
+
+Each button is enabled only when it makes sense for the current state — for
+example, **Start** is disabled while the server is already running. You also
+need the matching permission (`server.start`, `server.stop`, `server.restart`);
+without it the controls are hidden.
+
+The first time you press **Kill** you get a confirmation: *"This will
+force-terminate the server process immediately without saving. Data may be
+lost. Are you sure?"*
+
+While a server is installing, the header offers **Cancel install**.
+It kills the stuck installer and resets the server to stopped; partial install
+files are kept. You can then reinstall or start normally.
 
 ## The safe order
 
 1. Warn players if anyone is online.
-2. Prefer **Restart** over Kill — graceful stops let the game save the world.
+2. Prefer **Restart** over **Kill** — graceful stops let the game save the world.
 3. After changing configs, plugins, or startup variables, always restart; most
    games only read those files at boot.
 
@@ -35,7 +49,19 @@ Power controls sit in the server header and in the **Console** tab.
 3. If it still shows as running, check [server issues](/troubleshooting/server/)
    or ask your administrator — the node agent may need attention.
 
+## If a server will not start
+
+If the node denies host networking for the server, **Start** answers with a
+dialog titled *"Host networking is disabled on this node"*. Selecting **Enable
+and start** turns host networking on for the node (you need the `node.update`
+permission), then starts the server.
+
 ## Automate it
 
 Nightly restarts and similar routines belong in [Tasks](/users/tasks/), not in
 manual clicking.
+
+## Related
+
+- [Console](/users/console/) — watch the boot log after starting
+- [Tasks](/users/tasks/) — scheduled power actions

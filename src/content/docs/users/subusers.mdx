@@ -8,39 +8,57 @@ features:
   - subusers
   - permissions
 sources:
-  - catalyst-frontend/src/pages/servers/
-  - catalyst-backend/src/routes/servers/
-last_verified: '2026-09-15'
+  - catalyst-frontend/src/components/servers/tabs/ServerUsersTab.tsx
+  - catalyst-frontend/src/components/servers/InviteLinkModal.tsx
+  - catalyst-backend/src/routes/servers/invites.ts
+last_verified: '2026-09-28'
 ---
 
-The **Users** tab adds subusers: extra accounts with limited access to your
-server. Your friend logs in with their own account and only sees what you allow.
+The **Users** tab (titled **Users & Access**) adds subusers: extra accounts with
+limited access to your server. Your friend logs in with their own account and
+only sees what you allow.
 
-## Add a subuser
+## Invite a subuser
 
-1. Open **Users** and select **Invite/Add User**.
-2. Enter their panel account email (they need an account on the same panel).
-3. Tick **only** the permissions they need:
-   - A moderator might get console + power + files (view).
-   - A builder might get files only.
-   - Nobody needs everything except you.
-4. Send the invite. Invites expire after 7 days — if your friend misses the
-   window, remove the stale invite and send a fresh one. Once accepted, the
-   server appears in their list.
+1. Open your server's **Users** tab and find **Invite user**.
+2. Enter their panel account email.
+3. Pick a permission preset:
+   - **Read-only** — view the server, console, files, databases, and alerts.
+   - **Power user** — read-only plus power actions, console commands, file
+     editing, backups, and database management.
+   - **Full access** — every server permission, including scheduled tasks,
+     transferring the server, and deleting it.
+   - **Custom** — tick exactly the permissions you want to grant; they are
+     grouped by area (console, file, server, …).
+4. Select **Send invite**.
+
+If email delivery is configured, the panel emails the invite. If it is not, an
+**Invite link** dialog appears — select **Copy invite link** and send it to them
+yourself. Anyone with the link can accept it with the assigned permissions, so
+keep it private.
+
+Invites expire after 7 days. A pending invite can be **Regenerate**d (the old
+link stops working) or **Cancel**led. Once accepted, the server appears in their
+list.
+
+## Adjust or remove access
+
+The **Active access** section lists everyone with access and their permissions.
+For a subuser, toggle individual permission chips and select **Save permissions**,
+or select **Remove** to revoke access. Removal is immediate: open sessions lose
+access. The owner is marked **Owner** and cannot be removed here.
+
+You cannot grant a permission you do not hold yourself, and you can only manage
+subusers on a server you own or administer.
 
 ## Least privilege, always
 
 - Every permission is a way to break something. Console access can run
   destructive commands; file access can delete worlds; power access can stop
   the server mid-event.
-- Remove subusers who no longer play. Stale access is the most common source
-  of "someone griefed my server files" stories.
+- Remove subusers who no longer play. Stale access is the most common source of
+  "someone griefed my server files" stories.
 - Never share your own login instead — then nobody can tell who did what in
   [Activity](/users/activity/), and you cannot revoke access without changing
   your password.
-
-## Remove access
-
-Open **Users**, select the subuser, and remove them. Removal is immediate: open
-sessions lose access. If you suspect misuse, check **Activity** first so you
-know what changed.
+- If you suspect misuse, check **Activity** first so you know what changed.

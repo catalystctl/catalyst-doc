@@ -9,7 +9,7 @@ features:
 sources:
   - catalyst-frontend/src/pages/
   - catalyst-backend/src/routes/
-last_verified: '2026-09-15'
+last_verified: '2026-09-28'
 ---
 
 Catalyst is a self-hosted game-server control panel. You install it on your own
@@ -17,7 +17,7 @@ infrastructure and use it to create, run, and share game servers — Minecraft,
 Rust, CS2, ARK, and more — through a web interface instead of SSH and
 hand-edited config files.
 
-Three ideas explain almost everything in these docs:
+A few ideas explain almost everything in these docs:
 
 ## Panel
 
@@ -39,12 +39,21 @@ its own files, memory limit, network ports, backups, and databases. A server
 always lives on exactly one node. Server owners manage their server through
 tabs such as **Console**, **Files**, **Backups**, and **Databases**.
 
+## Allocations
+
+An **allocation** is an IP address + port pair on a node. A server's primary
+allocation is the address players join; extra allocations give it additional
+ports (query, RCON, voice, Bedrock). Allocations belong to nodes, and an
+administrator assigns them to servers — see
+[networking](/users/networking/) and
+[connecting to your server](/getting-started/connecting/).
+
 ## Templates
 
-A **template** (imported from a Pterodactyl egg, or built in) describes how to
-run a particular game: the container image, startup command, default settings,
-and install script. Administrators manage templates; creating a server is
-mostly picking a template and choosing resources.
+A **template** is an installable game recipe. It describes how to run a
+particular game: the container image, startup command, default settings, and
+install script. Administrators manage templates; creating a server is mostly
+picking a template and choosing resources.
 
 ## Where to go next
 

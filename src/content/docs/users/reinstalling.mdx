@@ -6,14 +6,15 @@ audience:
 features:
   - servers
 sources:
-  - catalyst-frontend/src/pages/servers/
-  - catalyst-backend/src/routes/servers/
-last_verified: '2026-09-15'
+  - catalyst-frontend/src/components/servers/tabs/ServerSettingsTab.tsx
+  - catalyst-frontend/src/components/servers/EulaModal.tsx
+  - catalyst-backend/src/routes/servers/power.ts
+last_verified: '2026-09-28'
 ---
 
-Reinstalling replaces your server files with a fresh copy from its template.
-Use it when an installation is damaged beyond easy repair — corrupted jars,
-mangled configs after a bad edit, or a version jump you would rather do cleanly.
+Reinstalling replaces your server files with a fresh copy from its template. Use
+it when an installation is damaged beyond easy repair — corrupted jars, mangled
+configs after a bad edit, or a version jump you would rather do cleanly.
 
 ## Before you reinstall
 
@@ -24,11 +25,27 @@ mangled configs after a bad edit, or a version jump you would rather do cleanly.
 
 ## Reinstall
 
-1. Open your server's settings/admin area and choose **Reinstall**.
-2. Confirm. The panel wipes the server directory and re-runs the template's
-   install script.
-3. Wait for installation to finish in the console, re-apply your settings
-   (EULA, configs, plugins), and start the server.
+1. Stop the server. **Reinstall** stays disabled while the server is running.
+2. Open the server's **Settings** tab and find the **Maintenance** row.
+3. Select **Reinstall**.
+4. Confirm the **Reinstall server?** dialog — it warns that every file in the
+   server directory is deleted. Select **Reinstall** to proceed.
+5. Watch the install output in the [console](/users/console/) until it finishes.
+6. Start the server again with [power controls](/users/power/). A Minecraft
+   server shows a **Minecraft EULA** dialog on the next start — scroll to the
+   bottom and select **I Agree** to let it boot, or **Decline** to stop it.
+7. Re-apply anything the template install does not restore (configs, plugins,
+   and so on).
+
+Reinstall is available to anyone with the `server.reinstall` permission, which
+the server owner has by default. Panel administrators also have a **Reinstall**
+action in the **Admin** tab's **Container** section.
+
+## If an install gets stuck
+
+A server stuck in the **installing** state shows a **Cancel install** button
+next to **Reinstall**. It kills the installer container and resets the server to
+stopped so you can try again; partial install files are kept.
 
 :::caution
 Reinstalling deletes current files. It is not an upgrade path for worlds you
@@ -39,4 +56,6 @@ want to keep unless you restore them afterwards from the backup.
 
 - One broken config? Revert that file instead of wiping everything.
 - Boot loop after a variable change? Revert the variable ([startup](/users/startup/)).
-- Just want a second world? Ask your administrator for another server instead.
+- Just want a second server with the same setup? [Clone it](/users/cloning/)
+  instead of starting from scratch — a configuration clone installs fresh, a
+  full clone copies the world too.

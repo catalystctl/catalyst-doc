@@ -1,6 +1,6 @@
 ---
 title: Metrics & Alerts
-description: Watch CPU, memory, and disk usage, and get notified before limits bite.
+description: Watch CPU, memory, disk, and network usage, and get notified before limits bite.
 audience:
   - user
 features:
@@ -8,15 +8,38 @@ features:
   - metrics
   - alerts
 sources:
+  - catalyst-frontend/src/components/servers/tabs/ServerMetricsTab.tsx
+  - catalyst-frontend/src/components/servers/ServerMetrics.tsx
+  - catalyst-frontend/src/components/servers/ServerMetricsTrends.tsx
+  - catalyst-frontend/src/components/servers/MetricsTimeRangeSelector.tsx
   - catalyst-frontend/src/pages/alerts/AlertsPage.tsx
   - catalyst-backend/src/routes/metrics.ts
   - catalyst-backend/src/routes/alerts.ts
-last_verified: '2026-09-15'
+  - catalyst-backend/src/services/alert-service.ts
+last_verified: '2026-09-28'
 ---
 
-The **Metrics** tab graphs what your server actually consumes — CPU, memory,
-disk, and network over time. The **Alerts** tab notifies you when something
-crosses a threshold.
+The **Metrics** tab shows what your server is actually consuming right now and
+over time. The **Alerts** tab on the same server creates rules and lists the
+incidents they fire.
+
+## Read the Metrics tab
+
+The header shows live detail — memory in use, disk used out of the total, and
+received traffic — while the agent is reporting. A stopped server reads zero
+CPU and memory rather than showing stale values; if the agent is offline, the
+panel keeps the last known values and says so.
+
+Below the header are trend cards for **CPU**, **Memory**, **Disk usage**,
+**Disk I/O**, and **Network** (receive plus transmit, in MB/s). The latest value
+on each card turns amber past 75% and red past 90% for CPU and memory.
+
+Use the time range selector at the top right to change the window:
+
+- **1 hour**, **6 hours**, **24 hours**, **7 days**, **30 days**.
+- **Custom range** — set **Hours** (1–8760) and **Data points** (1–1000).
+
+Gaps in a line mean no sample was recorded for that bucket, not zero usage.
 
 ## Read the graphs
 
@@ -29,15 +52,40 @@ crosses a threshold.
 - Compare against quiet hours: if usage is high with zero players, something
   (a farm, a runaway task, a leak) is burning resources.
 
-## Set up alerts
+## Create an alert rule
 
-1. Open **Alerts** and create an alert for the metric you care about (for
-   example, memory above 90% for 5 minutes, or server offline).
-2. Point it at a channel you actually read.
-3. Test it once — an alert you have never seen fire is a rumor, not protection.
+1. Open the server's **Alerts** tab.
+2. Select **Create Rule**.
+3. **Details:** give the rule a **Rule name** and optional **Description**,
+   choose a **Rule type**, and confirm the **Target**. On a server page the
+   target is fixed to that server.
+4. **Conditions:** set the thresholds for the rule type:
+   - **Resource threshold** — **CPU threshold (%)**, **Memory threshold (%)**,
+     and **Disk threshold (%)**. Leave one blank to ignore it.
+   - **Node offline** — **Offline threshold (minutes)**.
+   - **Server crashed** — no threshold; the rule fires on a crash event.
+5. **Notifications:** add **Webhook URLs** (a Discord webhook URL is a common
+   choice), **Email recipients**, and optionally tick **Notify server owner**.
+   Set the **Cooldown (minutes)** — the minimum gap between notifications from
+   the same rule (default 5).
+6. Select **Create rule**.
+
+Resource thresholds are checked against the most recent metrics sample: the rule
+fires as soon as a reading is over the threshold, and the cooldown stops it from
+re-notifying on every check. The **Alert history** section lists incidents with
+their severity, the rule that fired, any delivery result (for example a failed
+webhook), and a **Resolve** button. Use the filter to show **Unresolved**,
+**Resolved**, or **All**.
 
 Alert fatigue is real: alert on symptoms that need action (offline, disk nearly
 full), not on every wiggle.
+
+## Where alerts appear
+
+- **Alerts** tab (this page) — rules and incidents scoped to one server.
+- **Admin → Alerts** — administrators see every rule and incident with its
+  target (**Global**, **Server**, or **Node**), an overview count, and
+  **Resolve all**.
 
 ## Related
 

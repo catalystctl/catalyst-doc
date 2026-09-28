@@ -1,0 +1,118 @@
+---
+title: Cloning
+description: Duplicate a server — configuration only or a complete copy — on the same node or another one.
+audience:
+  - user
+features:
+  - servers
+sources:
+  - catalyst-frontend/src/components/servers/CloneServerDialog.tsx
+  - catalyst-frontend/src/components/servers/clone/CloneReviewStep.tsx
+  - catalyst-backend/src/services/server-clone.ts
+  - catalyst-backend/src/services/server-file-stream.ts
+  - catalyst-backend/src/routes/servers/core.ts
+last_verified: '2026-09-28'
+---
+
+Cloning creates a new server from an existing one. Use it to spin up a second
+deployment of the same setup, or to duplicate a configured world.
+
+You need the **Create servers** permission and access to the server you are
+cloning. Cloning onto a **different node** also needs the transfer permission
+(the same one that governs moving a server between nodes).
+
+## Choose a clone mode
+
+Both modes copy the server's panel configuration — its template, variables,
+startup command, resource limits, network mode, backup policy and restart
+policy. They differ in what happens to the server's files.
+
+| | Full clone | Configuration clone |
+|---|---|---|
+| Panel configuration | Copied | Copied |
+| Server files (world, plugins, configs) | Copied | Not copied |
+| Fresh install after cloning | No — files are already there | Yes — the template installer runs |
+| Source server must be stopped | Yes | No |
+
+Use a **full clone** to duplicate a live world or a hand-configured modpack.
+Use a **configuration clone** to stand up another server with the same settings
+but a clean installation.
+
+## Clone a server
+
+1. Open the server, then open **Settings** and find the **Maintenance** row.
+2. Select **Clone**.
+3. Choose the clone mode: **Full clone** or **Configuration clone**. The dialog
+   starts on **Configuration clone**.
+4. Give the new server a name (it defaults to the source name plus `Copy`).
+5. Choose the **node** it will be created on.
+6. Choose the **network mode**. For host or bridge networking, optionally pick
+   a **Network Allocation**; otherwise leave it on **Auto-assign**.
+7. Adjust memory, CPU and disk if you want the clone to differ from the source.
+   Panel administrators can also set the clone's **Server Owner**; otherwise you
+   own it.
+8. Tick what else to copy under **Also copy** — **Sub-users**, **Role grants**,
+   **Scheduled tasks**, **Databases**, and **Installed mods**. Tasks and
+   databases are off by default: running the same task from two servers can
+   conflict, and a copied database is provisioned empty rather than shared.
+9. Select **Review changes**.
+10. Review the change list, tick any warnings, then confirm the clone.
+
+::: caution[Full clones require a stopped source]
+A full clone reads the source server's files directly. If the source is running,
+Catalyst blocks the clone and offers **Stop source and continue**. Stopping the
+server disconnects its players.
+:::
+
+## Confirm the node-specific changes
+
+When you clone onto a **different node**, the panel will not create anything
+until you have reviewed and accepted the changes that are tied to the node.
+These are re-resolved for the clone and cannot be copied from the source:
+
+- **Node** and **location**.
+- **IP address** — a fresh IP from the new node's pool, or the allocation you chose.
+- **Primary port and port mappings** — host ports are always reassigned so the
+  clone cannot collide with a server that already exists on the node.
+- **Data directory** — the new node stores server data under its own path.
+- **SFTP endpoint** — the clone is reachable on the target node's hostname and port.
+
+If anything is wrong — the node is offline, it does not support the network
+mode, it lacks memory, CPU or free disk space, or no allocation is free — the
+panel lists it as a blocker and will not let you continue until it is resolved.
+
+The confirmation is bound to the changes you reviewed. If the options change
+between the review and the confirmation (for example, someone else claims the
+allocation you picked), the panel discards the review and asks you to review the
+changes again.
+
+## While the clone is created
+
+- A **configuration clone** starts installing immediately. Watch progress in the
+  console, exactly like a new server.
+- A **full clone** is created in a **Cloning** state while its files are copied.
+  It cannot be started until the copy finishes. Large servers take longer, and a
+  cross-node clone takes longer than a same-node one.
+
+A cross-node copy throttles itself when the target node is busy rather than
+failing, so a slow node finishes the copy instead of losing it.
+
+If a file copy fails, the new server is left in place and stopped, with the
+reason in its console log. Delete it and run the clone again.
+
+## What is not copied
+
+- **Backup archives** and the backup list. Backups belong to the source server.
+- **Database contents.** A configuration clone can create a new, empty database
+  when you tick **Databases**; it never points at the source database.
+- **Logs, metrics and crash history.** Every clone starts with a clean history.
+- **Backup storage credentials.** The clone falls back to local backup storage
+  instead of inheriting S3 or SFTP credentials.
+
+## After cloning
+
+1. Start the new server and confirm it boots.
+2. Check the connection details on the server's overview page — the address and
+   port are node-specific, so they may differ from the source.
+3. If you copied databases, reconnect the application inside the server to its
+   new database and credentials.

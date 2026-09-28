@@ -6,15 +6,32 @@ audience:
 features:
   - configuration
 sources:
+  - catalyst-frontend/src/pages/admin/SystemPage.tsx
+  - catalyst-frontend/src/pages/admin/SecurityPage.tsx
+  - catalyst-frontend/src/pages/admin/ThemeSettingsPage.tsx
+  - catalyst-docker/docker-compose.yml
+  - catalyst-docker/.env.example
   - docs/environment-variables.md
-  - catalyst-backend/src/config.ts
-  - catalyst-docker/
-last_verified: '2026-09-15'
+last_verified: '2026-09-28'
 ---
 
-Most day-to-day settings live in the panel UI under **Admin → System/Settings**.
-Infrastructure behavior (ports, database URLs, feature flags) is controlled by
-environment variables on the backend container.
+Most day-to-day settings live in the panel UI. Infrastructure behavior (ports,
+database URLs, feature flags) is controlled by environment variables in
+`catalyst-docker/.env`.
+
+## Change a setting in the UI
+
+This is always the first place to look. Every screen below validates input and
+saves immediately — no restart.
+
+| Screen | What it controls |
+| --- | --- |
+| **Admin → System** | SMTP email, mod manager API keys (CurseForge/Modrinth), default interface language, **Auto Updater**, and system status/diagnostics |
+| **Admin → Security** | Rate limits, email verification, lockout policy, file-upload limits, and the panel MCP endpoint |
+| **Admin → Theme** | Panel identity (panel name, logo, favicon), brand colors, surfaces, and custom CSS |
+| **Admin → Databases** | MySQL hosts used to provision databases for servers, plus Catalyst database health |
+| **Admin → Plugins** | Installed plugins and marketplace |
+| **Profile** | Your own language, password, passkeys, and API keys |
 
 ## The two layers
 
@@ -23,9 +40,28 @@ environment variables on the backend container.
 | **Panel settings** | Admin UI | Panel name, registration policy, mail, backups, limits |
 | **Environment** | Compose file / container env | `DATABASE_URL`, Redis URL, ports, `DOCS_ENABLED`, rate-limit and payload tunables |
 
-Change panel settings in the UI whenever possible — they validate input and
-take effect without restarts. Touch environment variables when the setting you
-need is not in the UI, and restart the backend container afterwards.
+Change panel settings in the UI whenever possible. Touch environment variables
+when the setting you need is not in the UI, then recreate the affected
+container:
+
+```bash
+cd catalyst-docker
+nano .env
+docker compose up -d
+```
+
+## Environment reference
+
+- The stack's variables live in `catalyst-docker/.env`; the annotated template
+  is `catalyst-docker/.env.example`, and the complete reference is
+  `docs/environment-variables.md` in the main Catalyst repository.
+- Docker ports and their defaults: `FRONTEND_PORT=0.0.0.0:8080`,
+  `BACKEND_PORT=127.0.0.1:3000`, `POSTGRES_PORT=127.0.0.1:5432`; Redis is not
+  published unless you set `REDIS_PORT`. See [networking](/admin/networking/).
+- `PUBLIC_URL` is the single source of truth for the panel URL — it drives CORS,
+  auth origins, and email links. Change it here, not in five separate places.
+- Re-run the installer's prompts to regenerate a configured `.env`:
+  `bash install.sh --reconfigure` ([installation](/admin/installation/)).
 
 ## Rules
 
@@ -37,9 +73,7 @@ need is not in the UI, and restart the backend container afterwards.
 3. **Record what you changed.** A one-line note (what, when, why) saves hours
    during the next incident.
 
-## Reference
+## Related
 
-- Environment variable details: see `docs/environment-variables.md` in the
-  main Catalyst repository (contributor reference).
 - Database and cache tuning: [storage](/admin/storage/).
 - TLS and proxy headers: [networking](/admin/networking/).

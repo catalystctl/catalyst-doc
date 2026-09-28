@@ -7,12 +7,16 @@ features:
   - backups
   - disaster-recovery
 sources:
+  - catalyst-backend/src/services/backup-storage.ts
+  - catalyst-backend/src/services/backup-retention.ts
   - catalyst-backend/src/routes/backups.ts
-  - catalyst-backend/src/routes/backups.ts
-last_verified: '2026-09-15'
+  - catalyst-docker/.env.example
+last_verified: '2026-09-28'
 ---
 
-Two different things need backing up, with different tools and rhythms.
+Two different things need backing up, with different tools and rhythms. The
+panel and its database are the operator's job; each server's files are the
+owner's — but the storage backend and retention rules are set here.
 
 ## 1. The panel database
 
@@ -25,20 +29,55 @@ files themselves. If it is gone, the fleet is unmanageable.
 - **Restore-test quarterly** into a scratch environment. See
   [disaster recovery](/admin/disaster-recovery/).
 
-## 2. Game servers
+## 2. Choose the fleet-wide backup backend
 
-Users back up their own servers ([user backups](/users/backups/)), but operators
-own the policy underneath:
+Backups are stored by the backend; pick the default in the panel's `.env`
+(the file the installer wrote next to `docker-compose.yml`) and apply it:
 
-- Set sane default quotas and retention so one server cannot fill a node.
-- Keep node-level snapshots or off-node copies for what user backups do not
-  cover (same-node copies die with the node).
-- Monitor backup failures — a backup job that has errored for a month is the
-  same as no backup. Failures surface in server views and logs.
+```bash
+# edit .env, then:
+docker compose up -d backend
+```
+
+```bash
+BACKUP_STORAGE_MODE=local   # local | s3 | stream
+```
+
+- **local** (default) — files under the backend's backup directory
+  (`BACKUP_DIR`, `/var/lib/catalyst/backups` in the Compose stack).
+- **stream** — backend-local transfer directory, useful when no persistent
+  backup volume is mounted.
+- **s3** — an S3-compatible bucket. Also set `BACKUP_S3_BUCKET`,
+  `BACKUP_S3_REGION`, `BACKUP_S3_ACCESS_KEY`, `BACKUP_S3_SECRET_KEY`, and
+  optionally `BACKUP_S3_ENDPOINT` / `BACKUP_S3_PATH_STYLE=true`.
+
+Set `BACKUP_CREDENTIALS_ENCRYPTION_KEY` (32-byte base64, e.g.
+`openssl rand -base64 32`) before storing per-server S3 or SFTP credentials:
+in production the backend refuses to save them unencrypted. **Keep it
+stable** — rotating it makes previously stored credentials undecryptable.
+
+## 3. Per-server backup settings
+
+Each owner manages backups in the server's **Backups** tab; **Backup settings**
+there overrides the fleet default:
+
+- **Storage mode** — **Local**, **S3**, **SFTP**, or **Stream
+  (backend-local)**; per-server settings override the `.env` default.
+- **Keep last N** and **Max age (days)** — retention; a backup is pruned when
+  either limit is exceeded (`0` means unlimited).
+- **Create backup**, **Restore**, and **Delete** back up or roll back files.
+  Restoring requires the server to be stopped.
+
+Server owners also back up their own servers ([user backups](/users/backups/)).
 
 ## Rules
 
 1. **3-2-1:** three copies, two media, one off-site — for the database at least.
-2. **Encrypt off-site copies.** Backups contain credentials and private player data.
-3. **Document the restore path** where the on-call person will find it at 3 AM,
+   Server backups stored on the same node die with the node.
+2. **Encrypt off-site copies.** Backups contain credentials and private player
+   data.
+3. **Monitor failures.** A backup task that has errored for a month is the same
+   as no backup. Failures surface in the server's **Backups** tab and the panel
+   system errors view.
+4. **Document the restore path** where the on-call person will find it at 3 AM,
    not in someone's head.

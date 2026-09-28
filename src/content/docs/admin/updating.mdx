@@ -6,9 +6,13 @@ audience:
 features:
   - updates
 sources:
+  - catalyst-frontend/src/components/admin/UpdateSettings.tsx
+  - catalyst-frontend/src/components/admin/UpdateProgressModal.tsx
   - catalyst-backend/src/routes/update.ts
-  - catalyst-docker/
-last_verified: '2026-09-15'
+  - catalyst-backend/src/services/auto-updater.ts
+  - catalyst-docker/update.sh
+  - install.sh
+last_verified: '2026-09-28'
 ---
 
 ## The order (always)
@@ -17,11 +21,56 @@ last_verified: '2026-09-15'
    minimum versions.
 2. **Back up the database** ([admin backups](/admin/backups/)). This is the
    rollback for everything except node agents.
-3. **Update the panel** — pull the new images and recreate containers. Database
-   migrations run automatically at backend startup; watch the logs until they
-   complete.
+3. **Update the panel** (below). Database migrations run automatically at
+   backend startup.
 4. **Verify the panel**: log in, open a server console, check a backup listing.
 5. **Update nodes one batch at a time** ([updating a node](/admin/nodes/updating/)).
+
+## Update the panel from the UI
+
+When Catalyst runs from the bundled Docker stack, the panel updates itself.
+
+1. Open **Admin → System** and find the **Auto Updater** section. It shows the
+   **Current version**, the **Latest version**, and an **Update status** badge.
+   If a release is available it reads **Update available**; otherwise
+   **Up to date**.
+2. Select **Trigger Update**. A **Panel update** dialog opens and streams the
+   live log: **Downloading update**, then **Restarting services**. The panel
+   goes down briefly and reconnects on its own; the page reloads into the new
+   version when it finishes.
+3. If the dialog shows **Update failed**, open the panel's **System Errors**
+   page (or collect a
+   [diagnostics bundle](/troubleshooting/diagnostics-bundle/)) for the reason
+   before retrying.
+
+The button is only enabled when the panel detects it is running in Docker and a
+newer release exists. On a standalone install the section shows
+**Auto-update is only available when running in Docker. Please update Catalyst
+manually.** — use the manual path below.
+
+## Update the panel manually
+
+From the directory that holds your stack (`catalyst-docker/`):
+
+```bash
+cd catalyst-docker
+bash update.sh                 # refreshes compose/nginx/TLS stack files, keeps .env
+docker compose pull            # fetch the new images
+docker compose up -d           # recreate containers; migrations run at startup
+```
+
+`update.sh --dry-run` shows what it would change before touching anything.
+`update.sh` upgrades the stack **files** only — the `docker compose pull` step
+is what actually moves you to the new image.
+
+If you run the installer with `--update` from the parent directory, it delegates
+to the same script:
+
+```bash
+bash install.sh --update
+```
+
+Watch the backend logs until migrations finish (`docker compose logs -f backend`).
 
 ## Rules
 

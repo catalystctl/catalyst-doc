@@ -7,7 +7,11 @@ features:
   - plugins
 sources:
   - catalyst-backend/src/plugins/validator.ts
-last_verified: '2026-09-22'
+  - catalyst-backend/src/plugins/safety.ts
+  - catalyst-backend/src/plugins/types.ts
+  - packages/plugin-sdk/src/types.ts
+  - packages/plugin-sdk/src/config.ts
+last_verified: '2026-09-28'
 ---
 
 `plugin.json` sits at the plugin root. The panel parses it with the manifest
@@ -22,7 +26,7 @@ A plugin that fails validation does not load.
   "description": "What an admin sees in the plugin list.",
   "author": "Your Name",
   "catalystVersion": ">=1.62.0",
-  "permissions": ["server.read"],
+  "permissions": ["server.read", "my-plugin.sample"],
   "permissionDescriptions": {
     "my-plugin.sample": "Shown verbatim in the safety dialog."
   },
@@ -85,7 +89,7 @@ custom tokens, or to replace the built-in sentence.
 | `auth.sessions` | `context.auth.createSession`. |
 | `auth.users` | `context.auth.findUser` and `createUser`. |
 | `roles.assign` | `context.auth.listRoles`, `listUserRoles`, `assignRoles`, `removeRoles`. |
-| `*` | Every token above. Treated as critical in the consent dialog. |
+| `*` | Covers every declared token, including all host APIs. Treated as critical in the consent dialog. |
 
 `files.read` and `files.write` appear on some official plugins as reviewer
 copy for file-tunnel use. The host does **not** gate `context.fileTunnel` on
@@ -123,6 +127,10 @@ The admin plugin page renders a control from each entry in `config`.
 | `boolean` | Toggle | `default`, `description` |
 | `select` | Dropdown | `default`, `options`, `description` |
 
+`config` itself is not restricted by the manifest schema, and the SDK's
+`ConfigFieldDef` also accepts `object` and `array`. The admin page has no
+control for those: any other `type` falls back to a single-line text field.
+
 `options` may be a list of strings (the ticketing plugin does this) or
 `[{ "label": "High", "value": "high" }]`. `getConfig` returns the stored value,
 falling back to `default`. It does not return this schema object.
@@ -149,9 +157,10 @@ the file for you.
 
 ## Events block
 
-`events` documents payloads your plugin emits. `emitTyped` warns when a
-payload does not match the declared `payload` object; it does not reject the
-emit. Listeners use `context.on` — see [Backend](/api/plugins/backend/).
+`events` documents payloads your plugin emits. `emitTyped` warns when a payload
+is missing a field declared in `payload`, and when the event is not declared at
+all; it does not type-check values and does not reject the emit. Listeners use
+`context.on` — see [Backend](/api/plugins/backend/).
 
 ## Dependencies
 
@@ -159,6 +168,8 @@ emit. Listeners use `context.on` — see [Backend](/api/plugins/backend/).
 "dependencies": { "ticketing-plugin": "3.0.0" }
 ```
 
-The version is compared with the same operators as `catalystVersion`. The
-panel loads dependencies first. A cycle is logged and the plugins still load;
-do not rely on cycle-breaking.
+The value must be an exact `MAJOR.MINOR.PATCH` version — unlike
+`catalystVersion`, operators such as `>=` are rejected by the schema. The
+installed dependency must match that exact version. The panel loads
+dependencies first. A cycle is logged and the plugins still load; do not rely
+on cycle-breaking.

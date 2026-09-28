@@ -1,44 +1,74 @@
 ---
 title: Registering a Node
-description: Add a node to the panel and give it addresses and ports.
+description: Create a node in the panel, run its install command, and add allocations.
 audience:
   - admin
 features:
   - nodes
 sources:
+  - catalyst-frontend/src/components/nodes/NodeCreateModal.tsx
   - catalyst-backend/src/routes/nodes.ts
-  - catalyst-frontend/src/pages/admin/NodesPage.tsx
-last_verified: '2026-09-15'
+  - catalyst-frontend/src/pages/admin/NodeAllocationsPage.tsx
+last_verified: '2026-09-28'
 ---
 
 Registration introduces a machine to the panel: identity, credentials, and the
-network addresses it may hand out to servers.
+network addresses it may hand out to servers. Do it before installing the agent,
+because the panel is what issues the agent's credential.
 
-## Register
+## Register the node
 
-1. Open **Admin → Nodes** and select **Add Node**.
-2. Enter a clear name (datacenter + purpose, for example `eu-frankfurt-01`),
-   the node's address as the panel reaches it, and resource overviews.
-3. Save — the panel generates the node's ID and API key.
-4. Install the agent with those credentials
-   ([installing](/admin/nodes/installing/)). The agent's first check-in flips
-   the node to healthy.
+1. Open **Admin → Nodes** and select **Register Node**.
+2. **Select a location** — where the node physically sits. If no locations exist
+   yet, select **Create a location**, then come back and pick it. Select
+   **Continue**.
+3. Fill in **Node details**:
+
+   | Field | Required | Notes |
+   | --- | --- | --- |
+   | **Name** | Yes | Datacenter + purpose, for example `eu-frankfurt-01`. |
+   | **Description** | No | Free text shown in the node list. |
+   | **Server data directory** | Pre-filled | Where server files live on the node. Default `/var/lib/catalyst/servers`. |
+   | **Hostname** | Yes | How the panel reaches the agent. |
+   | **Public address** | Yes | Address players connect to — an IPv4 or IPv6 literal. |
+   | **Memory (MB)** | Yes | Total memory the node may allocate. Default `16384`. |
+   | **CPU cores** | Yes | Total CPU cores the node may allocate. Default `8`. |
+   | **Memory Over-allocation (%)** | No | `0` = none, `-1` = unlimited. |
+   | **CPU Over-allocation (%)** | No | Same meaning. |
+   | **SFTP Access** | No | On by default, port `2022`. Untick to disable SFTP on this node. |
+   | **Advanced agent paths** | No | Container-runtime and CNI paths. Leave blank to use agent defaults. |
+
+4. Select **Register node**. The panel creates the node record and its ID.
+5. The **Deploy agent** step shows the install command, which carries a new agent
+   API key. Select **Copy** and run it on the machine —
+   [installing a node](/admin/nodes/installing/) covers the details.
+
+The node's first check-in flips it to online in **Admin → Nodes**. If you lose
+the command, open the node and select **Deploy** to generate a fresh one.
 
 ## Add allocations
 
-Servers need IP + port pairs. Under the node's **Allocations** (see also the
-admin allocations view), add the public IPs and port ranges players will use.
-Rules:
+Servers need IP + port pairs. Open the node and select **Allocations**, then use
+the **Port Allocations** tab → **Create Allocations**. Enter one or more IPs and
+one or more ports; the field accepts a single value (`25565`), a range
+(`25565-25664`), or a comma-separated list.
 
 - Only add IPs actually configured on the node.
 - Reserve panel/agent/management ports — never hand them to game servers.
-- Document which ranges serve which games if you split traffic.
+- For dedicated-IP (MACVLAN) networking, create an **IP Pool** instead; each
+  server then takes one IP from the pool automatically.
+
+The node's **Allocations** page also shows how many allocations are assigned and
+free, so you can see when a node is running out.
 
 ## Credential hygiene
 
-- Node API keys are long-lived secrets. If one leaks, rotate it immediately
-  and re-run the agent setup on that node.
+- The agent API key is a long-lived secret issued with the install command and
+  shown only there. If one leaks, rotate it immediately: open the node, select
+  **Regenerate Key**, and update `/opt/catalyst-agent/config.toml` on the node.
 - One key per node — never copy a key between machines.
+- Deployment tokens (the token in the install command's URL) are single-use and
+  expire after 24 hours; the API key in the command does not expire.
 
 ## Next
 

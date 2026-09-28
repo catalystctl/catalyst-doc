@@ -6,35 +6,75 @@ audience:
 features:
   - tasks
 sources:
-  - catalyst-frontend/src/pages/servers/
+  - catalyst-frontend/src/components/tasks/CreateTaskModal.tsx
+  - catalyst-frontend/src/components/tasks/EditTaskModal.tsx
+  - catalyst-frontend/src/components/servers/tabs/ServerTasksTab.tsx
   - catalyst-backend/src/routes/tasks.ts
-last_verified: '2026-09-15'
+  - catalyst-backend/src/services/task-scheduler.ts
+last_verified: '2026-09-28'
 ---
 
-The **Tasks** tab runs actions on a schedule — nightly restarts, automatic
-backups, timed messages — so you stop doing them by hand.
+The **Tasks** tab (titled **Scheduled Tasks**) runs actions on a schedule — a
+nightly restart, an automatic backup, a timed warning message — so you stop
+doing them by hand. Tasks are created, edited, paused, and deleted entirely in
+the panel.
 
 ## Create a task
 
-1. Open **Tasks** and select **Create Task**.
-2. Choose the action: send a power signal (start/restart/stop), run a console
-   command, or create a backup.
-3. Set the schedule (daily time or interval).
-4. Enable it. Disabled tasks are kept but never run.
+1. Open your server's **Tasks** tab.
+2. Select **Create task**.
+3. Enter a **Name** (the placeholder suggests `Nightly restart`).
+4. Choose the **Action**:
+   - **Restart server**
+   - **Start server**
+   - **Stop server**
+   - **Create backup**
+   - **Send command**
+5. If you chose **Send command**, enter the console **Command** — for example
+   `say Server restart in 5 minutes`.
+6. Set the **Start time**. The panel shows which timezone the time is
+   interpreted in — the dialog reads it in your local timezone.
+7. Choose how often it **Repeat**s: **Every minute**, **Every hour**,
+   **Daily**, **Weekly**, or **Monthly**.
+8. For a **Weekly** task, pick the **Day of week**.
+9. Select **Create**.
+
+## Manage existing tasks
+
+Each task row shows its name, action, schedule, and the **Next run**,
+**Last run**, status, and **Runs** counters. When a run fails, the error text
+appears under the row.
+
+- **Edit** opens the task's name, optional description, action, command, and
+  schedule.
+- **Pause** stops a task from running without deleting it; **Resume** turns it
+  back on. A paused task is kept but never runs.
+- **Delete** removes it after a confirmation.
+
+Create, edit, pause, and delete are disabled while the server is suspended.
 
 ## Recipes that work well
 
 - **Nightly restart:** restart at 04:00 when nobody is online. Warn players with
-  a preceding command task (`say Restarting in 5 minutes`) a few minutes earlier.
-- **Daily backup:** create a backup every night, and keep manual locked backups
-  for milestones ([backups](/users/backups/)).
+  a preceding **Send command** task (`say Restarting in 5 minutes`) a few minutes
+  earlier.
+- **Daily backup:** create a backup every night, and keep separate manual
+  backups for milestones ([backups](/users/backups/)).
 - **Timed messages:** broadcast rules or event reminders with `say`.
 
 ## Caveats
 
 - A task action runs with the same power as clicking it yourself — a scheduled
-  `stop` really stops the server. Name tasks clearly.
-- If the panel or node is down at the scheduled time, that run is missed, not
-  queued. Check the task's last-run status after outages.
+  **Stop server** really stops the server. Name tasks clearly.
+- If the panel was down when a task was due, the task runs when the scheduler
+  starts again rather than being silently skipped. Confirm the **Last run** and
+  status column after an outage.
+- A failed run still counts in **Runs** and records its error on the task; a
+  task whose node is unreachable fails instead of waiting.
 - Over-frequent restarts annoy players and can corrupt worlds if they coincide
   with heavy saves. Daily is plenty for most servers.
+
+## Related
+
+- [Backups](/users/backups/) — manual backups and restoring one
+- [Power controls](/users/power/) — starting, stopping, and restarting by hand

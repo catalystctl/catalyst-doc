@@ -1,46 +1,123 @@
 ---
 title: Installing a Node
-description: Install the Catalyst agent on a fresh Linux machine.
+description: Install the Catalyst agent on a fresh Linux machine with the command the panel shows.
 audience:
   - admin
 features:
   - nodes
   - installation
 sources:
+  - catalyst-frontend/src/lib/deploy-command.ts
+  - catalyst-frontend/src/components/nodes/NodeCreateModal.tsx
+  - catalyst-backend/src/index.ts
   - scripts/deploy-agent.sh
-  - catalyst-agent/
-last_verified: '2026-09-15'
+last_verified: '2026-09-28'
 ---
+
+Create the node entry in the panel first, then run the install command the
+panel gives you on the machine that will host it. That one command installs
+everything the node needs — the container runtime, the agent, its configuration
+and the service — so a fresh machine needs nothing pre-installed.
 
 ## Prerequisites
 
-- A Linux machine meeting the [requirements](/admin/requirements/) with root access.
-- The panel's public URL and an API key for node registration (create the node
-  entry in **Admin → Nodes** first — see [registering](/admin/nodes/registering/)).
+- A Linux machine meeting the [requirements](/admin/requirements/) with root
+  access (the command uses `sudo`).
+- The node entry created in the panel — see
+  [registering](/admin/nodes/registering/). The panel issues the install
+  credential for that node, so it must exist first.
+- The node can reach the panel's URL. The agent calls home over a WebSocket, so
+  the node does not need a public IP or an inbound panel port.
+- Outbound HTTPS from the node to fetch the container runtime and the agent
+  binary.
 
-## Run the agent installer
+## Install the agent
 
-From the panel host (or wherever you keep the backend image's scripts), the
-agent deployment script installs and configures the agent:
+1. In the panel open **Admin → Nodes**, select **Register Node**, and complete
+   the three-step dialog ([registering](/admin/nodes/registering/)). Give the
+   node its hostname, public address, and the memory/CPU capacity of the machine.
+2. The final **Deploy agent** step shows the node's install command:
 
-```bash
-deploy-agent.sh <backend_url> <node_id> <node_hostname>
-```
+   ```bash
+   curl -fsSL -H 'Authorization: Bearer <API key>' 'https://panel.example.com/api/deploy/<deployment token>' | sudo bash -x
+   ```
 
-with the node API key provided via `CATALYST_API_KEY_FILE` (preferred — keeps
-the key out of process listings). The script supports apt, dnf, yum, pacman,
-zypper, and apk-based distributions, and sets up the container runtime
-(containerd/nerdctl), CNI networking, and the agent service.
+3. Select **Copy** and run that command **on the node machine** as a user with
+   `sudo`. The `-x` prints a shell trace to stderr, which is what you want if the
+   install stops partway.
+4. Wait for `Installation complete!`. The script prints the node ID, the config
+   path, and the log command.
+
+:::caution[The install command is a credential]
+The URL embeds a deployment token that is single-use and expires after 24 hours;
+the `Authorization` header carries a long-lived agent API key. Run the command
+over a trusted channel and do not paste it into tickets, chat, or shell history
+on a shared machine. If the token is consumed or expires before you run it, open
+the node in the panel and select **Deploy** to generate a fresh command.
+:::
+
+### What the command installs
+
+The panel's command is a short bootstrap: it writes the API key to a `0600` file
+so it never appears in the process list, fetches the node installer from the
+panel, and runs it with the key in `CATALYST_API_KEY_FILE`. The command also
+pins `AGENT_VERSION` to the panel's own version, so the node installs the exact
+agent version that panel understands. The installer then:
+
+- Detects the package manager (`apt`, `dnf`, `yum`, `pacman`, `zypper`, `apk`)
+  and the init system (systemd, or OpenRC on Alpine).
+- Installs and enables containerd — the container runtime the node runs game
+  servers through — plus the CNI plugins used for server networking.
+- Downloads the agent binary **matching the panel's version**: from GitHub
+  Releases first, then from the panel itself if GitHub is unreachable.
+- Writes `/opt/catalyst-agent/config.toml` with mode `0600`, containing the
+  panel URL and the node API key.
+- Installs the `catalyst-agent` service and starts it.
 
 ## Verify
 
-1. In **Admin → Nodes**, the node appears and turns healthy within a minute.
-2. Check the agent service is running on the node (`systemctl status` or the
-   OpenRC equivalent).
-3. Create a test server on the node and start it before offering the node to users.
+1. In **Admin → Nodes** the node turns online within a minute.
+2. On the node, confirm the service is running:
+   - systemd: `systemctl status catalyst-agent`, logs with
+     `journalctl -u catalyst-agent -f`
+   - OpenRC: `rc-service catalyst-agent status`, logs in
+     `/var/log/catalyst-agent.log`
+3. Create a test server on the node and start it before offering the node to
+   users.
+
+## Re-running and upgrading
+
+Re-running the install command is safe: the installer backs up the existing
+configuration as `config.toml.bak.<timestamp>` before rewriting it. To move an
+existing node to a newer agent after a panel upgrade, see
+[updating](/admin/nodes/updating/).
+
+## Automation: run the installer directly
+
+The panel's command wraps `scripts/deploy-agent.sh` — the same file baked into
+the backend image at `/scripts/deploy-agent.sh` and served at
+`/api/agent/deploy-script`. Run it directly when you manage the installer
+yourself rather than through the panel:
+
+```bash
+CATALYST_API_KEY_FILE=/root/node-key deploy-agent.sh <panel_url> <node_id> <node_hostname>
+```
+
+- `CATALYST_API_KEY_FILE` keeps the API key out of the process list. Passing the
+  key as the third argument also works, with the hostname as the fourth.
+- `AGENT_VERSION=x.y.z` pins the agent version instead of asking the panel.
+  Without it the installer queries the panel (`/api/agent/version`) and installs
+  the matching version.
+- `AGENT_RELEASE_REPO` changes where the binary is fetched from.
+- `DATA_DIR` (default `/var/lib/catalyst`), `CONSOLE_LOG_DIR`, `SFTP_PORT` and
+  the `CNI_DIR` / `CNI_BIN_DIR` / `CNI_DATA_DIR` / `CNI_RESULTS_DIR` /
+  `CNI_BRIDGE_NAME` / `CNI_BRIDGE_SUBNET` variables override the defaults
+  written into the configuration.
 
 ## If it fails
 
-Work through [node issues](/troubleshooting/node/): version mismatches, blocked
-panel connectivity, and missing kernel features are the usual suspects. The
-agent logs on the node say exactly which step failed.
+Work through [node troubleshooting](/troubleshooting/node/). The usual causes
+are: the node cannot reach the panel URL, the deployment token was already used
+or expired, the distribution is unsupported by the installer, or the machine
+lacks a kernel feature the container runtime needs. The installer's output and
+the `catalyst-agent` logs on the node say which step failed.

@@ -1,38 +1,63 @@
 ---
 title: Updating a Node
-description: Roll the agent and runtime forward without losing servers.
+description: Roll the agent forward from the panel without losing running servers.
 audience:
   - admin
 features:
   - nodes
   - updates
 sources:
-  - catalyst-agent/src/updater.rs
+  - catalyst-frontend/src/components/nodes/AgentControlPanel.tsx
+  - catalyst-frontend/src/components/nodes/NodeUpdateModal.tsx
   - catalyst-backend/src/routes/nodes.ts
-last_verified: '2026-09-15'
+  - catalyst-agent/src/updater.rs
+last_verified: '2026-09-28'
 ---
+
+The panel drives agent updates: it reports the agent version each node is
+running and, once the panel is newer, offers an **Update Agent** command that the
+agent applies to itself. Running game servers keep running while the agent
+restarts and reconnects.
 
 ## Safe update order
 
-1. **Update the panel first** ([updating Catalyst](/admin/updating/)). New agents
-   expect a panel at least as new as they are.
+1. **Update the panel first** ([updating Catalyst](/admin/updating/)). The agent
+   update targets the panel's own version, so a newer panel is what makes the
+   node update available.
 2. Update **one node** and watch it for a full day before touching the rest.
 3. Update remaining nodes in batches, never all at once.
 
-## Process per node
+## Update one node from the panel
 
-1. Announce maintenance — restarts interrupt running servers.
-2. Trigger the agent update from **Admin → Nodes** (or your usual automation)
-   and follow progress in the node view; the agent reports update stages back
-   to the panel.
-3. Verify: node healthy, a test server starts, console streams, backups list.
-4. If the agent fails to come back, the node's local logs and the previous
-   agent binary are your recovery path — see [node issues](/troubleshooting/node/).
+1. Announce maintenance — the agent restarts during the update.
+2. Open the node in **Admin → Nodes**. If its agent is behind the panel, the
+   header shows a version badge (`v<current> → v<latest>`) and the **Update** tab
+   carries a status dot.
+3. Open the **Update** tab and compare **Current** with **Latest**. Select
+   **Update Agent**. The button is only enabled when the panel has a newer
+   version; when there is nothing to do it reads **No Update**.
+4. Watch the status in the same panel: it moves through `downloading` (with a
+   progress bar) and `restarting`, then clears. A failure shows the error text.
+5. Verify: the node is healthy again, a test server starts, the console streams,
+   and backups list.
+
+The panel sends the update over the agent's WebSocket, so the node must be
+online — an offline node reports "Failed to send update command to agent". The
+agent downloads the binary (GitHub Releases first, panel as fallback), verifies
+its checksum, swaps the binary in with an atomic rename, and restarts itself.
+A download or checksum failure aborts before anything is replaced.
+
+## Node settings are a different dialog
+
+The header's settings button opens **Update node**, which edits the node's
+identity, capacity, SFTP, and agent paths — not its version. Changes there apply
+to future deployments and do not restart the agent. To re-run the install command
+with new paths, use **Deploy** on the node header.
 
 ## Rules
 
-- Never update panel and all nodes simultaneously. A bad release then breaks
+- Never update the panel and all nodes simultaneously. A bad release then breaks
   everything instead of one canary node.
-- Game servers themselves do not update with the agent — game versions come
-  from templates ([templates](/admin/templates/)).
+- Game servers themselves do not update with the agent — game versions come from
+  templates ([templates](/admin/templates/)).
 - Keep a changelog note per node (agent version + date) for the next incident.
