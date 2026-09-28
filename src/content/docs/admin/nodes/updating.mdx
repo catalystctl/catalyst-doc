@@ -10,14 +10,16 @@ sources:
   - catalyst-frontend/src/components/nodes/AgentControlPanel.tsx
   - catalyst-frontend/src/components/nodes/NodeUpdateModal.tsx
   - catalyst-backend/src/routes/nodes.ts
+  - catalyst-backend/src/services/node-update-policy.ts
   - catalyst-agent/src/updater.rs
-last_verified: '2026-09-28'
+last_verified: '2026-09-25'
 ---
 
 The panel drives agent updates: it reports the agent version each node is
 running and, once the panel is newer, offers an **Update Agent** command that the
 agent applies to itself. Running game servers keep running while the agent
-restarts and reconnects.
+restarts and reconnects. Nothing is updated automatically unless you approve the
+node first (see [automatic node updates](#automatic-node-updates)).
 
 ## Safe update order
 
@@ -26,6 +28,28 @@ restarts and reconnects.
    node update available.
 2. Update **one node** and watch it for a full day before touching the rest.
 3. Update remaining nodes in batches, never all at once.
+
+## Automatic node updates
+
+The panel does **not** push agent updates to every outdated node. Each node is
+either **Automatic** or **Manual**:
+
+- **Manual** (default) — the node keeps its current agent version. The panel
+  flags **Update available** and you run the update yourself.
+- **Automatic** — when the panel's agent version is newer than the node's, the
+  panel sends the update command on its own.
+
+Choose the mode in **Admin → System → Auto Updater → Automatic node updates**:
+tick the nodes you trust to update unattended, untick the rest, then select
+**Apply**. Selecting rows only stages the change — nothing is sent until you
+apply, and the count badge shows how many nodes are currently automatic.
+
+A node that is offline, or currently mid-update, is skipped; it is picked up on
+the next health report once it can take the command. A node is only ever updated
+to the version the panel itself runs.
+
+Start with a canary: approve one node, watch it for a full day, then approve the
+rest. To update a Manual node now, use the per-node steps below.
 
 ## Update one node from the panel
 

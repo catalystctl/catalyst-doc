@@ -10,9 +10,11 @@ sources:
   - catalyst-frontend/src/components/admin/UpdateProgressModal.tsx
   - catalyst-backend/src/routes/update.ts
   - catalyst-backend/src/services/auto-updater.ts
+  - catalyst-backend/src/services/auto-update-settings.ts
+  - catalyst-backend/src/services/node-update-policy.ts
   - catalyst-docker/update.sh
   - install.sh
-last_verified: '2026-09-28'
+last_verified: '2026-09-25'
 ---
 
 ## The order (always)
@@ -48,6 +50,24 @@ newer release exists. On a standalone install the section shows
 **Auto-update is only available when running in Docker. Please update Catalyst
 manually.** — use the manual path below.
 
+### Automatic updates
+
+The **Auto Updater** section also controls the panel's own automation, and these
+settings are stored in the database — they apply immediately, with no redeploy:
+
+- **Panel update automation** — poll for new releases.
+- **Install panel updates automatically** — apply a release without confirming.
+  Leave this off when you want to read the release notes first.
+- **Check for updates** — how often the panel polls (1 hour to 24 hours).
+- **Check now** — poll immediately, for when you do not want to wait.
+
+`AUTO_UPDATE_ENABLED`, `AUTO_UPDATE_AUTO_TRIGGER`, and `AUTO_UPDATE_INTERVAL_MS`
+only seed these values on the first read; once you save a change in the panel,
+the panel wins.
+
+Automatic **node** updates are opt-in per node in the same section — see
+[updating a node](/admin/nodes/updating/#automatic-node-updates).
+
 ## Update the panel manually
 
 From the directory that holds your stack (`catalyst-docker/`):
@@ -75,6 +95,8 @@ Watch the backend logs until migrations finish (`docker compose logs -f backend`
 ## Rules
 
 - Never update everything at once. Panel first, one canary node, then the fleet.
+- Leave a node on **Manual** until you have watched one canary on the new agent
+  build for a day. A node is only updated automatically if you approved it.
 - Never skip the pre-update database backup, even for "tiny" releases.
 - Pin production to release tags, not `main`. Track `main` only in a lab.
 - If the panel fails to start after an update, read the container logs before
