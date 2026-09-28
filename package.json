@@ -2,7 +2,7 @@
   "name": "catalyst-doc",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "pnpm@12.4.1",
+  "packageManager": "pnpm@9.15.9",
   "description": "Catalyst product documentation site (docs.catalystctl.com) — Astro Starlight, deployed on Cloudflare Pages.",
   "type": "module",
   "engines": {
