@@ -9,40 +9,54 @@ sources:
   - catalyst-frontend/src/pages/admin/SystemPage.tsx
   - catalyst-frontend/src/pages/admin/SecurityPage.tsx
   - catalyst-frontend/src/pages/admin/ThemeSettingsPage.tsx
+  - catalyst-frontend/src/pages/admin/EnvironmentPage.tsx
+  - catalyst-backend/src/lib/env-registry.ts
   - catalyst-docker/docker-compose.yml
   - catalyst-docker/.env.example
   - docs/environment-variables.md
 last_verified: '2026-09-28'
 ---
 
-Most day-to-day settings live in the panel UI. Infrastructure behavior (ports,
-database URLs, feature flags) is controlled by environment variables in
-`catalyst-docker/.env`.
+Most day-to-day settings live in the panel UI. A handful of infrastructure
+variables must be set in the compose environment before the backend starts;
+everything else can be managed from the panel.
 
 ## Change a setting in the UI
 
 This is always the first place to look. Every screen below validates input and
-saves immediately — no restart.
+saves immediately — except **Admin → Environment**, which asks for a restart
+when a change needs one.
 
 | Screen | What it controls |
 | --- | --- |
 | **Admin → System** | SMTP email, mod manager API keys (CurseForge/Modrinth), default interface language, **Auto Updater**, and system status/diagnostics |
 | **Admin → Security** | Rate limits, email verification, lockout policy, file-upload limits, and the panel MCP endpoint |
+| **Admin → Environment** | Every environment variable the backend reads, with its source and a restart prompt when required |
 | **Admin → Theme** | Panel identity (panel name, logo, favicon), brand colors, surfaces, and custom CSS |
 | **Admin → Databases** | MySQL hosts used to provision databases for servers, plus Catalyst database health |
 | **Admin → Plugins** | Installed plugins and marketplace |
 | **Profile** | Your own language, password, passkeys, and API keys |
 
-## The two layers
+## Environment variables in the panel
 
-| Layer | Where | Examples |
-| --- | --- | --- |
-| **Panel settings** | Admin UI | Panel name, registration policy, mail, backups, limits |
-| **Environment** | Compose file / container env | `DATABASE_URL`, Redis URL, ports, `DOCS_ENABLED`, rate-limit and payload tunables |
+**Admin → Environment** lists every variable the backend reads that does not
+already have its own settings page. Values saved there are stored in the
+database and applied on the next panel start; when a change needs a restart the
+panel prompts the signed-in admin with a **Restart panel** button. **Reset to
+.env** removes the override and falls back to the compose value.
 
-Change panel settings in the UI whenever possible. Touch environment variables
-when the setting you need is not in the UI, then recreate the affected
-container:
+Settings with a dedicated editor are left out of this page so each value has one
+place to change it: the panel name under **Theme**, rate limits and console
+output under **Security**, update automation under **System → Auto Updater**,
+OIDC providers under **Theme → SSO**, and marketplace sources in the plugin
+marketplace dialog.
+
+A few variables must stay in `catalyst-docker/.env` because the backend needs
+them before it can reach the database (they are shown read-only in the panel):
+`DATABASE_URL`, `POSTGRES_PASSWORD`, `NODE_ENV`, `PORT`, `TZ`, `WORKERS` and
+`REDIS_PASSWORD`.
+
+For those, edit `.env` and recreate the backend container:
 
 ```bash
 cd catalyst-docker
