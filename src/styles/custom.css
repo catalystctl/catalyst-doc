@@ -499,14 +499,27 @@ starlight-menu-button button,
   border-radius: var(--deck-radius);
 }
 
-/* Tables: shared grid, sticky overline header, zebra rows. */
-.sl-markdown-content table {
+/* Tables: shared grid, framed overline header, zebra rows. Starlight's base
+   styles set Markdown tables to `display: block`, which destroys table layout.
+   Restore true table rendering and let wide content wrap into its column. */
+body .sl-markdown-content table:not(:where(.not-content *)) {
+  display: table;
+  width: 100%;
+  max-width: 100%;
+  table-layout: auto;
   border: 1px solid hsl(var(--border) / 0.7);
   border-radius: var(--deck-radius);
   border-collapse: separate;
   border-spacing: 0;
-  overflow: hidden;
   font-size: var(--text-data);
+}
+
+/* Let long tokens wrap to fit their column, without allowing short numeric
+   cells to collapse into vertical stacks. */
+.sl-markdown-content :is(th, td) {
+  overflow-wrap: break-word;
+  word-break: normal;
+  white-space: normal;
 }
 
 .sl-markdown-content th {
@@ -531,6 +544,22 @@ starlight-menu-button button,
 
 .sl-markdown-content tbody tr:last-child :is(td, th) {
   border-bottom: 0;
+}
+
+/* On narrow viewports, give the block holding a table a scroll container so a
+   wide table keeps its natural grid and scrolls instead of being squeezed. */
+@media (max-width: 50rem) {
+  body .sl-markdown-content:has(> table):not(:where(.not-content *)),
+  body .sl-markdown-content :is(ol, ul, blockquote, .starlight-aside__content):has(> table):not(:where(.not-content *)) {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+  }
+
+  body .sl-markdown-content table:not(:where(.not-content *)) {
+    width: max-content;
+    min-width: 100%;
+    max-width: none;
+  }
 }
 
 /* ==========================================================================
