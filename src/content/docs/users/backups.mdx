@@ -12,7 +12,7 @@ sources:
   - catalyst-frontend/src/components/backups/DeleteBackupDialog.tsx
   - catalyst-backend/src/routes/backups.ts
   - catalyst-backend/src/services/backup-retention.ts
-last_verified: '2026-09-28'
+last_verified: '2026-10-13'
 ---
 
 A backup is a restorable snapshot of your server's files. Make one before every
@@ -24,7 +24,10 @@ risky change — updates, new plugins, world edits, reinstalls.
    the list is empty.
 2. Optionally give it a name, for example `before-1.21-update`. Leave the name
    blank and the panel generates one from the current timestamp.
-3. Select **Create backup** in the dialog and wait for the status to reach
+3. Leave **Compress backup (gzip)** checked unless you specifically need a plain
+   archive. Unchecking it writes an uncompressed `.tar`, which is faster to
+   create and to restore but larger on disk and slower to transfer.
+4. Select **Create backup** in the dialog and wait for the status to reach
    **Completed** before stopping the server or making changes.
 
 ## Restore a backup
@@ -44,8 +47,9 @@ backup of the *current* files first, so you can go back either way.
 
 ## Download and delete
 
-- **Download** saves the snapshot as a `.tar.gz` file — keep critical backups
-  off-site, since a backup on the same node does not survive node loss.
+- **Download** saves the snapshot as a `.tar.gz` file, or a `.tar` file for an
+  uncompressed backup — keep critical backups off-site, since a backup on the
+  same node does not survive node loss.
 - **Delete** removes a snapshot. The confirmation names the backup and warns
   *"This action cannot be undone."*
 
