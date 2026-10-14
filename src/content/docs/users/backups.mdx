@@ -12,7 +12,7 @@ sources:
   - catalyst-frontend/src/components/backups/DeleteBackupDialog.tsx
   - catalyst-backend/src/routes/backups.ts
   - catalyst-backend/src/services/backup-retention.ts
-last_verified: '2026-10-13'
+last_verified: '2026-10-14'
 ---
 
 A backup is a restorable snapshot of your server's files. Make one before every
@@ -39,6 +39,13 @@ risky change — updates, new plugins, world edits, reinstalls.
    stopped before restoring and current files will be overwritten."*
 4. Wait for the restore to finish, then start the server and verify the world
    loads correctly before deleting the backup you restored from.
+
+The restore runs on the node: the archive is extracted into a staging directory
+and only swapped over the live files once the whole tree has been checked.
+Symbolic and hard links in the snapshot are restored as they were. If the
+restore is refused — an unreadable archive, not enough free space, or a link
+pointing outside the server directory — the server returns to **Stopped**, the
+panel reports the reason, and your current files are left untouched.
 
 :::caution
 Restore overwrites the server's current files. When in doubt, download a fresh
