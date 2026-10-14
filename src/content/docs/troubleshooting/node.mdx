@@ -10,8 +10,9 @@ sources:
   - catalyst-agent/
   - catalyst-agent/src/storage_manager.rs
   - catalyst-agent/src/runtime_manager/
+  - catalyst-agent/src/systemd_compat.rs
   - docs/agent.md
-last_verified: '2026-09-28'
+last_verified: '2026-10-14'
 ---
 
 ## Node shows unreachable
@@ -71,6 +72,37 @@ agent log on the node for one of these:
 An unprivileged LXC container is the usual cause of 1 and 2. It can host a node,
 but expect no disk quota and verify the `io` controller is available before
 offering the node to users.
+
+## Backup restores fail with "Function not implemented"
+
+On Fedora 44 every archive restore aborts with `Function not implemented`
+(`ENOSYS`) and the server never leaves `restoring`. Fedora's GNU tar issues
+`openat2(2)` when extracting, and systemd's `RestrictSUIDSGID=yes` denies that
+syscall outright: classic seccomp cannot inspect the mode field inside
+`struct open_how`, so systemd blocks the whole call
+([systemd#43314](https://github.com/systemd/systemd/issues/43314), closed
+upstream as "fix in GNU tar").
+
+The agent unit therefore ships `RestrictSUIDSGID=no`. Every other sandbox
+directive stays on (`SystemCallFilter=@system-service @mount`,
+`NoNewPrivileges=true`, `ProtectSystem=full`, `ProtectHome=true`,
+`RestrictNamespaces=mnt net uts ipc`, the capability bounding set), and the
+archive path keeps its own protections: restores refuse archive-supplied
+ownership and permissions, reject symlink/device/absolute members before
+extraction, and game servers run as unprivileged container users.
+
+1. **Confirm the cause** — on the node run
+   `systemd-run -p RestrictSUIDSGID=yes --wait --pipe tar -cf /dev/null -C /tmp .`.
+   On Fedora 44 it fails; the agent log shows the same error for the restore.
+2. **Check the effective unit** — `systemctl show catalyst-agent -p RestrictSUIDSGID`
+   must print `RestrictSUIDSGID=no`. Drop-ins override the main unit, so also run
+   `grep -r RestrictSUIDSGID /etc/systemd/system/catalyst-agent.service.d/`.
+3. **Apply the fix** — the agent repairs an upgraded-in-place node on its next
+   start: it writes
+   `/etc/systemd/system/catalyst-agent.service.d/zz-catalyst-openat2-compat.conf`
+   and restarts once. To do it immediately, re-run the deploy script for the
+   node, or set `RestrictSUIDSGID=no` in the unit and any drop-in, then
+   `systemctl daemon-reload && systemctl restart catalyst-agent`.
 
 ## Data to collect before asking for help
 
