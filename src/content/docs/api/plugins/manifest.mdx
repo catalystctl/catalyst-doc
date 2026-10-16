@@ -4,14 +4,15 @@ description: Every plugin.json field the panel validates, with the rules that re
 audience:
   - developer
 features:
-  - plugins
+  - plugin-development
 sources:
   - catalyst-backend/src/plugins/validator.ts
   - catalyst-backend/src/plugins/safety.ts
   - catalyst-backend/src/plugins/types.ts
   - packages/plugin-sdk/src/types.ts
+  - packages/plugin-sdk/src/permissions.ts
   - packages/plugin-sdk/src/config.ts
-last_verified: '2026-09-28'
+last_verified: '2026-10-16'
 ---
 
 `plugin.json` sits at the plugin root. The panel parses it with the manifest
@@ -30,6 +31,13 @@ A plugin that fails validation does not load.
   "permissionDescriptions": {
     "my-plugin.sample": "Shown verbatim in the safety dialog."
   },
+  "userPermissions": [
+    {
+      "id": "my-plugin.view",
+      "label": "View the sample widget",
+      "description": "Shows the widget on the dashboard."
+    }
+  ],
   "backend": { "entry": "backend/index.js" },
   "frontend": { "entry": "frontend/index.ts", "hasTabs": true },
   "config": {
@@ -58,6 +66,7 @@ A plugin that fails validation does not load.
 | `catalystVersion` | yes | Comparison against the running panel: `>=1.62.0`, `>1.0.0`, `=1.62.2`, `<2.0.0`, `<=1.62.2`. A bare `1.62.0` means equal. Anything that does not match that pattern is incompatible. |
 | `permissions` | no | Array of strings. Defaults to `[]`. Each token is trimmed; tokens that are not `^[a-zA-Z0-9_.*-]{1,64}$` are dropped. |
 | `permissionDescriptions` | no | Map of permission token → 1–200 char sentence. Every key must also appear in `permissions`, or discovery fails. |
+| `userPermissions` | no | Up to 32 `{ "id", "label", "description"? }` entries. Permissions you expose to the panel's role editor (the ids your frontend uses in `requiredPermissions`). Ids match `^[a-zA-Z0-9_.-]{1,64}$`, must be unique, and `*` is rejected. |
 | `backend` | no | `{ "entry": "backend/index.js" }`. Path is resolved inside the plugin directory. |
 | `frontend` | no | `{ "entry": "frontend/index.ts", "hasTabs"?: boolean, "hasComponents"?: boolean }`. |
 | `dependencies` | no | Map of other plugin name → exact `MAJOR.MINOR.PATCH`. The dependency must be installed and version-compatible or the plugin is skipped. |
@@ -113,6 +122,40 @@ const declared = definePermissions(
 ```
 
 Descriptions are cut at 200 characters.
+
+## Permissions for panel users
+
+`permissions` is the plugin's own capability list: the admin grants those
+tokens to the plugin, and the host enforces them on host APIs. `userPermissions`
+is the other direction — permissions the plugin invents for *panel users*, so
+an admin can grant them to a role and the plugin can gate its own UI:
+
+```json
+{
+  "userPermissions": [
+    {
+      "id": "my-plugin.view",
+      "label": "View the sample widget",
+      "description": "Shows the widget on the dashboard."
+    }
+  ]
+}
+```
+
+The panel lists them under **Plugins** in the role editor (they appear only
+while the plugin is enabled). Use the same ids in the frontend's
+`requiredPermissions` to gate a tab, page or slot component — see
+[Plugin Frontend](/api/plugins/frontend/). An id that is also a built-in
+permission is ignored in the role editor: use the built-in token directly.
+
+```typescript
+import { defineUserPermissions } from '@catalyst/plugin-sdk';
+
+export const exposedPermissions = defineUserPermissions(
+  { id: 'my-plugin.view', label: 'View the sample widget' },
+);
+// → { userPermissions: [{ id: 'my-plugin.view', label: 'View the sample widget' }] }
+```
 
 ## Config field types
 
@@ -173,3 +216,9 @@ The value must be an exact `MAJOR.MINOR.PATCH` version — unlike
 installed dependency must match that exact version. The panel loads
 dependencies first. A cycle is logged and the plugins still load; do not rely
 on cycle-breaking.
+
+## Related
+
+- [Plugin Data & Permissions](/api/plugins/data/) — how `permissions` gate host APIs
+- [Plugin Frontend](/api/plugins/frontend/) — using `userPermissions` ids in `requiredPermissions`
+- [API reference](/api/reference/) — the panel REST API the manifest enables

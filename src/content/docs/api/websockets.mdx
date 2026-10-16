@@ -4,7 +4,6 @@ description: Subscribe to console output, server events, and metrics over SSE.
 audience:
   - developer
 features:
-  - api
   - websockets
   - console
 sources:
@@ -14,11 +13,7 @@ sources:
   - catalyst-backend/src/routes/admin-events.ts
   - catalyst-backend/src/websocket/gateway.ts
   - catalyst-frontend/src/services/api/sse-hub.ts
-api_tags:
-  - websockets
-  - console
-  - events
-last_verified: '2026-09-28'
+last_verified: '2026-10-16'
 ---
 
 Polling the REST API for live state is wasteful. For anything realtime — console
@@ -69,13 +64,14 @@ refused with `503`:
 
 ## Console events
 
-The console stream emits four named SSE events:
+The console stream emits five named SSE events:
 
 | Event | Payload |
 | --- | --- |
 | `connected` | `{ serverId, timestamp }` |
 | `console_output` | `{ serverId, stream, data, timestamp, logId }` — `stream` is `stdout`/`stderr` |
 | `eula_required` | `{ serverId, serverUuid, eulaText }` |
+| `ping` | `{ t }` — epoch milliseconds, sent every 25 s as a named heartbeat the client can watch |
 | `error` | `{ serverId?, error }` |
 
 ## Server and admin events
@@ -158,3 +154,9 @@ The command body is `{ "command": "..." }` (max 4096 characters) and requires
 The generated [API reference](/api/reference/) covers the REST endpoints the
 streams pair with (console command, power actions, lists). The long-lived SSE
 paths above are the contract for the streams themselves.
+
+## Related
+
+- [API reference](/api/reference/) — the REST endpoints the streams pair with
+- [Rate limits](/api/rate-limits/) — why SSE streams bypass the global bucket
+- [Errors](/api/errors/) — `401`, `403`, and `503` handling

@@ -4,7 +4,7 @@ description: Build a .catpkg.zip, publish an index, and get a plugin onto a pane
 audience:
   - developer
 features:
-  - plugins
+  - plugin-development
 sources:
   - catalyst-backend/src/plugins/marketplace/packaging.ts
   - catalyst-backend/src/plugins/marketplace/service.ts
@@ -18,6 +18,14 @@ last_verified: '2026-09-28'
 Panels install plugins from a marketplace index. The official index is
 [catalyst-plugins](https://github.com/catalystctl/catalyst-plugins) and is
 browsed by default. You can run your own index without being listed there.
+
+## Prerequisites
+
+- A plugin directory with a valid `plugin.json` — see
+  [Plugin Manifest](/api/plugins/manifest/).
+- A Catalyst checkout to build the SDK CLI from; the CLI is not published to
+  npm. See [Create a plugin](/api/plugins/creating/).
+- HTTPS hosting for the package and index if others should install it.
 
 ## Package layout
 
@@ -197,3 +205,9 @@ curl -H "Authorization: Bearer $CATALYST_API_KEY" \
 The response includes the manifest, whether consent is current, and the
 granted permissions. Then call one of your own routes and confirm a disabled
 plugin returns `503` rather than running the handler.
+
+## Related
+
+- [Plugin Manifest](/api/plugins/manifest/) — the fields the installer validates
+- [Create a plugin](/api/plugins/creating/) — scaffold and build the plugin first
+- [API reference](/api/reference/) — the panel REST API the marketplace endpoints sit beside

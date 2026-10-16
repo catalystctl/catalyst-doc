@@ -13,8 +13,7 @@ sources:
   - catalyst-backend/src/lib/env-registry.ts
   - catalyst-docker/docker-compose.yml
   - catalyst-docker/.env.example
-  - docs/environment-variables.md
-last_verified: '2026-09-28'
+last_verified: '2026-10-16'
 ---
 
 Most day-to-day settings live in the panel UI. A handful of infrastructure
@@ -53,8 +52,9 @@ marketplace dialog.
 
 A few variables must stay in `catalyst-docker/.env` because the backend needs
 them before it can reach the database (they are shown read-only in the panel):
-`DATABASE_URL`, `POSTGRES_PASSWORD`, `NODE_ENV`, `PORT`, `TZ`, `WORKERS` and
-`REDIS_PASSWORD`.
+`DATABASE_URL`, `NODE_ENV`, `PORT`, `POSTGRES_PASSWORD`, `TZ`, and `WORKERS`.
+`REDIS_PASSWORD` is **not** in this set — the backend reads it when it connects
+to Redis, so it can be set from **Admin → Environment** like other settings.
 
 For those, edit `.env` and recreate the backend container:
 
@@ -67,13 +67,19 @@ docker compose up -d
 ## Environment reference
 
 - The stack's variables live in `catalyst-docker/.env`; the annotated template
-  is `catalyst-docker/.env.example`, and the complete reference is
-  `docs/environment-variables.md` in the main Catalyst repository.
+  is `catalyst-docker/.env.example`. The backend's own registry
+  (`catalyst-backend/src/lib/env-registry.ts`) lists every variable it reads,
+  and **Admin → Environment** renders that registry.
 - Docker ports and their defaults: `FRONTEND_PORT=0.0.0.0:8080`,
-  `BACKEND_PORT=127.0.0.1:3000`, `POSTGRES_PORT=127.0.0.1:5432`; Redis is not
-  published unless you set `REDIS_PORT`. See [networking](/admin/networking/).
+  `BACKEND_PORT=127.0.0.1:3000`, `POSTGRES_PORT=127.0.0.1:5432`. **Redis is
+  published on `127.0.0.1:6379` (loopback only) by default** — the compose
+  default `REDIS_PORT` is `127.0.0.1:6379`, and commenting it out does not
+  unpublish the port. To make Redis fully internal to the Docker network, add a
+  `ports: []` override for the `redis` service. See [networking](/admin/networking/).
 - `PUBLIC_URL` is the single source of truth for the panel URL — it drives CORS,
-  auth origins, and email links. Change it here, not in five separate places.
+  auth origins, and email links, and the installer derives `PASSKEY_RP_ID` from
+  its hostname. Set it here; [networking](/admin/networking/) covers the TLS and
+  proxy side.
 - Re-run the installer's prompts to regenerate a configured `.env`:
   `bash install.sh --reconfigure` ([installation](/admin/installation/)).
 

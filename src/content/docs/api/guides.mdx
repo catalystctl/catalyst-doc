@@ -10,16 +10,18 @@ sources:
   - catalyst-backend/src/routes/servers/power.ts
   - catalyst-backend/src/lib/validation.ts
   - catalyst-backend/src/routes/api-keys.ts
-api_tags:
-  - guides
 last_verified: '2026-09-28'
 ---
 
 Copy-pasteable patterns for the jobs integrations do most. Adapt the host,
 key, and IDs. Full field details live in the [API reference](/api/reference/).
 
-Create the API key in the panel first (**Admin → Access Control → API Keys →
-Create API Key**) — see [Authentication](/api/authentication/).
+## Prerequisites
+
+- An [API key](/api/authentication/) created in the panel
+  (**Admin → Access Control → API Keys → Create API Key**).
+- The permissions each workflow needs — for example `server.create` to
+  provision a server and `backup.read` to list backups.
 
 ## Provision a server for a new customer
 
@@ -80,3 +82,9 @@ Subscribe to [server events](/api/websockets/) and trigger on
 `server_state_update` (or `server_state`) when a server leaves `running`, then
 confirm via REST before paging anyone — flapping nodes produce duplicate events
 during reconnects.
+
+## Related
+
+- [Authentication](/api/authentication/) — create and scope an API key
+- [Authorization & permissions](/api/authorization/) — the permission each call needs
+- [API reference](/api/reference/) — full field and error details

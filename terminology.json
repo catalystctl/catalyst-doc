@@ -3,7 +3,7 @@
     "Catalyst": "Product name is always capitalized.",
     "panel": "The web application. Never 'dashboard' for the app itself (Dashboard is a page).",
     "node": "A machine running the agent. Never 'server' for a node.",
-    "server": "One game instance. Never 'container' or 'instance' in user docs.",
+    "server": "One game server. Never call it a 'container' or an 'instance'.",
     "template": "Installable game recipe. Never 'egg' except when describing Pterodactyl imports.",
     "allocation": "An IP + port pair. Never 'port' alone when the IP matters.",
     "task": "A scheduled server action. Never 'cron job' or 'schedule' as a noun for it.",
@@ -14,6 +14,16 @@
     "pterodactyl server": "Say 'Catalyst server'. Pterodactyl is only named for imports/migration.",
     "cron job": "Say 'task'.",
     "sub-user": "Say 'subuser'.",
-    "apikey": "Say 'API key'."
+    "apikey": "Say 'API key'.",
+    "server container": "Say 'server' for the game server; 'container' is only the Docker/OCI runtime object that runs it.",
+    "container running the server": "Say 'server' for the game server; 'container' is only the Docker/OCI runtime object.",
+    "container that runs the server": "Say 'server' for the game server; 'container' is only the Docker/OCI runtime object.",
+    "server instance": "Say 'server'. 'instance' is not a Catalyst term for a game server.",
+    "instance of the server": "Say 'server'.",
+    "game instance": "Say 'server'.",
+    "create a schedule": "Say 'task' — a schedule is a timing rule, a task is the action that runs.",
+    "a schedule for": "Say 'a task for' — a schedule is the timing, a task is the action.",
+    "the schedule runs": "Say 'the task runs'.",
+    "a schedule runs": "Say 'a task runs'."
   }
 }

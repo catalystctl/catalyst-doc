@@ -5,7 +5,6 @@ audience:
   - user
 features:
   - servers
-  - startup
 sources:
   - catalyst-frontend/src/components/servers/tabs/ServerConfigurationTab.tsx
   - catalyst-frontend/src/components/servers/tabs/ServerStartupVariablesSection.tsx
@@ -17,6 +16,13 @@ last_verified: '2026-09-28'
 The **Configuration** tab controls how your server boots: the startup command,
 the variables the template exposes (game version, memory, extra flags), and a
 form editor for the server's config files.
+
+## Prerequisites
+
+- A server you can access, with the `server.update` permission to change the
+  startup command, variables, and template config files.
+- A [restart](/users/power/) after the change — most games read these values
+  only at boot.
 
 ## Change a startup variable
 

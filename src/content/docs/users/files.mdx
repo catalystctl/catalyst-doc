@@ -18,9 +18,14 @@ The **Files** tab is a file manager for your server: configs, worlds, plugins,
 and logs. It is the right tool for small, targeted changes. For large transfers
 (whole world folders, modpacks), use [SFTP](/users/sftp/) instead.
 
+## Prerequisites
+
+- A server you can access, with the `file.read` permission to browse and
+  `file.write` to change anything.
+- For uploads, a file size within the upload limit your administrator set.
+
 The left rail is the **Directory Tree**; the breadcrumb and filter box above the
-list move around the current folder. You need the `file.read` permission to
-browse and `file.write` to change anything.
+list move around the current folder.
 
 ## Everyday tasks
 
@@ -75,3 +80,9 @@ Exact paths depend on the template your server was created from. If a path here
 does not exist on your server, look at the template description or ask your
 administrator rather than creating it by hand.
 :::
+
+## Related
+
+- [SFTP](/users/sftp/) — large transfers and whole folders
+- [Backups](/users/backups/) — the undo button for file changes
+- [Startup & Variables](/users/startup/) — template-declared config files

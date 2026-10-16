@@ -5,7 +5,6 @@ audience:
   - user
 features:
   - servers
-  - activity
 sources:
   - catalyst-frontend/src/components/servers/tabs/ServerActivityLogTab.tsx
   - catalyst-backend/src/routes/servers/stats.ts
@@ -14,8 +13,8 @@ last_verified: '2026-09-28'
 
 The **Activity** tab (titled **Activity Log**) is an audit trail for your
 server: power actions, file changes, backup restores, subuser changes, and
-similar events, each stamped with who did it and when. Entries are grouped by
-day and paged 25 at a time, newest first.
+similar events, each stamped with who did it and when. Entries are a flat list,
+newest first, paged 25 at a time.
 
 ## Read an entry
 
@@ -40,3 +39,8 @@ recovery) rather than one a person triggered.
   for disputes promptly.
 - If an expected entry is missing, the action may have happened outside the
   panel (direct node access) — ask your administrator.
+
+## Related
+
+- [Console](/users/console/) — in-game history is in the game's own logs
+- [Users & Subusers](/users/subusers/) — who has access to your server

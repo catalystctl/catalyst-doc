@@ -4,7 +4,7 @@ description: Sell plugins with vendor-owned license validation and encrypted pay
 audience:
   - developer
 features:
-  - plugins
+  - plugin-development
 sources:
   - packages/plugin-sdk/src/licensing.ts
   - catalyst-backend/src/plugins/validator.ts
@@ -303,3 +303,9 @@ and are meant to be copied:
   — the working client plugin: a plaintext `backend/index.js` bootstrap, an
   encrypted `backend/payload.enc`, and a `/premium-report` route that only
   exists after activation.
+
+## Related
+
+- [Plugin Manifest](/api/plugins/manifest/) — the `licensing` block's validation
+- [Packaging & marketplace](/api/plugins/packaging/) — shipping the encrypted payload
+- [API reference](/api/reference/) — the panel REST API the plugin calls beside

@@ -10,7 +10,8 @@ sources:
   - catalyst-frontend/src/pages/admin/MigrationPage.tsx
   - catalyst-backend/src/routes/migration.ts
   - catalyst-backend/src/services/migration/index.ts
-last_verified: '2026-09-28'
+  - catalyst-backend/src/services/migration/types.ts
+last_verified: '2026-10-16'
 ---
 
 The migration center (**Admin → Migration**) imports a Pterodactyl panel into
@@ -19,7 +20,7 @@ run. Each job exposes phase- and step-level status, so you can retry a failed
 step, pause, resume, or cancel without starting over. Migration requires an
 administrator account.
 
-## Before you start
+## Prerequisites
 
 - A Catalyst node that is **online** with enough free capacity for the servers
   you are moving. Migration refuses to start with no online target node.
@@ -53,9 +54,10 @@ administrator account.
    mapped, and at least one target node is online.
 7. The view switches to the **Active Migration** tab. Work the phases top to
    bottom: Validation, Locations, Templates (Nests & Eggs), Users, Servers,
-   Databases, Schedules, Backups, Server Files. Use **Pause** / **Resume** to
-   control the job, **Cancel** to stop it, and the retry button on a failed step
-   to re-run just that step. A failed step does not mean a failed migration.
+   Subusers, Databases, Schedules, Backups, Server Files. Use **Pause** /
+   **Resume** to control the job, **Cancel** to stop it, and the retry button on
+   a failed step to re-run just that step. A failed step does not mean a failed
+   migration.
 8. Finished jobs move to the **History** tab with their step counts.
 
 ## Safest order of operations
@@ -81,3 +83,9 @@ Do not delete or wipe the source panel while a migration is in progress or
 unverified. The migration is one-way; the source is your rollback until owners
 confirm the new servers.
 :::
+
+## Related
+
+- Importing individual eggs as templates: [importing Pterodactyl eggs](/admin/importing-eggs/).
+- Reviewing imported templates before a large run: [templates](/admin/templates/).
+- Rolling back a failed panel update: [disaster recovery](/admin/disaster-recovery/).

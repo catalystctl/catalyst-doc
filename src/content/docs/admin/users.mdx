@@ -4,7 +4,7 @@ description: Create accounts, handle invites, and manage the admin team.
 audience:
   - admin
 features:
-  - users
+  - users-and-access
   - administration
 sources:
   - catalyst-frontend/src/pages/admin/UsersPage.tsx
@@ -13,6 +13,12 @@ last_verified: '2026-09-28'
 ---
 
 Manage accounts under **Admin → Users**.
+
+## Prerequisites
+
+- The `user.create` permission (or full administrator access) to create accounts.
+- At least one [role](/admin/roles/) defined if you want to assign one at
+  creation time.
 
 ## Create an account
 
@@ -63,3 +69,9 @@ invites and add [subusers](/users/subusers/) themselves from the server's
    [panel issues](/troubleshooting/panel/)).
 4. In **Admin → Audit Logs**, filter the action **Sign-in failed** or the
    resource type **Login lockout** before resetting anything.
+
+## Related
+
+- Designing least-privilege roles: [roles & permissions](/admin/roles/).
+- Account security settings: [security](/admin/security/).
+- What owners can share themselves: [subusers](/users/subusers/).

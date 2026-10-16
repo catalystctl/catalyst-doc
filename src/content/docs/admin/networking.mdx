@@ -5,7 +5,6 @@ audience:
   - admin
 features:
   - networking
-  - tls
 sources:
   - catalyst-docker/docker-compose.caddy.yml
   - catalyst-docker/docker-compose.traefik.yml
@@ -49,9 +48,10 @@ overlays remove the frontend's direct host exposure; if you use `podman-compose`
 `FRONTEND_PORT=127.0.0.1:8080` in `.env` to keep direct access off the public
 interface.
 
-Set `PUBLIC_URL` to the exact URL users type (scheme + host) — it is the single
-source of truth for CORS, auth, and email links. `PASSKEY_RP_ID` is derived from
-its hostname automatically.
+`PUBLIC_URL` must be the exact URL users type (scheme + host) — the single
+source of truth for CORS, auth, and email links. The installer derives
+`PASSKEY_RP_ID` from its hostname. See [configuration](/admin/configuration/)
+for the full environment reference.
 
 ## Node ↔ panel
 
@@ -80,3 +80,9 @@ agent's config; open it on the node if you offer SFTP to users.
 2. Node checks in healthy.
 3. A test server's game port answers from outside your network.
 4. SFTP port reachable if you offer it to users.
+
+## Related
+
+- Environment reference and where to change variables: [configuration](/admin/configuration/).
+- Game-port and firewall troubleshooting: [networking issues](/troubleshooting/networking/).
+- Node reachability and the agent connection: [nodes overview](/admin/nodes/overview/).

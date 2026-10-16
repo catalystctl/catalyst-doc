@@ -4,16 +4,24 @@ description: Diagnose unreachable nodes, failed agents, and node-level failures.
 audience:
   - admin
 features:
-  - nodes
   - troubleshooting
+  - nodes
 sources:
-  - catalyst-agent/
+  - catalyst-agent/src/main.rs
+  - catalyst-agent/src/config.rs
+  - catalyst-agent/src/updater.rs
   - catalyst-agent/src/storage_manager.rs
-  - catalyst-agent/src/runtime_manager/
+  - catalyst-agent/src/runtime_manager/image_and_spec.rs
   - catalyst-agent/src/systemd_compat.rs
-  - docs/agent.md
-last_verified: '2026-10-14'
+  - scripts/deploy-agent.sh
+last_verified: '2026-10-16'
 ---
+
+## Prerequisites
+
+- Admin access to the panel, so you can read node status, metrics, and logs.
+- Shell access on the node (root or a sudo-capable account) to inspect and
+  restart `catalyst-agent`.
 
 ## Node shows unreachable
 
@@ -111,3 +119,10 @@ Agent version (`catalyst-agent --version`), the agent log tail
 (`df -h`, `free -m`), and whether the panel URL is reachable from the node with
 `curl`. The host-level `diagnose.sh` collects all of this in one redacted file
 ([diagnostics bundle](/troubleshooting/diagnostics-bundle/)).
+
+## Related
+
+- [Common errors](/troubleshooting/common-errors/) — look up a code or message.
+- [Panel issues](/troubleshooting/panel/) — rule out the panel before blaming the node.
+- [Networking issues](/troubleshooting/networking/) — the node cannot reach the panel.
+- [Diagnostics bundle](/troubleshooting/diagnostics-bundle/) — collect node and panel logs together.

@@ -16,12 +16,14 @@ Reinstalling replaces your server files with a fresh copy from its template. Use
 it when an installation is damaged beyond easy repair — corrupted jars, mangled
 configs after a bad edit, or a version jump you would rather do cleanly.
 
-## Before you reinstall
+## Prerequisites
 
 1. [Create a backup](/users/backups/) and wait for it to finish.
 2. Download anything the backup might not cover that you care about (or verify
    the backup completed — do not skip this).
 3. Tell your players: the server will be offline and the world may reset.
+
+You need the `server.reinstall` permission (the server owner has it by default).
 
 ## Reinstall
 
@@ -44,7 +46,7 @@ action in the **Admin** tab's **Container** section.
 ## If an install gets stuck
 
 A server stuck in the **installing** state shows a **Cancel install** button
-next to **Reinstall**. It kills the installer container and resets the server to
+next to **Reinstall**. It kills the stuck installer and resets the server to
 stopped so you can try again; partial install files are kept.
 
 :::caution
@@ -59,3 +61,9 @@ want to keep unless you restore them afterwards from the backup.
 - Just want a second server with the same setup? [Clone it](/users/cloning/)
   instead of starting from scratch — a configuration clone installs fresh, a
   full clone copies the world too.
+
+## Related
+
+- [Backups](/users/backups/) — restore what a reinstall wiped
+- [Startup & Variables](/users/startup/) — re-apply template variables
+- [Cloning](/users/cloning/) — duplicate instead of rebuilding

@@ -5,7 +5,6 @@ audience:
   - admin
 features:
   - monitoring
-  - logging
 sources:
   - catalyst-frontend/src/pages/admin/AdminDashboardPage.tsx
   - catalyst-frontend/src/pages/admin/SystemErrorsPage.tsx
@@ -14,7 +13,7 @@ sources:
   - catalyst-backend/src/routes/alerts.ts
   - catalyst-backend/src/routes/metrics.ts
   - catalyst-backend/src/routes/dashboard.ts
-last_verified: '2026-09-28'
+last_verified: '2026-10-16'
 ---
 
 ## What to watch
@@ -65,6 +64,12 @@ under **Admin → Security**.
    (CPU/memory/disk percentages), **Node offline** (offline threshold in
    minutes), or **Server crashed**; choose a **Target** (**Global**, **Node**,
    or **Server**).
+
+   :::note
+   **Resource threshold** rules cannot use the **Global** target — the panel
+   rejects them at creation with "use target `server` or `node`" because there
+   is no fleet-wide aggregation. Pick a specific server or node instead.
+   :::
 3. **Conditions** — set the thresholds the rule type exposes.
 4. **Notifications** — add **Email recipients**, **Webhook URLs**, a **Cooldown
    (minutes)**, and optionally **Notify server owner**.
@@ -88,3 +93,9 @@ people to ignore the channel.
 
 Go to [troubleshooting](/troubleshooting/overview/) with the alert text, the
 affected host, and a timestamp. Those three facts solve half of all incidents.
+
+## Related
+
+- Per-server resource graphs: [server metrics](/users/metrics/).
+- Backup health and retention: [backups](/admin/backups/).
+- Node reachability and agent versions: [nodes overview](/admin/nodes/overview/).

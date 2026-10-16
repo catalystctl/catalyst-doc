@@ -1,9 +1,19 @@
 name: API sync check
 
-# Verifies the committed OpenAPI artifact is well-formed. Regeneration from
-# the Catalyst source repo happens via the docs agent (`pnpm docs-agent api
-# --source-repo <checkout>`) and lands through normal PR review — this job
-# only guarantees the committed contract never silently rots.
+# Two independent checks:
+#
+#  1. `api/openapi.json` is a valid OpenAPI 3.1 document and matches the served
+#     copy (`public/openapi.json`). Hard gate: a stale served copy breaks the
+#     Scalar reference at runtime.
+#
+#  2. Drift against the product repo's exported contract. The committed
+#     artifact is regenerated deliberately with the docs agent
+#     (`pnpm docs-agent api --source-repo <checkout>`) and lands through PR
+#     review, so it can legitimately lag product `main` between releases. The
+#     weekly job exports `catalyst-backend` from `catalystctl/catalyst` and
+#     prints the operation delta. It is advisory (continue-on-error) so a
+#     product-side change cannot turn the docs repo red on its own; promote it
+#     to a hard gate only if the artifact must track every product commit.
 on:
   push:
     branches: [main]
@@ -23,3 +33,46 @@ jobs:
           node-version: 22
       - name: Validate OpenAPI artifact + served copy
         run: node scripts/sync-openapi.mjs --check
+
+  drift-check:
+    # Product HEAD is the reference only on the weekly run; on PRs the committed
+    # artifact is reviewed directly.
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check out Catalyst (product repo)
+        uses: actions/checkout@v4
+        with:
+          repository: catalystctl/catalyst
+          path: .catalyst-source
+      - uses: pnpm/action-setup@v4
+        with:
+          version: latest
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install the Catalyst backend toolchain
+        run: pnpm install --frozen-lockfile
+        working-directory: .catalyst-source
+      - name: Export the product OpenAPI contract
+        run: pnpm --filter catalyst-backend run openapi:export --out "$GITHUB_WORKSPACE/.openapi-exported.json"
+        working-directory: .catalyst-source
+      - name: Report drift against the committed artifact (advisory)
+        run: |
+          node -e '
+          const { readFileSync } = require("node:fs");
+          const ops = (file) => new Set(
+            Object.entries(JSON.parse(readFileSync(file, "utf8")).paths)
+              .flatMap(([p, item]) => Object.keys(item).map((method) => `${method.toUpperCase()} ${p}`)),
+          );
+          const committed = ops("api/openapi.json");
+          const exported = ops(".openapi-exported.json");
+          const added = [...exported].filter((op) => !committed.has(op));
+          const removed = [...committed].filter((op) => !exported.has(op));
+          console.log(`committed artifact: ${committed.size} operations; product export: ${exported.size}`);
+          if (added.length) console.log(`missing from the docs artifact (+${added.length}):\n- ${added.join("\n- ")}`);
+          if (removed.length) console.log(`in the docs artifact but gone from the product (-${removed.length}):\n- ${removed.join("\n- ")}`);
+          if (!added.length && !removed.length) console.log("no drift: the committed artifact matches the product export");
+          '

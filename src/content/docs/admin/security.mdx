@@ -11,8 +11,9 @@ sources:
   - catalyst-backend/src/routes/mcp.ts
   - catalyst-backend/src/mcp/tools.ts
   - catalyst-backend/src/services/mcp-settings.ts
-  - docs/SECURITY.md
-last_verified: '2026-09-28'
+  - catalyst-docker/docker-compose.yml
+  - catalyst-docker/.env.example
+last_verified: '2026-10-16'
 ---
 
 ## Panel
@@ -22,8 +23,10 @@ last_verified: '2026-09-28'
 - Restrict who can reach the admin UI by network (VPN, allowlist) in addition
   to passwords.
 - Never expose the database or Redis ports to the internet. The bundled compose
-  stack publishes PostgreSQL on `127.0.0.1` only and leaves Redis internal to
-  the Docker network by default.
+  stack publishes PostgreSQL on `127.0.0.1:5432` and Redis on `127.0.0.1:6379`
+  (both loopback-only) by default. To keep Redis off the host entirely, add a
+  `ports: []` override for the `redis` service — commenting out `REDIS_PORT`
+  does not unpublish it ([configuration](/admin/configuration/)).
 
 ## Accounts and access
 
@@ -99,6 +102,13 @@ audit-logged exactly like direct API use.
 
 ## Report a vulnerability
 
-Do not open a public issue for a suspected security bug. See `SECURITY.md` in
-the main Catalyst repository for the private reporting channel, and expect
-coordinated disclosure: report, fix window, then public advisory.
+Do not open a public issue for a suspected security bug. Report it privately to
+the maintainers and expect coordinated disclosure: report, fix window, then a
+public advisory.
+
+## Related
+
+- [Networking](/admin/networking/) — TLS and proxy layout.
+- [Users](/admin/users/) and [roles](/admin/roles/) — account and permission hygiene.
+- [Updating Catalyst](/admin/updating/) — ship security fixes promptly.
+- [Importing eggs](/admin/importing-eggs/) — the untrusted-code boundary.

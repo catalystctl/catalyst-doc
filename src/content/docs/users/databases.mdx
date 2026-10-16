@@ -17,6 +17,14 @@ Many plugins (permissions, economy, logging, Dynmap) need a database. The
 **Databases** tab provisions one for your server without you touching a
 database server.
 
+## Prerequisites
+
+- A server you can access, with the `database.read` permission to see the tab.
+- The `database.create` permission to add one, `database.rotate` to rotate a
+  password, and `database.delete` to remove one.
+- A database host configured by your administrator; if none is, the tab reports
+  the allocation as disabled.
+
 ## Create a database
 
 1. Open **Databases**. If the creation controls are not shown, you do not have
@@ -74,3 +82,9 @@ drop the database and its credentials"* and cannot be undone.
   password.
 - **Limit reached:** ask your administrator to raise the per-server database
   limit, or delete a database you no longer need.
+
+## Related
+
+- [Storage](/admin/storage/) — where administrators configure database hosts
+- [Files](/users/files/) — edit the plugin config that uses the database
+- [Startup & Variables](/users/startup/) — variables some plugins need

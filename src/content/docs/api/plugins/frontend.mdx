@@ -4,7 +4,7 @@ description: Add admin tabs, server tabs, pages, and slots, and call your plugin
 audience:
   - developer
 features:
-  - plugins
+  - plugin-development
 sources:
   - packages/plugin-sdk/src/frontend/
   - catalyst-frontend/src/plugins/loader.ts
@@ -13,7 +13,7 @@ sources:
   - catalyst-frontend/src/pages/PluginTabPage.tsx
   - catalyst-frontend/src/pages/PluginRoutePage.tsx
   - catalyst-plugins/scripts/build-bundles.mjs
-last_verified: '2026-09-28'
+last_verified: '2026-10-16'
 ---
 
 `frontend.entry` in `plugin.json` points at an ES module. The panel loads it
@@ -72,7 +72,12 @@ export default createFrontendPlugin({
     { path: '/my-plugin', component: AdminTab, requiredPermissions: ['server.read'] },
   ],
   components: [
-    { slot: 'dashboard-widgets', component: MyWidget, order: 50 },
+    {
+      slot: 'dashboard-widgets',
+      component: MyWidget,
+      order: 50,
+      requiredPermissions: ['server.read'],
+    },
   ],
   onMount: () => {},
   onUnmount: () => {},
@@ -130,10 +135,47 @@ Only these names render today:
 | --- | --- |
 | `dashboard-widgets` | Dashboard, below the activity list |
 | `profile-connections` | Profile page, below the linked-accounts card |
+| `server-header-stats` | Server detail header, between DISK and NETWORK |
+
+| Property | Required | Meaning |
+| --- | --- | --- |
+| `slot` | yes | Slot name from the table above. |
+| `component` | yes | React component. |
+| `order` | no | Lower comes first. Default 50. |
+| `requiredPermissions` | no | Hidden unless the signed-in user holds one of them. Omit to show it to everyone who can reach the surface. |
+
+A `server-header-stats` component receives
+`{ serverId, serverStatus, backupAllocationMb }`.
 
 [discord-oauth](https://github.com/catalystctl/catalyst-plugins/tree/main/discord-oauth)
 uses `profile-connections` for its link/unlink card. Any other slot name is
 accepted, stored, and never mounted — `sidebar-bottom` is one of those.
+
+### Who sees your UI
+
+Every signed-in user loads the plugin store, so visibility is yours to decide:
+
+- **No `requiredPermissions`** — the component, tab or page renders for anyone
+  who can reach the surface it is mounted on.
+- **Built-in permissions** — the host evaluates them for the viewer. On a
+  server surface that includes server-scoped grants, so an owner or a subuser
+  holding `backup.read` on that server sees the UI even though they hold no
+  panel-wide admin permission. `*`, `admin.read` and `admin.write` keep their
+  usual widening behaviour.
+- **Your own permissions** — declare them in `plugin.json` (see
+  [Manifest](/api/plugins/manifest/)) and an admin can grant them to a role.
+  The role editor lists them under **Plugins**. Tokens you do not declare
+  still work in `requiredPermissions`, but nobody can be granted them, so only
+  `*` holders would see that UI.
+
+Admins keep the full plugin inventory (consent state, licensing, capability
+counts, config). Everyone else gets a reduced list — name, version, display
+name, description and author of the **enabled** plugins that ship a frontend —
+purely so the panel can mount the UI each plugin targets. That does tell a
+signed-in user which plugins are installed; a plugin's bundle
+(`/plugins-assets/...`) is reachable for the same reason. Disabled plugins,
+backend-only plugins and sourcemaps stay admin-only, and the per-plugin detail
+and frontend-manifest endpoints are unchanged.
 
 ## Calling your backend
 
@@ -226,3 +268,9 @@ path.
 :::
 
 Backend-only plugins omit `frontend` entirely.
+
+## Related
+
+- [Plugin Manifest](/api/plugins/manifest/) — `userPermissions` and the fields the frontend reads
+- [Plugin Backend](/api/plugins/backend/) — the routes the UI calls
+- [API reference](/api/reference/) — the panel REST API `createPluginApi` sits beside

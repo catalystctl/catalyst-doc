@@ -5,7 +5,6 @@ audience:
   - user
 features:
   - networking
-  - allocations
 sources:
   - catalyst-frontend/src/components/servers/tabs/ServerAdminTab.tsx
   - catalyst-frontend/src/pages/admin/NodeAllocationsPage.tsx
@@ -17,6 +16,13 @@ An **allocation** is an IP address + port pair on your node. Your **primary**
 allocation is the address players join through; additional allocations serve
 extra ports (query, RCON, voice, Bedrock vs. Java).
 
+## Prerequisites
+
+- A server you can access — the address is shown in its header and on its card.
+- To add or remove allocations, the **Admin** tab's **Ports** section, which
+  needs the `server.network` permission (panel administrators have it through
+  `admin.write`).
+
 ## Find your server's address
 
 The address is shown in the server header and on the server card in your list —
@@ -27,18 +33,18 @@ otherwise always include the port. Details:
 
 ## See and manage allocations
 
-Allocations are managed in the server's **Admin** tab under **Ports**, which is
-available to panel administrators (`admin.write`). The node owns the pool of
-addresses; if you need another port (for example, for a plugin's web map), ask
-your administrator.
+Allocations are managed in the server's **Admin** tab under **Ports**, which
+needs the `server.network` permission (panel administrators have it through
+`admin.write`). The node owns the pool of addresses; if you need another port
+(for example, for a plugin's web map), ask your administrator.
 
 What the **Ports** section does, when you have access:
 
-1. Pick a free address from the **Select allocation** list and set the
-   **Container port** it maps to inside the server.
+1. Pick a free address from the **Select allocation** list and set the port it
+   maps to inside the server (the field the panel labels **Container port**).
 2. Select **Add allocation**.
-3. Each row shows the host address (`IP:host port`) mapped to the
-   **container port**, and marks the **Primary** one with a star.
+3. Each row shows the host address (`IP:host port`) mapped to the server-side
+   port, and marks the **Primary** one with a star.
 4. **Set primary** promotes a secondary allocation; **Remove allocation**
    deletes one. Removing an allocation from a running server closes its
    firewall rule immediately and disconnects anyone using that port, so the
@@ -55,3 +61,9 @@ allocations page.
   configuration, not something you change from the game itself.
 - If players cannot connect, first confirm you are sharing the primary
   allocation and the server is running.
+
+## Related
+
+- [Connecting to your server](/getting-started/connecting/) — find and share your address
+- [Admin networking](/admin/networking/) — how administrators manage node address pools
+- [Server issues](/troubleshooting/server/) — when players cannot connect

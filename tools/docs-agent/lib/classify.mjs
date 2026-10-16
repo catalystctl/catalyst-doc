@@ -36,6 +36,25 @@ const RULES = [
   [/troubleshooting/i, { features: ['troubleshooting'], audiences: ['user', 'admin'] }],
 ];
 
+// Canonical `features` vocabulary enforced on pages by scripts/validate-docs.mjs.
+// RULES must stay inside this set: the agent matches these names against page
+// frontmatter, so an off-vocabulary tag would silently map to nothing.
+const CANONICAL_FEATURES = new Set([
+  'getting-started', 'installation', 'configuration', 'administration',
+  'users-and-access', 'permissions', 'security', 'nodes', 'servers', 'console',
+  'files', 'sftp', 'backups', 'databases', 'networking', 'tasks',
+  'mods-and-plugins', 'monitoring', 'storage', 'templates', 'updates',
+  'migration', 'disaster-recovery', 'api', 'api-auth', 'api-errors',
+  'websockets', 'plugin-development', 'troubleshooting', 'contributing',
+]);
+for (const [, info] of RULES) {
+  for (const feature of info.features) {
+    if (!CANONICAL_FEATURES.has(feature)) {
+      throw new Error(`classify.mjs: rule emits '${feature}', not in the canonical features vocabulary`);
+    }
+  }
+}
+
 const API_TOUCH = /routes\/|websocket\/|error-codes\/|shared-types\.ts|openapi/i;
 const INTERNAL_ONLY = /__tests__|\.test\.|benchmarks?\/|e2e\/|review-.*\.md|PERFORMANCE_AUDIT|SESSION_BRIDGE|skills-lock|target\/|dist\//i;
 // UI copy churn with no doc impact: locale-only edits outside structural keys.

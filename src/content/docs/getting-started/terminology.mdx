@@ -5,7 +5,7 @@ audience:
   - user
   - admin
 features:
-  - core-concepts
+  - getting-started
 sources:
   - catalyst-frontend/src/i18n/locales/en/
 last_verified: '2026-09-28'
@@ -18,11 +18,11 @@ they always mean the following:
 | --- | --- |
 | **Panel** | The Catalyst web application and API you log in to. |
 | **Node** | A machine running the Catalyst agent that hosts game servers. |
-| **Agent** | The service on a node that runs containers and talks to the panel. |
-| **Server** | One game instance with its own files, limits, ports, and backups. |
+| **Agent** | The service on a node that runs game servers and talks to the panel. |
+| **Server** | One game running on a node, with its own files, limits, ports, and backups. |
 | **Template** | A reusable recipe for a game (image, startup command, install script). |
 | **Nest** | A category that groups related templates (for example, Minecraft). |
-| **Allocation** | An IP + port pair on a node assigned to a server. |
+| **Allocation** | An IP + port pair on a node assigned to a server — see [Networking](/users/networking/). |
 | **Subuser** | An extra account given limited access to someone else's server. |
 | **Task** | A scheduled action on a server, such as a restart or backup (see [Tasks](/users/tasks/)). |
 | **Backup** | A restorable snapshot of a server's files. |

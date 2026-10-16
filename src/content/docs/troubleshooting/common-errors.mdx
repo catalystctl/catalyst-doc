@@ -1,6 +1,6 @@
 ---
 title: Common Errors
-description: Look up a Catalyst error message and fix it.
+description: Match a Catalyst error message to a symptom and fix it.
 audience:
   - user
   - admin
@@ -10,29 +10,40 @@ features:
 sources:
   - catalyst-backend/src/lib/error-codes/
   - catalyst-frontend/src/i18n/api-errors.ts
-last_verified: '2026-09-28'
+last_verified: '2026-10-16'
 ---
 
-Copy the `code` from your error (API consumers) or match the message below.
-API codes are stable identifiers — see [errors](/api/errors/).
+This page maps what you **see** to what to do. The panel and API attach a
+stable `code` to most errors — look yours up in
+[API errors](/api/errors/) for the HTTP status, meaning, and whether it is
+safe to retry. Branch on the `code`, never on the message: messages are
+localized and may change.
 
-| Error | Meaning | Fix |
+## Symptom guide
+
+| Symptom | Likely cause | Fix |
 | --- | --- | --- |
-| `PERMISSION_DENIED` / "Insufficient permissions" | Logged in, but not allowed. | Check your role/subuser grants ([authorization](/api/authorization/), [subusers](/users/subusers/)). |
-| `VALIDATION_ERROR` / "Missing required fields" | The request or form was incomplete. | Fill the highlighted fields; for API calls compare against the [reference](/api/reference/). |
-| `NOT_FOUND` | No such thing (or hidden from you). | Check the ID/UUID; confirm it was not deleted. |
-| `CONFLICT` | Duplicate or state clash. | Rename, or stop/delete the conflicting resource first. |
-| `RATE_LIMITED` / "Too many requests" | Over the limit. | Slow down, back off, stop polling ([rate limits](/api/rate-limits/)). |
-| `INSUFFICIENT_RESOURCES` | Node lacks memory/disk/ports. | Free capacity or ask the administrator for a bigger node. |
-| `PORT_ALREADY_IN_USE` / "Port N is already in use on this node" | Allocation clash. | [Server issues](/troubleshooting/server/) — free or reassign the port. |
-| `SERVER_NOT_STOPPED` / "Server must be stopped ..." | The action needs the server off. | **Stop** the server, then retry (some actions, like restore, require it). |
-| `NODE_OFFLINE` | The node's agent is not reachable. | Check the agent on the node ([node issues](/troubleshooting/node/)). |
+| "Insufficient permissions" | Logged in, but not allowed. | Check your role/subuser grants ([authorization](/api/authorization/), [subusers](/users/subusers/)). |
+| Form rejected, "Missing required fields" | The request or form was incomplete. | Fill the highlighted fields; for API calls compare against the [reference](/api/reference/). |
+| "Not found" | No such thing, or hidden from your account. | Check the ID/UUID; confirm it was not deleted. |
+| "Already exists" / duplicate name | A conflicting resource exists. | Rename, or stop/delete the conflicting resource first. |
+| "Too many requests" | You are over the rate limit. | Slow down, back off, stop polling ([rate limits](/api/rate-limits/)). |
+| "Insufficient memory/disk/ports" | The node lacks capacity. | Free capacity or ask the administrator for a bigger node. |
+| "Port N is already in use on this node" (`PORT_ALREADY_IN_USE`) | Two servers claim the same allocation. | [Server issues](/troubleshooting/server/) — free or reassign the port. |
+| "Server must be stopped ..." (`SERVER_NOT_STOPPED`) | The action needs the server off. | **Stop** the server, then retry — restore and similar actions require it. |
+| "Node offline" / agent unreachable | The node's agent is not reachable. | Check the agent on the node ([node issues](/troubleshooting/node/)). |
 | Minecraft **Minecraft EULA** prompt | The EULA is not accepted yet. | In the **Console**, select **I Agree**, then start the server ([first server](/getting-started/first-server/)). |
 | SFTP "authentication failed" | Stale or mistyped credentials. | Copy fresh credentials from the SFTP tab ([SFTP](/users/sftp/)). |
-| Setup wizard missing on fresh install | Setup already ran, or backend still migrating. | Sign in; if erroring, check container logs ([panel issues](/troubleshooting/panel/)). |
+| Setup wizard missing on fresh install | Setup already ran, or the backend is still migrating. | Sign in; if erroring, check container logs ([panel issues](/troubleshooting/panel/)). |
 
 If your message is not here, open **Admin → System Errors** to see the persisted
 exception, or capture a [diagnostics bundle](/troubleshooting/diagnostics-bundle/).
 You can also search the page text in the main Catalyst repository issues — and
 consider contributing the fix back to this page (see
 [docs contributor guide](/contributing/docs/)).
+
+## Related
+
+- [API errors](/api/errors/) — the full stable-code table: statuses, meanings, retry guidance.
+- [Troubleshooting overview](/troubleshooting/overview/) — start from the layer that owns the symptom.
+- [Diagnostics bundle](/troubleshooting/diagnostics-bundle/) — collect logs when the message is not enough.

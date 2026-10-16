@@ -30,32 +30,33 @@ start.
 ## 1. Create the server
 
 1. Open **Servers** and select **New server**. The **Create new server** dialog
-   opens on the **Details** step, with a step rail across the top:
-   **Details → Resources → Network → Startup**.
-2. On **Details**, enter a **Server Name** you will recognize, for example
-   `Survival SMP`. **Description** is optional.
-3. Choose the **Template** — the searchable list of installed games. For
-   Minecraft: Java Edition, pick **Minecraft Server (Universal)**. Its
-   **SERVER_TYPE** variable decides the server software and defaults to Paper —
-   you will confirm it on the **Startup** step. If the template offers an
-   **Image Variant**, leave it on **Use default image** unless you need a
-   specific Java runtime.
-4. Choose the **Node** to run it on (usually there is only one).
-5. Select **Next** to open **Resources**. **Memory (MB)** and **Disk (MB)** are
-   prefilled from the template and **CPU Cores** defaults to `1`; accept them
-   unless you know you need more. **Swap (MB)**, **Backup (MB)**, and
-   **Database Allocation** can stay blank to use the provider defaults.
-6. Select **Next** to open **Network**. Leave **Network Mode** on
-   **Host (port mapping)** — the usual choice. Under **Primary Allocation**,
-   pick an **Allocation** (IP + port) for players to join through. **Primary
-   Port** fills in from that allocation automatically. (Choose **Macvlan** only
-   if your administrator told you to.)
-7. Select **Next** to open **Startup**. These are the template's
-   **Environment Variables**; the defaults are a good starting point. Anything
-   marked with a red `*` is required. For the Minecraft template, leave
-   **SERVER_TYPE** on `paper`, and if you like, tick the **EULA** checkbox to
-   accept the Minecraft licence up front (otherwise Catalyst asks after
-   install).
+   is one scrollable form with five numbered sections — **Details**, **Node**,
+   **Resource Allocation**, **Network**, and **Startup** — plus a live summary
+   panel that mirrors the server about to be created.
+2. **Details:** enter a **Server Name** you will recognize, for example
+   `Survival SMP`. **Description** is optional. Choose the **Template** — the
+   searchable list of installed games. For Minecraft: Java Edition, pick
+   **Minecraft Server (Universal)**; its **SERVER_TYPE** variable decides the
+   server software and defaults to Paper (you can change it in **Startup**). If
+   the template offers an **Image Variant**, leave it on **Use default image**
+   unless you need a specific Java runtime.
+3. **Node:** choose the **Node** to run it on (usually there is only one). The
+   location comes from the node.
+4. **Resource Allocation:** **Memory (MB)** and **Disk (MB)** are prefilled from
+   the template and **CPU Cores** defaults to `1`; accept them unless you know
+   you need more. **Swap (MB)**, **Backup (MB)**, and **Database Allocation**
+   can stay blank to use the provider defaults.
+5. **Network:** leave **Network Mode** on **Host (port mapping)** — the usual
+   choice. Under **Primary Allocation**, pick an **Allocation** (IP + port) for
+   players to join through; **Primary Port** fills in from that allocation
+   automatically. (Choose **Macvlan** only if your administrator told you to.)
+6. **Startup:** these are the template's **Environment Variables**; the defaults
+   are a good starting point. Anything marked with a red `*` is required. For
+   the Minecraft template, leave **SERVER_TYPE** on `paper` and tick the
+   **EULA** checkbox to accept the Minecraft licence up front (otherwise
+   Catalyst asks after install).
+7. If something is missing or out of range, the panel lists the reason at the
+   bottom of the dialog and **Create server** stays disabled.
 8. Select **Create server**. Catalyst creates the server and starts the install
    automatically, then opens its **Console**. Installation can take a few
    minutes — watch the output in the **Console** tab.
@@ -87,7 +88,7 @@ do not edit any files:
    [Find your address](/getting-started/connecting/) if it is not visible.
 3. In Minecraft, use **Multiplayer → Add Server** and paste the address.
 
-## Next steps
+## Related
 
 - [Use the console](/users/console/) — commands, power controls, and logs.
 - [Upload files and use SFTP](/users/files/) — worlds, plugins, and configs.

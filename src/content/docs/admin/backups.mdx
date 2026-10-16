@@ -21,13 +21,15 @@ owner's — but the storage backend and retention rules are set here.
 ## 1. The panel database
 
 PostgreSQL holds users, servers, roles, audit logs — everything except the game
-files themselves. If it is gone, the fleet is unmanageable.
+files themselves. If it is gone, the fleet is unmanageable. The exact `pg_dump`
+and restore commands live in [disaster recovery](/admin/disaster-recovery/);
+this page owns the schedule and the fleet-wide storage settings.
 
 - Take automated dumps on a schedule (daily minimum) and ship them off the
   panel host.
 - Retain enough history to survive a weekend discovery (7–30 days is typical).
-- **Restore-test quarterly** into a scratch environment. See
-  [disaster recovery](/admin/disaster-recovery/).
+- **Restore-test quarterly** into a scratch environment
+  ([the recovery drill](/admin/disaster-recovery/)).
 
 ## 2. Choose the fleet-wide backup backend
 
@@ -40,16 +42,20 @@ docker compose up -d backend
 ```
 
 ```bash
-BACKUP_STORAGE_MODE=local   # local | s3 | stream
+BACKUP_STORAGE_MODE=local   # local | s3
 ```
 
 - **local** (default) — files under the backend's backup directory
   (`BACKUP_DIR`, `/var/lib/catalyst/backups` in the Compose stack).
-- **stream** — backend-local transfer directory, useful when no persistent
-  backup volume is mounted.
 - **s3** — an S3-compatible bucket. Also set `BACKUP_S3_BUCKET`,
   `BACKUP_S3_REGION`, `BACKUP_S3_ACCESS_KEY`, `BACKUP_S3_SECRET_KEY`, and
   optionally `BACKUP_S3_ENDPOINT` / `BACKUP_S3_PATH_STYLE=true`.
+
+The panel's environment editor offers only `local` and `s3` for this variable.
+The backend also accepts `stream` (a backend-local transfer directory, useful
+when no persistent backup volume is mounted) and `sftp` when you set them
+directly in `.env`; per-server settings expose the same extra modes. Values
+outside `local`/`s3`/`sftp`/`stream` fall back to `local`.
 
 Set `BACKUP_CREDENTIALS_ENCRYPTION_KEY` (32-byte base64, e.g.
 `openssl rand -base64 32`) before storing per-server S3 or SFTP credentials:
@@ -81,3 +87,9 @@ Server owners also back up their own servers ([user backups](/users/backups/)).
    system errors view.
 4. **Document the restore path** where the on-call person will find it at 3 AM,
    not in someone's head.
+
+## Related
+
+- Rebuild procedure and the quarterly drill: [disaster recovery](/admin/disaster-recovery/).
+- Where backup files live on disk: [storage](/admin/storage/).
+- What owners can do themselves: [user backups](/users/backups/).

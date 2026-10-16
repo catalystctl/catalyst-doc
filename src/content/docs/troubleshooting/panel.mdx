@@ -9,9 +9,17 @@ features:
 sources:
   - catalyst-backend/src/index.ts
   - catalyst-frontend/src/pages/admin/SystemErrorsPage.tsx
-  - catalyst-docker/
-last_verified: '2026-09-28'
+  - catalyst-docker/docker-compose.yml
+  - catalyst-docker/update.sh
+last_verified: '2026-10-16'
 ---
+
+## Prerequisites
+
+- Admin access to the panel, so you can open **Admin → System Errors** and
+  **Admin → Audit Logs**.
+- Shell access on the host running the stack, to read container logs and run
+  `docker compose`.
 
 ## Panel will not start after an update
 
@@ -56,3 +64,10 @@ incident window, and whether the problem survives a private window
 (rules out extensions/cookies). **Admin → System Errors → Download diagnostics**
 captures the panel logs and system errors in one redacted ZIP — see
 [diagnostics bundle](/troubleshooting/diagnostics-bundle/).
+
+## Related
+
+- [Common errors](/troubleshooting/common-errors/) — look up a code or message.
+- [Node issues](/troubleshooting/node/) — the panel is healthy but nodes are not.
+- [Networking issues](/troubleshooting/networking/) — the panel URL is unreachable.
+- [Diagnostics bundle](/troubleshooting/diagnostics-bundle/) — export panel logs for support.

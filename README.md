@@ -29,7 +29,15 @@ pnpm preview        # serve the production output
 ## Repository structure
 
 ```text
-src/content/docs/     Markdown/MDX pages by audience
+astro.config.mjs      Starlight config — NESTED sidebar (group → subgroup → page)
+src/content/docs/     69 pages, one folder per audience:
+  getting-started/      4  what Catalyst is, terminology, first server
+  users/               17  the Game Server Guide (incl. account.mdx)
+  admin/               22  the Administrator Guide (incl. plugins.mdx)
+  api/                 18  REST API, realtime, plugin development, reference
+  troubleshooting/      7  symptom-driven fixes
+  contributing/         1  this docs contributor guide
+  index.mdx               splash page
 src/assets/ src/styles/  logo, Catalyst-themed Starlight CSS
 public/               static files (openapi.json served copy lands here)
 api/openapi.json      committed API contract (generated — see below)
@@ -43,8 +51,23 @@ terminology.json      canonical product vocabulary
 
 ## Edit docs
 
-Pages live under `src/content/docs/` with frontmatter (`title`, `description`,
-`audience`, `features`, `sources`, `last_verified`). Full conventions:
+Pages live under `src/content/docs/`, one folder per audience. Every page
+except the splash `index.mdx` carries frontmatter (`title`, `description`,
+`audience`, `features`, `sources`, `last_verified`). A new page also needs a
+sidebar entry in `astro.config.mjs`; the sidebar is nested (`items:` groups to
+arbitrary depth) and nesting does not change URLs. Two recent additions:
+`admin/plugins` and `users/account`.
+
+Run the gates before pushing:
+
+```bash
+pnpm validate            # links, slugs, frontmatter, assets, OpenAPI, terminology
+pnpm check-terminology   # banned + preferred vocabulary only
+pnpm test                # docs-agent unit tests
+```
+
+`pnpm validate` (i.e. `node scripts/validate-docs.mjs`) is the fastest gate;
+`pnpm run build` is the command Cloudflare Pages runs. Full conventions:
 `AGENTS.md` and the [docs contributor guide](https://docs.catalystctl.com/contributing/docs/).
 
 ## API reference generation

@@ -4,7 +4,7 @@ description: Lifecycle hooks, routes, tasks, events, WebSocket, and file access 
 audience:
   - developer
 features:
-  - plugins
+  - plugin-development
 sources:
   - catalyst-backend/src/plugins/types.ts
   - catalyst-backend/src/plugins/context.ts
@@ -279,3 +279,9 @@ await harness.unload();
 `createMockContext()` records `registerRoute` calls and stores collections in
 memory, including `$set`, `$unset`, `$inc`, `$push`, `$pull`, and dotted paths.
 Schema-shaped config values are unwrapped the same way the host unwraps them.
+
+## Related
+
+- [Plugin Manifest](/api/plugins/manifest/) — the fields these hooks read
+- [Plugin Data & Permissions](/api/plugins/data/) — config, storage, scoped database
+- [API reference](/api/reference/) — the panel REST API these routes sit beside

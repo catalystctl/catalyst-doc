@@ -5,14 +5,13 @@ audience:
   - admin
 features:
   - storage
-  - database
-  - redis
+  - databases
 sources:
   - catalyst-docker/docker-compose.yml
-  - docs/redis.md
+  - catalyst-backend/src/lib/redis.ts
   - catalyst-agent/src/storage_manager.rs
   - catalyst-agent/src/websocket_handler/backup.rs
-last_verified: '2026-09-28'
+last_verified: '2026-10-16'
 ---
 
 ## Panel host
@@ -25,14 +24,16 @@ The bundled stack keeps four named Docker volumes: `catalyst-postgres-data`
   Back it up continuously; see [backups](/admin/backups/) and
   [disaster recovery](/admin/disaster-recovery/).
 - **Backups** are stored in the `catalyst-backup-data` volume
-  (`/var/lib/catalyst/backups`) by default, or in S3 when
-  `BACKUP_STORAGE_MODE=s3`.
+  (`/var/lib/catalyst/backups`) by default. Choosing the storage backend
+  (`BACKUP_STORAGE_MODE`) and its retention is covered in
+  [backups](/admin/backups/).
 - **Redis** is an ephemeral cache and coordination layer: config caches,
   cross-instance invalidation, realtime fan-out, agent command relay, shared
   rate-limit counters, and locks. It has **no volume, no AOF/RDB, and no
   persistence by design** — sessions live in PostgreSQL, not Redis. Losing
   Redis means slower requests and degraded realtime, never lost data; the
-  backend falls back to the database when it is down (`docs/redis.md`).
+  backend falls back to the database when it is down
+  (`catalyst-backend/src/lib/redis.ts`).
 - Keep database volumes on fast, monitored disks separate from bulk backup
   storage.
 
@@ -61,3 +62,10 @@ images, logs, and temporary backup staging. Plan for it:
 - Never let any volume hit 100%. Ever. This is the single most preventable
   cause of "everything broke at 3 AM".
 - Test restores, not just backups — an untested snapshot is a hope.
+
+## Related
+
+- Backup backend, retention, and restore-testing: [backups](/admin/backups/).
+- Rebuilding the panel after disk loss: [disaster recovery](/admin/disaster-recovery/).
+- Node kernel and disk-quota requirements: [requirements](/admin/requirements/).
+- Watching disk usage before it fills: [monitoring](/admin/monitoring/).

@@ -5,7 +5,7 @@ audience:
   - user
 features:
   - servers
-  - subusers
+  - users-and-access
   - permissions
 sources:
   - catalyst-frontend/src/components/servers/tabs/ServerUsersTab.tsx
@@ -17,6 +17,15 @@ last_verified: '2026-09-28'
 The **Users** tab (titled **Users & Access**) adds subusers: extra accounts with
 limited access to your server. Your friend logs in with their own account and
 only sees what you allow.
+
+## Prerequisites
+
+- A server you own or administer — you can only manage subusers on a server you
+  own or administer.
+- The permissions you intend to grant; you cannot grant a permission you do not
+  hold yourself.
+- For invites by email, a panel with email delivery configured. Without it, the
+  panel shows a copyable invite link instead.
 
 ## Invite a subuser
 
@@ -62,3 +71,9 @@ subusers on a server you own or administer.
   [Activity](/users/activity/), and you cannot revoke access without changing
   your password.
 - If you suspect misuse, check **Activity** first so you know what changed.
+
+## Related
+
+- [Activity](/users/activity/) — see what a subuser did
+- [Roles](/admin/roles/) — how administrators define permission sets
+- [Users & Access (admin)](/admin/users/) — panel-wide account management

@@ -16,8 +16,16 @@ last_verified: '2026-09-28'
 
 Catalyst can import Pterodactyl eggs as templates, so a library built for
 Pterodactyl does not have to be rebuilt from scratch. Imports live on the
-templates page (**Admin → Templates**), not in the migration center — that page
-imports whole servers. Both JSON (Pterodactyl) and YAML (Pelican) eggs work.
+[templates page](/admin/templates/) (**Admin → Templates**), not in the
+migration center — that page imports whole servers. Both JSON (Pterodactyl) and
+YAML (Pelican) eggs work.
+
+## Prerequisites
+
+- The `template.create` permission, or full administrator access.
+- For **From URL**, outbound access from the backend to the egg's host.
+- For **Import All Pterodactyl Eggs**, outbound access from the backend to
+  GitHub.
 
 ## Import one egg
 
@@ -75,3 +83,9 @@ egg can be posted as JSON to `POST /api/templates/import-pterodactyl`. Both
 require the `template.create` permission and return structured validation errors
 (422) for eggs that cannot be converted. Full-panel migrations import nests and
 templates on their own — see [migration](/admin/migration/).
+
+## Related
+
+- Creating and maintaining templates: [templates](/admin/templates/).
+- Moving whole servers: [migration](/admin/migration/).
+- Why imported install scripts need review: [security](/admin/security/).

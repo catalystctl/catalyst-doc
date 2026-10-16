@@ -4,7 +4,7 @@ description: Extend the panel with plugins — routes, tabs, tasks, storage, and
 audience:
   - developer
 features:
-  - plugins
+  - plugin-development
 sources:
   - packages/plugin-sdk/
   - catalyst-backend/src/plugins/
@@ -81,7 +81,7 @@ image falls back to `frontend.mjs`, which cannot use React hooks. If your UI
 calls `useState` or `useEffect`, ship it as a repository plugin or keep the UI
 free of hooks.
 
-## Read next
+## Related
 
 1. [Create a plugin](/api/plugins/creating/) — scaffold, install, enable.
 2. [Manifest](/api/plugins/manifest/) — every `plugin.json` field.
@@ -91,6 +91,7 @@ free of hooks.
 6. [Sign-in plugins](/api/plugins/auth/) — OAuth and SSO.
 7. [Plugin licensing](/api/plugins/licensing/) — vendor-owned license validation and encrypted payloads.
 8. [Packaging & marketplace](/api/plugins/packaging/) — `.catpkg.zip` and indexes.
+9. [API reference](/api/reference/) — the host REST API a plugin can call.
 
 ## Rules
 

@@ -14,8 +14,16 @@ sources:
   - catalyst-backend/src/services/node-update-policy.ts
   - catalyst-docker/update.sh
   - install.sh
-last_verified: '2026-09-25'
+last_verified: '2026-10-16'
 ---
+
+## Prerequisites
+
+- The panel is running from the bundled Docker stack for the in-panel updater;
+  a standalone install uses the manual path below.
+- A pre-update database backup — this is the rollback for everything except node
+  agents ([backups](/admin/backups/)).
+- Administrator access to **Admin → System** (`admin.write`).
 
 ## The order (always)
 
@@ -109,3 +117,52 @@ Watch the backend logs until migrations finish (`docker compose logs -f backend`
 - Nodes: reinstall the previous agent build on the affected node.
 - After any rollback, verify the same four checks as an update before
   declaring victory.
+
+## Recovering from a failed migration
+
+The backend runs `prisma migrate deploy` on every container start
+(`catalyst-backend/docker-entrypoint.sh`). A migration that fails leaves the
+backend crash-looping with a Prisma error in the logs. Recover in this order.
+
+1. **Take a dump first**, even if the panel is down — the pre-update backup is
+   the supported rollback ([disaster recovery](/admin/disaster-recovery/)).
+2. **Read the failure.**
+   ```bash
+   docker compose logs backend | grep -A 20 -i migration
+   ```
+3. **Inspect the migration table** for the row that never finished:
+   ```bash
+   docker compose exec catalyst-postgres psql -U catalyst -d catalyst_db
+   ```
+   ```sql
+   SELECT migration_name, started_at, finished_at, rolled_back_at
+   FROM "_prisma_migrations"
+   ORDER BY started_at DESC
+   LIMIT 5;
+   ```
+   A row with `finished_at` NULL and `rolled_back_at` NULL is the failed
+   migration.
+4. **Fix the cause, then re-run.** Most failures are a transient lock, a
+   version/env mismatch, or a full disk. Once fixed, recreating the backend
+   re-runs the deploy:
+   ```bash
+   docker compose up -d backend
+   docker compose logs -f backend
+   ```
+5. **If it still fails, restore the pre-update dump** and redeploy the previous
+   release. That is the rollback the panel supports.
+
+:::caution
+Never edit or delete an already-applied migration, and do not hand-edit
+`_prisma_migrations`. If a migration must be re-applied after a correction, use
+Prisma's own `prisma migrate resolve --rolled-back <name>` from inside the
+backend image — then redeploy. Editing migration files or the table directly
+leaves the schema and the migration history disagreeing.
+:::
+
+## Related
+
+- Panel and node update order: this page and [updating a node](/admin/nodes/updating/).
+- Pre-update database dump and restore: [disaster recovery](/admin/disaster-recovery/).
+- Backup schedule and storage: [backups](/admin/backups/).
+- Update failures at runtime: [troubleshooting](/troubleshooting/overview/).

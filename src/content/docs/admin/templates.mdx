@@ -16,9 +16,15 @@ last_verified: '2026-09-28'
 startup command, variables, and defaults. Users pick a template when creating a
 server; everything else flows from it. Manage them under **Admin → Templates**.
 
+## Prerequisites
+
+- The `template.create` permission, or full administrator access.
+- A [node](/admin/nodes/overview/) if you want to install-test the template
+  before publishing it.
+
 ## Add a template
 
-You need `template.create` (or full admin). From **Admin → Templates**:
+From **Admin → Templates**:
 
 1. Select **New Template**.
 2. **Nest** step: choose the nest that should group the template, or select
@@ -30,7 +36,7 @@ You need `template.create` (or full admin). From **Admin → Templates**:
    can create servers from it.
 
 To bring in an existing game definition instead, select **Import** on the same
-page:
+page ([importing eggs](/admin/importing-eggs/) walks through the whole flow):
 
 - **From URL** — paste a direct link to a Pterodactyl egg (`.json`/`.yaml`).
 - **From Local File** — **Choose file** on your computer.
@@ -68,3 +74,9 @@ entries help nobody.
 Select **Nests** on the Templates page to open **Manage nests**, then **New
 nest**; give it a **Name**, optional **Description**, and optional **Icon URL**.
 Deleting a nest leaves its templates ungrouped rather than deleting them.
+
+## Related
+
+- Importing Pterodactyl eggs and nests: [importing eggs](/admin/importing-eggs/).
+- What users see when they create a server: [creating a server](/getting-started/first-server/).
+- Migrating whole servers: [migration](/admin/migration/).

@@ -38,8 +38,10 @@ restored, you do not have recovery — you have a theory.
 
 ## Back up the panel
 
-Run these on the panel host, from the compose directory. `POSTGRES_USER` and
-`POSTGRES_DB` default to `catalyst` and `catalyst_db`; use your `.env` values.
+Schedule, retention, and the storage backend are covered in
+[backups](/admin/backups/); this section is the command reference. Run these on
+the panel host, from the compose directory. `POSTGRES_USER` and `POSTGRES_DB`
+default to `catalyst` and `catalyst_db`; use your `.env` values.
 
 ```bash
 cd /opt/catalyst-docker            # or your CATALYST_COMPOSE_DIR
@@ -121,3 +123,10 @@ broke the stack.
 Recovery instructions, credentials for restores, and contact lists must live
 somewhere other than the infrastructure they recover. A runbook on the dead
 panel helps no one.
+
+## Related
+
+- Backup schedule, storage backend, and retention: [backups](/admin/backups/).
+- Installing a fresh stack: [installation](/admin/installation/).
+- Re-adding nodes: [installing a node](/admin/nodes/installing/).
+- User-side restore: [user backups](/users/backups/).

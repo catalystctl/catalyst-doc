@@ -16,11 +16,23 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: Validate docs (links, slugs, frontmatter, assets, OpenAPI, terminology)
-        run: pnpm validate
+      # --strict turns orphan-page warnings into failures: every page must be
+      # reachable from the sidebar.
+      - name: Validate docs (links, slugs, frontmatter, features, assets, OpenAPI, terminology)
+        run: pnpm validate --strict
       - name: Docs-agent tests
         run: pnpm test
+      # `docs-agent audit` gates its source checks on the Catalyst checkout
+      # being present; without it the step silently degrades to a stale/unmapped
+      # report and never verifies that a page's declared `sources` still exist.
+      # Check the product repo out (same public repo the product CI uses) so the
+      # audit does real work. Keep it advisory: docs land through review.
+      - name: Check out Catalyst (for docs-agent source checks)
+        uses: actions/checkout@v4
+        with:
+          repository: catalystctl/catalyst
+          path: .catalyst-source
       - name: Docs-agent audit (advisory)
-        run: pnpm docs-agent audit --docs-repo . --json || true
+        run: pnpm docs-agent audit --docs-repo . --source-repo .catalyst-source --json || true
       - name: Production build (same command as Cloudflare Pages)
         run: pnpm run build

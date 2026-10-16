@@ -1,0 +1,132 @@
+---
+title: Plugins
+description: Install, enable, configure, and license panel extensions.
+audience:
+  - admin
+features:
+  - plugin-development
+sources:
+  - catalyst-backend/src/routes/plugins.ts
+  - catalyst-backend/src/plugins/safety.ts
+  - catalyst-backend/src/plugins/marketplace/service.ts
+  - catalyst-frontend/src/pages/admin/PluginsPage.tsx
+  - catalyst-frontend/src/pages/admin/plugins/MarketplacePage.tsx
+  - catalyst-frontend/src/pages/admin/plugins/SafetyConsentDialog.tsx
+  - packages/plugin-sdk/src/licensing.ts
+last_verified: '2026-10-16'
+---
+
+Plugins extend the panel with new pages, server tabs, API routes, scheduled
+tasks, and sign-in providers. Manage them under **Admin → Plugins**. Plugins run
+with the access you grant them, so every install is a trust decision — see
+[security](/admin/security/).
+
+## Prerequisites
+
+- Administrator access — the plugin surfaces need `admin.read`/`admin.write`.
+- Outbound HTTPS from the backend to the marketplace index and the package URL
+  you install from.
+- For a vendor-licensed plugin, the license key from the vendor.
+
+## Install a plugin
+
+1. Open **Admin → Plugins** and select **Marketplace**.
+2. Browse the configured sources. Each entry shows its version and whether a
+   newer one is available.
+3. Select **Install**. A package is a `.catpkg.zip` — a ZIP whose root contains
+   `plugin.json`. When the marketplace index publishes a `sha256`, the panel
+   verifies the download against it.
+4. Installed code is staged **inert**: it cannot run until you accept the safety
+   disclaimer and enable it.
+
+Installing over an existing copy upgrades it in place. You can also install by
+URL with `POST /api/plugins/install` and a body of `{ "url": "…", "sha256": "…" }`
+— `sha256` is optional but recommended.
+
+### Marketplace sources
+
+The marketplace merges the official index (unless `PLUGIN_MARKETPLACE_DISABLE_OFFICIAL`
+is set), comma-separated `PLUGIN_MARKETPLACE_URLS`, and sources added from the
+panel. Add, enable, or remove panel-added sources in the marketplace; the
+official and environment sources are read-only.
+
+## Enable a plugin and accept the safety disclaimer
+
+The first time you enable a plugin, the panel requires an up-to-date acceptance
+of its safety disclaimer.
+
+1. In **Admin → Plugins**, toggle the plugin on.
+2. If consent is required, the **Enable** dialog opens: it lists the
+   plugin's author, version, declared permissions, and — for licensed plugins —
+   the activation endpoint it will contact. The dialog warns that plugins run
+   with the same network and host access as Catalyst itself.
+3. Tick the acknowledgement and select **Accept & Enable**. The panel records
+   who accepted, when, and which permissions were in scope.
+
+Consent is required again when:
+
+- the plugin's version changes,
+- its declared permissions grow beyond the accepted set,
+- the disclaimer version changes.
+
+Disabling a plugin stops its routes, tasks, and event handlers. Re-enabling an
+unchanged plugin does not ask for a new acceptance.
+
+## Grant and revoke plugin permissions
+
+A plugin declares the capabilities it wants in `plugin.json`; you decide which it
+actually receives.
+
+1. Open the plugin's **Details** and the **Permissions** tab.
+2. Toggle individual permissions. Grants must be a subset of what the plugin
+   declared — the panel rejects undeclared scopes.
+3. Select **Save permissions**.
+
+Revoking a permission stops the plugin's access to that data immediately, with no
+restart. Mounted routes, scheduled tasks, and event listeners stay until you
+disable the plugin. Every change is audit-logged.
+
+Plugins can also expose permissions for panel **roles** (a separate namespace
+from the plugin's own capabilities). Those appear in the role editor under
+**Plugins** — assign them to staff through [roles](/admin/roles/).
+
+## Configure a plugin
+
+1. Select the plugin's **Settings**.
+2. Fill in the fields the plugin declares in its config schema (strings, numbers,
+   booleans, enums, or free-form values). Password-typed values are never
+   returned to non-admin callers.
+3. Save. Config is stored by the panel and applied on reload.
+
+## Update, reload, disable, uninstall
+
+- **Update** — when the marketplace lists a newer version, the row shows
+  **Update available**; installing that listing upgrades the plugin in place.
+- **Reload** — re-reads the plugin from disk without restarting the panel.
+- **Disable** — stops the plugin; its files and settings stay installed.
+- **Uninstall** — removes the plugin code and unloads it. Optionally enable
+  **Also delete stored data** to also remove its config values, key-value
+  storage, collections, and consent history; stored data cannot be recovered
+  after purging.
+
+## Licensing
+
+Catalyst does not issue or validate plugin licenses. A vendor plugin declares a
+`licensing` block in `plugin.json` (`licenseServer`, and optionally `buyUrl`,
+`encrypted`, `failMode`, and `cacheTtlHours`). The panel's job is to disclose the
+phone-home before you enable the plugin, hand the plugin a stable install ID, and
+refuse to install a package marked `encrypted` that ships no encrypted backend
+payload.
+
+- Put the vendor's **license key** in the plugin's config (usually the
+  `licenseKey` field) and reload it.
+- Activation is cached in the plugin's own storage (default 7 days), so a vendor
+  outage does not immediately take the plugin down.
+- When activation fails, the plugin decides whether to degrade or fail according
+  to its declared `failMode`.
+
+## Related
+
+- Least-privilege roles and plugin-exposed permissions: [roles & permissions](/admin/roles/).
+- Trust boundaries and hardening: [security](/admin/security/).
+- Building a plugin: [plugin development](/api/plugins/).

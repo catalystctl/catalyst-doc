@@ -4,7 +4,7 @@ description: Config, key-value storage, collections, and the database fields a p
 audience:
   - developer
 features:
-  - plugins
+  - plugin-development
 sources:
   - catalyst-backend/src/plugins/context.ts
   - catalyst-backend/src/plugins/storage/
@@ -181,3 +181,9 @@ Admins can revoke individual declared permissions after enable
 (`PUT /api/plugins/:name/permissions` with `{ "granted": ["server.read"] }`).
 The list must be a subset of the manifest. Revocation is the lever for data
 access; it does not unload your routes.
+
+## Related
+
+- [Plugin Backend](/api/plugins/backend/) — where `ctx.db` and storage are used
+- [Plugin Manifest](/api/plugins/manifest/) — config fields and declared permissions
+- [API reference](/api/reference/) — the panel API this data mirrors

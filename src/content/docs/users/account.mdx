@@ -1,0 +1,138 @@
+---
+title: Your Account
+description: Sign in, and manage your password, email, two-factor authentication, passkeys, sessions, and personal API keys.
+audience:
+  - user
+features:
+  - users-and-access
+sources:
+  - catalyst-frontend/src/pages/ProfilePage.tsx
+  - catalyst-frontend/src/pages/auth/LoginPage.tsx
+  - catalyst-frontend/src/pages/auth/ForgotPasswordPage.tsx
+  - catalyst-frontend/src/pages/auth/ResetPasswordPage.tsx
+  - catalyst-frontend/src/pages/ApiKeysPage.tsx
+  - catalyst-frontend/src/components/apikeys/CreateApiKeyDialog.tsx
+  - catalyst-backend/src/routes/auth.ts
+  - catalyst-backend/src/routes/api-keys.ts
+last_verified: '2026-10-16'
+---
+
+Your Catalyst account is the login you use across the panel. This page covers
+signing in, securing the account, and the personal settings behind the user
+card at the bottom of the sidebar (**Profile**).
+
+## Prerequisites
+
+- A panel account, provided by your host or administrator.
+- Access to the email address on the account, for password resets and email
+  verification.
+
+## Sign in
+
+1. Open the panel URL and enter your **Email** and **Password**, then select
+   **Sign in**. Tick **Remember me** to stay signed in on this browser.
+2. If the panel offers external sign-in, use **Sign in with passkey**, or
+   **Continue with WHMCS** / **Continue with Paymenter** when your
+   administrator has enabled them.
+3. If your account uses two-factor authentication, enter the code from your
+   authenticator app (or a backup code) and select **Verify**. Tick **Trust
+   this device for 30 days** to skip the code on this browser.
+4. If your administrator requires email verification, sign-in is blocked until
+   you confirm your address — the panel tells you to check your inbox for the
+   verification link.
+
+## Change or reset your password
+
+**Change it** while signed in:
+
+1. Open **Profile** and find the **Password** card.
+2. Enter your **Current password** and a **New password**. Tick **Sign out all
+   other devices** if you want other sessions revoked.
+3. Select **Update Password**.
+
+If your account was created through external sign-in and has no password yet,
+the card offers **Set Password** instead — enter a new password and select
+**Set Password**.
+
+**Reset it** when you cannot sign in:
+
+1. On the sign-in page, select **Forgot password?**.
+2. Enter your **Email address** and select **Send reset link**. For security the
+   panel shows the same confirmation whether or not the address exists — check
+   your inbox (and spam folder).
+3. Open the link in the email. Enter a **New password** and **Confirm new
+   password**, then select **Reset password**. Passwords must be at least 8
+   characters.
+4. If the link has expired, the page says so — select **Request new reset link**
+   to start again.
+
+## Verify your email
+
+Open **Profile**. The email line shows a **Verified** badge once confirmed. If
+it is not verified, select **Verify email** to resend the verification message.
+
+## Two-factor authentication
+
+1. Open **Profile** and find the **Two-Factor Authentication** card.
+2. Enter your password and select **Enable 2FA**.
+3. Scan the QR code with your authenticator app, or copy the **Manual Key**.
+4. Save the **Backup Codes** shown in the dialog — they are displayed once and
+   are the way back in if you lose the authenticator.
+5. With 2FA on, the card offers **New Codes** (regenerate backup codes) and
+   **Disable** (turn 2FA off, with your password).
+
+## Passkeys
+
+1. Open **Profile** and find the **Passkeys** card.
+2. Type a name (optional) and select **Add**. Your browser or device prompts for
+   the passkey.
+3. Select **Rename** to change the label, or the delete button to remove a
+   passkey.
+
+## Active sessions
+
+The **Active Sessions** card lists every device signed into your account, with
+the browser, operating system, IP address, and when it was last active.
+
+- Select the revoke button on a row to sign that device out.
+- With more than one session, **Sign Out All Other Devices** revokes the rest.
+
+## Personal API keys
+
+The **API Keys** card on your profile lists the keys you have created and links
+to the API Keys page, where you manage them. Viewing that page needs
+`apikey.read`; creating a key needs `apikey.write`.
+
+1. Select **Create API Key**.
+2. Give the key a **Name** and choose an **Expiration** (7, 30, 90, 180 days,
+   1 year, or never).
+3. Choose the key's **Permissions**, or leave **All my permissions** selected to
+   inherit everything you hold. A key can never exceed your own permissions.
+4. Set the **Rate Limit** if the default of 100 requests per minute is wrong.
+5. Select **Create API key** and copy the value immediately — it is shown once
+   and cannot be retrieved later.
+6. **Revoke** a key from the list when it is no longer needed; anything using it
+   loses access at once.
+
+For what the key can call, see the [API overview](/api/overview/).
+
+## Profile and preferences
+
+- **Avatar:** click the avatar and choose an image (JPEG, PNG, GIF, or WebP), or
+  select **Remove avatar**.
+- **Name:** select the pencil to edit your **Username**, **First name**, and
+  **Last name**.
+- **Appearance:** the **Appearance** card sets your theme and accent colors for
+  this browser only.
+- **Linked accounts:** link or unlink WHMCS / Paymenter when your administrator
+  has enabled them.
+- **Recent Activity:** your recent account actions.
+- **Danger Zone:** **Export My Data** downloads your account data as
+  `catalyst-account-export.json`; **Delete Account** removes the account after
+  you type `DELETE` to confirm.
+
+## Related
+
+- [Users & Subusers](/users/subusers/) — giving other people access to your server
+- [SFTP](/users/sftp/) — the SFTP password is a separate token, not your panel password
+- [API overview](/api/overview/) — what personal API keys can call

@@ -4,8 +4,8 @@ description: Add a "Continue with" login button that creates a real panel sessio
 audience:
   - developer
 features:
-  - plugins
-  - authentication
+  - plugin-development
+  - api-auth
 sources:
   - catalyst-backend/src/plugins/types.ts
   - catalyst-backend/src/plugins/context.ts
@@ -100,7 +100,8 @@ anonymous user start a login flow. `public` on `callback` is required because
 the provider redirects a browser that may have no panel cookie yet.
 
 Both modes are downgraded to `required` unless `routes.public` is currently
-granted. A revoked grant re-secures the routes on the next request.
+granted — see [Plugin Backend](/api/plugins/backend/#routes) for the full
+auth-mode rules and what happens when a grant is revoked.
 
 ## 3. Use the auth bridge
 
@@ -166,3 +167,9 @@ Keep the external account id in a `dedicated` collection, not in a user
 column. You cannot add columns. discord-oauth and oidc-sso both set
 `"storageEngine": "dedicated"` and key documents by the panel user id plus
 the provider subject.
+
+## Related
+
+- [Plugin Backend](/api/plugins/backend/) — routes, auth modes, and the grant model
+- [Plugin Manifest](/api/plugins/manifest/) — declaring `authProviders` and permissions
+- [API reference](/api/reference/) — the REST endpoints session and API-key auth apply to

@@ -5,7 +5,6 @@ audience:
   - user
 features:
   - servers
-  - power
 sources:
   - catalyst-frontend/src/components/servers/ServerControls.tsx
   - catalyst-backend/src/routes/servers/power.ts
@@ -14,6 +13,12 @@ last_verified: '2026-09-28'
 
 Power controls sit in the server header on the server page, and on the card or
 row for each server on the **Servers** page.
+
+## Prerequisites
+
+- A server you own or can access. The controls are hidden without the matching
+  permission (see below).
+- An online node — power actions fail while the node's agent is offline.
 
 | Action | What it does | When to use it |
 | --- | --- | --- |
@@ -24,8 +29,9 @@ row for each server on the **Servers** page.
 
 Each button is enabled only when it makes sense for the current state — for
 example, **Start** is disabled while the server is already running. You also
-need the matching permission (`server.start`, `server.stop`, `server.restart`);
-without it the controls are hidden.
+need the matching permission: **Start** needs `server.start`, **Stop** needs
+`server.stop`, **Kill** needs `server.kill`, and **Restart** needs **both**
+`server.start` and `server.stop`. Without them the controls are hidden.
 
 The first time you press **Kill** you get a confirmation: *"This will
 force-terminate the server process immediately without saving. Data may be
@@ -53,8 +59,8 @@ files are kept. You can then reinstall or start normally.
 
 If the node denies host networking for the server, **Start** answers with a
 dialog titled *"Host networking is disabled on this node"*. Selecting **Enable
-and start** turns host networking on for the node (you need the `node.update`
-permission), then starts the server.
+and start** turns host networking on for the node (you need the
+`node.agent_control` permission), then starts the server.
 
 ## Automate it
 

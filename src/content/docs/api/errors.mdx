@@ -4,14 +4,12 @@ description: Status codes, stable error codes, and how to handle failures.
 audience:
   - developer
 features:
-  - api
+  - api-errors
 sources:
   - catalyst-backend/src/lib/error-codes/
   - catalyst-backend/src/lib/http-error.ts
   - catalyst-backend/src/shared-types.ts
   - catalyst-frontend/src/i18n/api-errors.ts
-api_tags:
-  - errors
 last_verified: '2026-09-28'
 ---
 
@@ -72,3 +70,9 @@ frontend translates the same codes through its `errors` namespace.
    support will ask for.
 4. **Log request ID, endpoint, code, and timestamp** on every failure. "It broke
    yesterday" is not debuggable.
+
+## Related
+
+- [Authorization & permissions](/api/authorization/) — why a request gets a `403`
+- [Rate limits](/api/rate-limits/) — handling `429`
+- [API reference](/api/reference/) — per-endpoint error codes

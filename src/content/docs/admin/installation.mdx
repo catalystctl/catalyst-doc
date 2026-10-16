@@ -5,12 +5,11 @@ audience:
   - admin
 features:
   - installation
-  - docker
 sources:
   - install.sh
   - catalyst-docker/docker-compose.yml
   - catalyst-docker/update.sh
-last_verified: '2026-09-28'
+last_verified: '2026-10-16'
 ---
 
 The supported path is the released Docker installer: one command installs
@@ -20,8 +19,10 @@ result and start it yourself.
 
 ## Prerequisites
 
-- A Linux host (Ubuntu/Debian, RHEL/CentOS, Fedora, Arch, Alpine, or openSUSE)
-  with `curl`, `tar`, and `openssl`.
+The full host baseline is on [requirements](/admin/requirements/). In short:
+
+- A Linux host with `curl`, `tar`, and `openssl` (the installer stops if any is
+  missing).
 - Docker (or Podman) with Compose, or permission for the installer to install
   Docker for you.
 - Root access — the one-liner below runs the installer through `sudo bash`.
@@ -142,7 +143,8 @@ browser.
 
 Opening the panel URL shows the setup wizard. Complete it
 ([first-time setup](/admin/first-time-setup/)) — panel name, admin account, and
-appearance. The first registered user becomes the administrator.
+appearance. The wizard creates the first account with the **Administrator** role
+and marks it verified; there is no separate "first user becomes admin" step.
 
 ## After installing
 

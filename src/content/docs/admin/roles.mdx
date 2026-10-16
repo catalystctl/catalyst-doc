@@ -4,8 +4,7 @@ description: Design roles that give staff exactly the access they need.
 audience:
   - admin
 features:
-  - users
-  - roles
+  - users-and-access
   - permissions
 sources:
   - catalyst-frontend/src/pages/admin/RolesPage.tsx
@@ -16,6 +15,11 @@ last_verified: '2026-09-28'
 
 **Roles** are named bundles of permissions; users get powers through roles, not
 one-off grants. Manage them under **Admin → Roles**.
+
+## Prerequisites
+
+- The `role.create` permission (or full administrator access).
+- A clear idea of the job the role serves — see **Design principles** below.
 
 ## Create a role
 
@@ -63,3 +67,9 @@ The permissions catalog endpoint documents every available scope.
 - User management + server file access can become full account takeover paths.
 - Backup restore + subuser creation can exfiltrate other users' data.
 - When a role needs a risky permission, time-box it: grant, do the task, revoke.
+
+## Related
+
+- Creating and assigning users: [users](/admin/users/).
+- Scoped API keys using the same permission catalog: [API authentication](/api/authentication/).
+- Built-in security controls and lockouts: [security](/admin/security/).

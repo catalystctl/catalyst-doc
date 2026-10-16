@@ -90,6 +90,9 @@ Useful flags:
 - `--sections panel,errors,nodes,servers,env` — include only what you need.
 - `--redaction strict` — also mask IPs and hostnames.
 - `--out FILE` — output path.
+- `--cookie VALUE` — raw `Cookie` header for a browser session, as an
+  alternative to `--api-key`.
+- `--timeout SECONDS` — request timeout. Default `900`.
 - `-k` — skip TLS verification for a self-signed certificate.
 
 If the frontend container is down but the backend port is reachable on the
@@ -155,3 +158,9 @@ The host-level `diagnose.sh` strips secrets by default too, and its
 Redaction covers known secret patterns, not customer data. Review `manifest.json`
 and a few log lines before attaching the bundle to a public issue or ticket.
 :::
+
+## Related
+
+- [Common errors](/troubleshooting/common-errors/) — look up a code before exporting.
+- [Panel issues](/troubleshooting/panel/) — the export entry point lives in **Admin → System Errors**.
+- [Node issues](/troubleshooting/node/) — collect node and agent logs alongside the panel's.

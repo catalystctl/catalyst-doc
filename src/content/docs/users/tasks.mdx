@@ -14,10 +14,18 @@ sources:
 last_verified: '2026-10-13'
 ---
 
-The **Tasks** tab (titled **Scheduled Tasks**) runs actions on a schedule — a
+The **Tasks** tab (titled **Scheduled Tasks**) runs actions automatically — a
 nightly restart, an automatic backup, a timed warning message — so you stop
 doing them by hand. Tasks are created, edited, paused, and deleted entirely in
 the panel.
+
+## Prerequisites
+
+- A server you can access, with the `server.schedule` permission to create,
+  edit, pause, or delete a task. Reading the task list needs `server.read`.
+- For a **Create backup** task, `backup.create` as well; the **Stop server
+  before backup** option needs `server.stop` and **Start server after backup**
+  needs `server.start`.
 
 ## Create a task
 
@@ -49,12 +57,12 @@ the panel.
 
 ## Manage existing tasks
 
-Each task row shows its name, action, schedule, and the **Next run**,
+Each task row shows its name, action, repeat interval, and the **Next run**,
 **Last run**, status, and **Runs** counters. When a run fails, the error text
 appears under the row.
 
 - **Edit** opens the task's name, optional description, action, command,
-  schedule, and any backup options.
+  timing, and any backup options.
 - **Pause** stops a task from running without deleting it; **Resume** turns it
   back on. A paused task is kept but never runs.
 - **Delete** removes it after a confirmation.

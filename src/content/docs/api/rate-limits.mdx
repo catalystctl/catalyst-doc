@@ -6,13 +6,13 @@ audience:
 features:
   - api
 sources:
-  - catalyst-backend/src/index.ts
+  - catalyst-backend/src/server.ts
+  - catalyst-backend/src/routes/auth.ts
+  - catalyst-backend/src/services/mailer.ts
   - catalyst-backend/src/lib/rate-limiter.ts
   - catalyst-backend/src/lib/rate-limit-store.ts
   - catalyst-backend/src/services/api-key-service.ts
-api_tags:
-  - rate-limits
-last_verified: '2026-09-28'
+last_verified: '2026-10-16'
 ---
 
 ## The limits
@@ -43,7 +43,9 @@ Some areas are not on the global bucket:
   `/api/sftp/*`, file-tunnel traffic) bypass rate limiting, since nodes have
   their own message-level limits.
 - **Sign-in and auth routes** (`/api/auth/*`) carry a separate
-  operator-configured limit (default 60 requests per minute).
+  operator-configured limit (default 60 requests per minute). Individual auth
+  routes set tighter caps that override it: `POST /api/auth/login` allows 30
+  requests per 15 minutes and `POST /api/auth/register` 20 per 15 minutes.
 - Individual routes may set tighter limits — for example, listing backups is
   capped at 30 requests per minute.
 
@@ -77,3 +79,9 @@ A `429` carries code `RATE_LIMITED`.
 2. Move live views to event streams.
 3. Raise the key's own rate limit, and talk to the panel administrator — the
    global limit is operator-configured.
+
+## Related
+
+- [Authentication](/api/authentication/) — where a key's rate budget is set
+- [Errors](/api/errors/) — the `RATE_LIMITED` code
+- [Realtime events](/api/websockets/) — streams that are not on the global bucket

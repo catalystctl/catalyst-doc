@@ -5,8 +5,7 @@ audience:
   - user
 features:
   - servers
-  - metrics
-  - alerts
+  - monitoring
 sources:
   - catalyst-frontend/src/components/servers/tabs/ServerMetricsTab.tsx
   - catalyst-frontend/src/components/servers/ServerMetrics.tsx
@@ -22,6 +21,13 @@ last_verified: '2026-09-28'
 The **Metrics** tab shows what your server is actually consuming right now and
 over time. The **Alerts** tab on the same server creates rules and lists the
 incidents they fire.
+
+## Prerequisites
+
+- A server you can access, with the `server.read` permission for the **Metrics**
+  tab.
+- The `alert.read` permission to see alert rules and incidents, and
+  `alert.create` to add one.
 
 ## Read the Metrics tab
 
@@ -90,4 +96,5 @@ full), not on every wiggle.
 ## Related
 
 - [Power controls](/users/power/) — what to do when a restart is the fix
+- [Admin monitoring](/admin/monitoring/) — node and panel-wide health for administrators
 - [Panel issues](/troubleshooting/panel/) — when metrics stop reporting

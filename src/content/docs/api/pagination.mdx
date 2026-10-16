@@ -6,14 +6,13 @@ audience:
 features:
   - api
 sources:
+  - catalyst-backend/src/lib/pagination.ts
   - catalyst-backend/src/routes/admin.ts
   - catalyst-backend/src/routes/servers/core.ts
   - catalyst-backend/src/routes/backups.ts
   - catalyst-backend/src/routes/alerts.ts
   - catalyst-backend/src/routes/templates.ts
-api_tags:
-  - pagination
-last_verified: '2026-09-28'
+last_verified: '2026-10-16'
 ---
 
 ## Pagination is per-endpoint, not universal
@@ -38,7 +37,7 @@ the collection plus a `pagination` object:
 | --- | --- | --- |
 | `GET /api/admin/users` | 1 | 20 |
 | `GET /api/admin/servers` | 1 | 20 |
-| `GET /api/alerts` | 1 | 25 |
+| `GET /api/alerts` | 1 | 50 |
 
 These endpoints also accept endpoint-specific filters such as `search`
 (`/api/admin/users`, `/api/admin/servers`), `status`, and `owner`
@@ -68,7 +67,7 @@ curl -H "Authorization: Bearer $CATALYST_API_KEY" \
 { "success": true, "data": [ ... ] }
 ```
 
-`limit` defaults to 50 (max 100); `offset` defaults to 0. `GET /api/templates`
+`limit` defaults to 50 (max 500); `offset` defaults to 0. `GET /api/templates`
 accepts optional `limit`/`offset` in the same shape — and returns **all**
 templates when `limit` is omitted.
 
@@ -90,3 +89,9 @@ locations, nests, roles, and server allocations. Do not assume `total` or
   reconcile.
 - **Cache sparingly.** Lists change constantly (server states, node health).
   Cache seconds, not hours, or re-fetch on user action.
+
+## Related
+
+- [API reference](/api/reference/) — the parameters each endpoint accepts
+- [Rate limits](/api/rate-limits/) — page walking and request budgets
+- [Errors](/api/errors/) — handling failures mid-walk

@@ -17,9 +17,17 @@ last_verified: '2026-09-28'
 Cloning creates a new server from an existing one. Use it to spin up a second
 deployment of the same setup, or to duplicate a configured world.
 
-You need the **Create servers** permission and access to the server you are
-cloning. Cloning onto a **different node** also needs the transfer permission
-(the same one that governs moving a server between nodes).
+You need the `server.clone` permission and access to the server you are
+cloning. Cloning onto a **different node** also needs `server.transfer`.
+
+## Prerequisites
+
+- The `server.clone` permission (legacy `server.create` grants still work).
+- Access to the source server you are cloning.
+- To clone onto another node, the `server.transfer` permission and access to
+  that node.
+- For a full clone, the source server stopped — the dialog offers **Stop source
+  and continue** if it is running.
 
 ## Choose a clone mode
 
@@ -58,7 +66,7 @@ but a clean installation.
 9. Select **Review changes**.
 10. Review the change list, tick any warnings, then confirm the clone.
 
-::: caution[Full clones require a stopped source]
+:::caution[Full clones require a stopped source]
 A full clone reads the source server's files directly. If the source is running,
 Catalyst blocks the clone and offers **Stop source and continue**. Stopping the
 server disconnects its players.
@@ -116,3 +124,9 @@ reason in its console log. Delete it and run the clone again.
    port are node-specific, so they may differ from the source.
 3. If you copied databases, reconnect the application inside the server to its
    new database and credentials.
+
+## Related
+
+- [Networking](/users/networking/) — the clone's address and ports
+- [Backups](/users/backups/) — the clone never inherits the source's backups
+- [Tasks](/users/tasks/) — tasks are not copied unless you tick them

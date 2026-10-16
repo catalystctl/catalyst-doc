@@ -4,16 +4,16 @@ description: How Catalyst resolves what an identity may do, and the permission s
 audience:
   - developer
 features:
-  - api
+  - api-auth
   - permissions
 sources:
   - catalyst-backend/src/lib/permissions.ts
   - catalyst-backend/src/lib/permissions-catalog.ts
+  - catalyst-backend/src/lib/permission-vocabulary.ts
+  - catalyst-backend/src/plugins/custom-permissions.ts
   - catalyst-backend/src/routes/roles.ts
   - catalyst-backend/src/routes/api-keys.ts
-api_tags:
-  - auth
-last_verified: '2026-09-28'
+last_verified: '2026-10-16'
 ---
 
 ## The model
@@ -36,7 +36,7 @@ Three permission values have implied meaning:
 | --- | --- |
 | `*` | Everything (Super Admin). |
 | `admin.write` | Every concrete permission, read or write. |
-| `admin.read` | Every read permission: anything ending in `.read`, plus `node.view_stats` and `backup.download`. |
+| `admin.read` | Every read permission: anything ending in `.read`, plus `node.view_stats`, `backup.download`, and `diagnostics.download`. |
 
 A resource-scoped admin bit (`admin.read:<id>`) does **not** widen to all
 resources.
@@ -50,18 +50,27 @@ editors. Fetch the live catalog from
 | Category | Permissions |
 | --- | --- |
 | Administration | `*`, `admin.read`, `admin.write` |
-| Servers | `server.read`, `server.create`, `server.start`, `server.stop`, `server.delete`, `server.suspend`, `server.transfer`, `server.schedule`, `server.update`, `server.install`, `server.reinstall`, `server.rebuild` |
-| Nodes | `node.read`, `node.create`, `node.update`, `node.delete`, `node.view_stats`, `node.manage_allocation`, `node.assign` |
+| Servers | `server.read`, `server.create`, `server.start`, `server.stop`, `server.delete`, `server.suspend`, `server.transfer`, `server.schedule`, `server.update`, `server.install`, `server.reinstall`, `server.rebuild`, `server.clone`, `server.kill`, `server.network`, `server.storage`, `server.archive`, `server.migrate` |
+| Nodes | `node.read`, `node.create`, `node.update`, `node.delete`, `node.view_stats`, `node.manage_allocation`, `node.assign`, `node.server_manage`, `node.agent_control` |
 | Locations | `location.read`, `location.create`, `location.update`, `location.delete` |
 | Templates | `template.read`, `template.create`, `template.update`, `template.delete` |
 | Users | `user.read`, `user.create`, `user.update`, `user.delete`, `user.ban`, `user.unban`, `user.set_roles` |
 | Roles | `role.read`, `role.create`, `role.update`, `role.delete` |
-| Backups | `backup.read`, `backup.create`, `backup.delete`, `backup.restore`, `backup.download` |
+| Backups | `backup.read`, `backup.create`, `backup.delete`, `backup.restore`, `backup.download`, `backup.pin` |
 | Files | `file.read`, `file.write` |
 | Console | `console.read`, `console.write` |
 | Databases | `database.read`, `database.create`, `database.delete`, `database.rotate` |
 | Alerts | `alert.read`, `alert.create`, `alert.update`, `alert.delete` |
-| API keys | `apikey.manage` |
+| API keys | `apikey.manage`, `apikey.read`, `apikey.write` |
+| Server content | `mods.manage`, `plugins.manage` |
+| Panel operations | `migration.manage`, `update.trigger`, `diagnostics.download` |
+
+The role editor's catalog (`GET /api/roles/permissions-catalog`) also appends a
+**Plugins** category for permissions that enabled plugins expose through their
+manifest's `userPermissions`. Those tokens only exist while the plugin is
+installed and enabled. The API-key catalog
+(`GET /api/admin/api-keys/permissions-catalog`) returns only the built-in
+categories above.
 
 ### Server-scoped permissions
 
@@ -69,13 +78,15 @@ The grantable set for a specific server — subuser grants and the role wizard's
 scoped-access step — is the server permission list returned by
 `GET /api/permissions/server`:
 
-`server.read`, `server.start`, `server.stop`, `server.install`,
-`server.reinstall`, `server.rebuild`, `server.update`, `server.transfer`,
-`server.delete`, `server.schedule`, `console.read`, `console.write`,
-`file.read`, `file.write`, `backup.read`, `backup.create`, `backup.restore`,
-`backup.delete`, `backup.download`, `database.read`, `database.create`,
-`database.rotate`, `database.delete`, `alert.read`, `alert.create`,
-`alert.update`, `alert.delete`.
+`server.read`, `server.start`, `server.stop`, `server.kill`, `server.install`,
+`server.reinstall`, `server.rebuild`, `server.update`, `server.network`,
+`server.storage`, `server.archive`, `server.migrate`, `server.transfer`,
+`server.delete`, `server.schedule`, `server.clone`, `console.read`,
+`console.write`, `file.read`, `file.write`, `backup.read`, `backup.create`,
+`backup.restore`, `backup.delete`, `backup.download`, `backup.pin`,
+`database.read`, `database.create`, `database.rotate`, `database.delete`,
+`alert.read`, `alert.create`, `alert.update`, `alert.delete`, `mods.manage`,
+`plugins.manage`.
 
 Server owners and full admins implicitly hold the whole set for their servers.
 

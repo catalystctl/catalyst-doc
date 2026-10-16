@@ -12,7 +12,7 @@ sources:
   - catalyst-backend/src/routes/nodes.ts
   - catalyst-backend/src/services/node-update-policy.ts
   - catalyst-agent/src/updater.rs
-last_verified: '2026-09-25'
+last_verified: '2026-10-16'
 ---
 
 The panel drives agent updates: it reports the agent version each node is
@@ -20,6 +20,13 @@ running and, once the panel is newer, offers an **Update Agent** command that th
 agent applies to itself. Running game servers keep running while the agent
 restarts and reconnects. Nothing is updated automatically unless you approve the
 node first (see [automatic node updates](#automatic-node-updates)).
+
+## Prerequisites
+
+- The panel is already on the target version — a node only updates to the
+  version the panel itself runs ([updating Catalyst](/admin/updating/)).
+- The node is online; the update command travels over the agent's WebSocket.
+- Administrator access (`admin.write`) to trigger the update.
 
 ## Safe update order
 
@@ -85,3 +92,10 @@ with new paths, use **Deploy** on the node header.
 - Game servers themselves do not update with the agent — game versions come from
   templates ([templates](/admin/templates/)).
 - Keep a changelog note per node (agent version + date) for the next incident.
+
+## Related
+
+- [Updating Catalyst](/admin/updating/) — panel first, nodes after.
+- [Installing a node](/admin/nodes/installing/) — re-running the deploy command.
+- [Nodes overview](/admin/nodes/overview/) — version reporting and check-ins.
+- [Node issues](/troubleshooting/node/) when a node will not reconnect.

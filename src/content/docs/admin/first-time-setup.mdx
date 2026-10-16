@@ -5,7 +5,6 @@ audience:
   - admin
 features:
   - installation
-  - setup
 sources:
   - catalyst-frontend/src/pages/setup/SetupPage.tsx
   - catalyst-frontend/src/i18n/locales/en/setup.json
@@ -16,6 +15,13 @@ last_verified: '2026-09-28'
 After [installation](/admin/installation/), opening the panel URL shows the
 setup wizard. It runs once and locks itself afterwards. The wizard has three
 steps, and the panel URL itself was already set by the installer.
+
+## Prerequisites
+
+- A completed [installation](/admin/installation/) with the stack running.
+- The panel URL reachable in a browser.
+- The backend has finished its startup migrations (otherwise the wizard may show
+  an error page — see **If the wizard does not appear** below).
 
 ## Complete the wizard
 
@@ -62,3 +68,9 @@ rather than deleting data to force it.
 - You see the login page instead: setup already completed — sign in.
 - You see an error page: the backend may still be migrating — wait and check
   container logs. See [panel issues](/troubleshooting/panel/).
+
+## Related
+
+- [Installation](/admin/installation/) — install the stack first.
+- [Installing a node](/admin/nodes/installing/) — the next step after setup.
+- [Roles](/admin/roles/) — create staff roles before inviting people.

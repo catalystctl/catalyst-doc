@@ -1,5 +1,5 @@
 ---
-title: API & Developers
+title: Overview
 description: Integrate with Catalyst programmatically — REST, realtime events, and the reference.
 audience:
   - developer
@@ -8,8 +8,6 @@ features:
 sources:
   - catalyst-backend/src/routes/
   - catalyst-backend/src/lib/error-codes/
-api_tags:
-  - rest
 last_verified: '2026-09-28'
 ---
 
@@ -45,7 +43,13 @@ channels for console output, metrics, and events.
 
 ## Source of truth
 
-The [API reference](/api/reference/) is generated from the backend's route
-definitions, not hand-written; the raw contract is served at `/openapi.json`.
-If the reference and a guide disagree, the reference (and the actual behavior)
-wins — and please report the mismatch so the guide gets fixed.
+The [API reference](/api/reference/) is the generated contract; the raw
+OpenAPI document is served at `/openapi.json`. If a guide here disagrees with
+the reference, the reference (and the actual behavior) wins — report the
+mismatch so the guide gets fixed.
+
+## Related
+
+- [Authentication](/api/authentication/) · [Authorization](/api/authorization/) · [Errors](/api/errors/)
+- [Pagination](/api/pagination/) · [Rate limits](/api/rate-limits/) · [Realtime events](/api/websockets/)
+- [Guides](/api/guides/) · [Plugin development](/api/plugins/) · [API reference](/api/reference/)

@@ -16,6 +16,13 @@ Registration introduces a machine to the panel: identity, credentials, and the
 network addresses it may hand out to servers. Do it before installing the agent,
 because the panel is what issues the agent's credential.
 
+## Prerequisites
+
+- Administrator access — registering a node needs the `admin.write` permission.
+- The target machine meets the [node requirements](/admin/requirements/).
+- The node's hostname and public address (an IPv4 or IPv6 literal) to hand.
+- A location to group the node under; you can create one in the dialog.
+
 ## Register the node
 
 1. Open **Admin → Nodes** and select **Register Node**.
@@ -70,6 +77,8 @@ free, so you can see when a node is running out.
 - Deployment tokens (the token in the install command's URL) are single-use and
   expire after 24 hours; the API key in the command does not expire.
 
-## Next
+## Related
 
-[Updating a node](/admin/nodes/updating/) · [Node issues](/troubleshooting/node/)
+- [Installing a node](/admin/nodes/installing/) — run the deploy command the panel shows.
+- [Updating a node](/admin/nodes/updating/).
+- [Node issues](/troubleshooting/node/).

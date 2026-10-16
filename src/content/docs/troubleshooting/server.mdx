@@ -5,13 +5,24 @@ audience:
   - user
   - admin
 features:
-  - servers
   - troubleshooting
+  - servers
 sources:
-  - catalyst-backend/src/routes/servers/
+  - catalyst-backend/src/routes/servers/core.ts
+  - catalyst-backend/src/routes/servers/power.ts
+  - catalyst-backend/src/routes/servers/network.ts
+  - catalyst-backend/src/routes/servers/mod-plugins.ts
+  - catalyst-backend/src/routes/servers/stats.ts
   - catalyst-frontend/src/components/servers/EulaModal.tsx
-last_verified: '2026-09-28'
+last_verified: '2026-10-16'
 ---
+
+## Prerequisites
+
+- Access to the game server as its owner or as a subuser with the permissions
+  the fix needs (console, power, files, startup).
+- For node-level causes (full disk, OOM killer), an administrator for the node
+  that hosts the server.
 
 ## Crash loop (starts, then stops)
 
@@ -55,3 +66,10 @@ restart. If it persists, the administrator must free the allocation.
 
 When the install itself is damaged: [back up](/users/backups/), then
 [reinstall](/users/reinstalling/). Faster than archaeology for mangled installs.
+
+## Related
+
+- [Common errors](/troubleshooting/common-errors/) — look up a code or message.
+- [Node issues](/troubleshooting/node/) — every server on the node is affected.
+- [Networking issues](/troubleshooting/networking/) — players cannot reach the server.
+- [Backups](/users/backups/) — back up before reinstalling or making risky changes.
