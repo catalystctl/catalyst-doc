@@ -10,7 +10,7 @@ sources:
   - catalyst-frontend/src/components/servers/tabs/DatabaseCredentialsDialog.tsx
   - catalyst-backend/src/routes/servers/databases.ts
   - catalyst-backend/prisma/schema.prisma
-last_verified: '2026-09-28'
+last_verified: '2026-10-16'
 ---
 
 Many plugins (permissions, economy, logging, Dynmap) need a database. The
@@ -22,8 +22,10 @@ database server.
 - A server you can access, with the `database.read` permission to see the tab.
 - The `database.create` permission to add one, `database.rotate` to rotate a
   password, and `database.delete` to remove one.
-- A database host configured by your administrator; if none is, the tab reports
-  the allocation as disabled.
+- A database allocation on this server and at least one database host configured
+  by your administrator. With no allocation the tab reports **Database
+  allocation disabled**; with an allocation but no hosts the panel sends you
+  back to the console.
 
 ## Create a database
 

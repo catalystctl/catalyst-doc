@@ -10,7 +10,7 @@ sources:
   - catalyst-backend/src/plugins/
   - catalyst-frontend/src/plugins/
   - catalyst-frontend/src/pages/admin/PluginsPage.tsx
-last_verified: '2026-09-28'
+last_verified: '2026-10-16'
 ---
 
 A **plugin** extends the panel itself: extra API routes, admin and server tabs,
@@ -34,12 +34,14 @@ instead.
 | Events | Host lifecycle (`server:started`) and your own events |
 | Storage | Key-value plus document collections, scoped to the plugin |
 | Sign-in | "Continue with …" buttons on the login page |
+| Role permissions | Your own permission ids, listed in the role editor and usable to gate your UI |
 | License validation | Vendor-owned license checks and encrypted payloads |
 | Plugin-to-plugin calls | Named functions another plugin can invoke |
 
 Plugins run **in the panel process**. A thrown error in your code can take the
-backend down with it. There is no worker isolation to rely on: `"runtime":
-"isolated"` is accepted in the manifest and then forced in-process.
+backend down with it. There is no worker isolation to rely on: isolation is not
+implemented, so a manifest that declares `"runtime": "isolated"` is refused at
+load time instead of running in-process.
 
 ## The pieces
 

@@ -46,7 +46,10 @@ each section.
   **Console output bytes / sec**, **Agent messages / sec**, **Agent metrics /
   sec**, **Server metrics / sec**, and **Max buffer (MB)**. Each rate limit has
   a count and a time window (second, minute, hour, day, or month).
-- **Email Verification** — **Require verified email before sign-in**.
+- **Email Verification** — **Require verified email before sign-in**. The toggle
+  is disabled until SMTP is configured under **Admin → System**. If a saved
+  payload asks for it while mail is not configured, the backend stores it as
+  off instead of failing the save, so the other security settings still apply.
 - **Lockout Policy** — **Max attempts**, **Window (minutes)**, **Duration
   (minutes)**, and **Audit retention (days)**. Failed sign-ins lock out per
   email + IP combination.

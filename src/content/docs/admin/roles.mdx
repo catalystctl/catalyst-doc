@@ -8,9 +8,11 @@ features:
   - permissions
 sources:
   - catalyst-frontend/src/pages/admin/RolesPage.tsx
+  - catalyst-frontend/src/pages/admin/role-creator/
   - catalyst-backend/src/routes/roles.ts
-  - catalyst-backend/src/shared-types.ts
-last_verified: '2026-09-28'
+  - catalyst-backend/src/lib/permissions-catalog.ts
+  - catalyst-backend/src/plugins/custom-permissions.ts
+last_verified: '2026-10-16'
 ---
 
 **Roles** are named bundles of permissions; users get powers through roles, not
@@ -23,27 +25,39 @@ one-off grants. Manage them under **Admin → Roles**.
 
 ## Create a role
 
+The role editor is one screen with three sections — **Role details**, **Where
+this role applies**, and **What members can do** — plus an **Effective access**
+summary that updates as you change them.
+
 1. Open **Admin → Roles** and select **Create role**.
-2. On **Details**, set a **Name** (for example `Support L1`) and a
+2. **Role details** — set a **Name** (for example `Support L1`) and an optional
    **Description**.
-3. On **Permissions**, optionally start from a **Quick start from a preset** —
-   **Administrator**, **Moderator**, **Support**, or **User** — then tick the
-   individual permissions. They are grouped by category (Server, Node, File
-   Management, Console, Backup, User Management, and so on), and the search box
-   filters by name.
-4. On **Node Access**, choose which nodes members of this role can see. This is
-   visibility, not permission.
-5. On **Scoped Access**, leave **No scoped access** for a global role, or grant
-   the selected permissions only **By node** or **By server**, so members act
-   like bulk subusers on those targets.
-6. Select **Save changes**. The role is listed immediately; assign it to a user
-   under **Admin → Users**.
+3. **Where this role applies** — pick one access boundary: **Panel
+   administration** (panel-wide permissions only, no node or server access),
+   **Entire panel** (every server on every node, including ones added later),
+   **Selected nodes** (every server hosted on those nodes), or **Specific
+   servers**. Search and tick the nodes or servers you mean.
+4. **What members can do** — leave the **Wildcard — All Permissions** switch off
+   and tick individual permissions, or start from a preset (**Administrator**,
+   **Moderator**, **Support**, **User**) and adjust it; **Clear** empties the
+   selection. The search box filters by name. Permissions are split into
+   **Resource permissions** — granted only inside the boundary you chose — and
+   **Panel-wide permissions**, which are always global. Permissions that
+   installed plugins expose for roles appear in a **Plugins** group.
+5. Select **Create role** (or **Save changes** when editing). The role is listed
+   immediately; assign it to a user under **Admin → Users**.
 
-**Edit role** reopens the same form. Deleting a role removes its permissions
-from every member, so reassign affected users first.
+**Node access** — which nodes members can reach at all, independent of the
+boundary above — is assigned after the role exists: edit the role and use the
+**Node access** block.
 
-The **Full Administrator Access** card marks a role whose wildcard permission
-grants everything; do not hand that out casually.
+**Edit role** reopens the same editor. A role that still has assigned users
+cannot be deleted; remove or reassign those users first.
+
+The **Wildcard — All Permissions** switch grants every current and future
+permission panel-wide and clears the boundary. Roles that hold it show a **Full
+Admin** badge in the list and **Full Administrator Access** in the detail view;
+do not hand that out casually.
 
 ## Design principles
 

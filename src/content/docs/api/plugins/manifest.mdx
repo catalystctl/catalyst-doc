@@ -74,7 +74,7 @@ A plugin that fails validation does not load.
 | `events` | no | Map of event name → `{ "payload": object, "description"?: string }`. |
 | `authProviders` | no | Up to 8 sign-in buttons. See [Sign-in plugins](/api/plugins/auth/). |
 | `storageEngine` | no | `"legacy"` (default) or `"dedicated"`. See [Data](/api/plugins/data/). |
-| `runtime` | no | `"legacy"` (default) or `"isolated"`. `"isolated"` is accepted and then forced in-process. Do not depend on it. |
+| `runtime` | no | `"legacy"` (default) or `"isolated"`. Isolation is not implemented: a plugin that declares `"isolated"` is refused at load time (`isolated plugin execution is unavailable`), so leave the field unset. |
 | `licensing` | no | Vendor-owned licensing declaration. Presence of the block declares the phone-home and is disclosed before enable. See [Plugin licensing](/api/plugins/licensing/). |
 
 Unknown top-level keys are stripped by the schema. Do not hide required

@@ -10,8 +10,10 @@ sources:
   - catalyst-backend/src/plugins/storage/
   - catalyst-backend/src/plugins/safety.ts
   - catalyst-backend/src/plugins/path-utils.ts
+  - catalyst-backend/src/plugins/validator.ts
+  - catalyst-backend/src/plugins/custom-permissions.ts
   - catalyst-backend/src/routes/plugins.ts
-last_verified: '2026-09-28'
+last_verified: '2026-10-16'
 ---
 
 A plugin has three stores, and a narrow window onto panel data. Use the
@@ -182,8 +184,33 @@ Admins can revoke individual declared permissions after enable
 The list must be a subset of the manifest. Revocation is the lever for data
 access; it does not unload your routes.
 
+## Two permission namespaces
+
+`permissions` in `plugin.json` is the plugin's own capability list — what an
+admin grants to *the plugin* so it can call host APIs. `userPermissions` is the
+other direction: tokens you invent for *panel users*, which an admin grants to
+a role.
+
+```json
+"userPermissions": [
+  { "id": "tickets.view", "label": "View the ticket queue" }
+]
+```
+
+- The role editor lists them under **Plugins**, and only while your plugin is
+  enabled. Ids that are also built-in permissions are left to the built-in
+  categories, so use the built-in token directly in that case.
+- A role grant reaches your backend routes: `ctx.requirePermission('tickets.view')`
+  succeeds for a user holding that token, exactly like a built-in one.
+- `PUT /api/plugins/:name/permissions` does not touch them. It replaces the
+  plugin's own grants, and rejects tokens that are not in `permissions`.
+
+See [Manifest](/api/plugins/manifest/) for the declaration rules and
+[Plugin Frontend](/api/plugins/frontend/) for gating tabs, pages and slots on
+the same ids.
+
 ## Related
 
 - [Plugin Backend](/api/plugins/backend/) — where `ctx.db` and storage are used
-- [Plugin Manifest](/api/plugins/manifest/) — config fields and declared permissions
+- [Plugin Manifest](/api/plugins/manifest/) — config fields, declared permissions, and `userPermissions`
 - [API reference](/api/reference/) — the panel API this data mirrors

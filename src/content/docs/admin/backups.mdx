@@ -9,9 +9,12 @@ features:
 sources:
   - catalyst-backend/src/services/backup-storage.ts
   - catalyst-backend/src/services/backup-retention.ts
+  - catalyst-backend/src/services/create-backup.ts
   - catalyst-backend/src/routes/backups.ts
+  - catalyst-backend/src/lib/permissions-catalog.ts
+  - catalyst-frontend/src/components/backups/
   - catalyst-docker/.env.example
-last_verified: '2026-09-28'
+last_verified: '2026-10-16'
 ---
 
 Two different things need backing up, with different tools and rhythms. The
@@ -42,7 +45,7 @@ docker compose up -d backend
 ```
 
 ```bash
-BACKUP_STORAGE_MODE=local   # local | s3
+BACKUP_STORAGE_MODE=local   # local | s3 | stream | sftp
 ```
 
 - **local** (default) — files under the backend's backup directory
@@ -50,12 +53,12 @@ BACKUP_STORAGE_MODE=local   # local | s3
 - **s3** — an S3-compatible bucket. Also set `BACKUP_S3_BUCKET`,
   `BACKUP_S3_REGION`, `BACKUP_S3_ACCESS_KEY`, `BACKUP_S3_SECRET_KEY`, and
   optionally `BACKUP_S3_ENDPOINT` / `BACKUP_S3_PATH_STYLE=true`.
+- **stream** — the agent streams each archive to the panel's scratch directory
+  (`BACKUP_STREAM_DIR`), useful when no persistent backup volume is mounted.
+- **sftp** — upload to a per-server SFTP target, configured on the server.
 
-The panel's environment editor offers only `local` and `s3` for this variable.
-The backend also accepts `stream` (a backend-local transfer directory, useful
-when no persistent backup volume is mounted) and `sftp` when you set them
-directly in `.env`; per-server settings expose the same extra modes. Values
-outside `local`/`s3`/`sftp`/`stream` fall back to `local`.
+All four modes are selectable in **Admin → Environment**. Values outside them
+fall back to `local`.
 
 Set `BACKUP_CREDENTIALS_ENCRYPTION_KEY` (32-byte base64, e.g.
 `openssl rand -base64 32`) before storing per-server S3 or SFTP credentials:
@@ -74,7 +77,37 @@ there overrides the fleet default:
 - **Create backup**, **Restore**, and **Delete** back up or roll back files.
   Restoring requires the server to be stopped.
 
-Server owners also back up their own servers ([user backups](/users/backups/)).
+Each server also carries a **backup allocation** in MB. With **local** or
+**stream** storage and no allocation, creating a backup is refused (*Backup
+allocation disabled. Configure S3 or SFTP to enable backups.*); with an
+allocation set, the size of existing local backups is counted against it before
+a new backup starts. **S3** and **SFTP** storage are not subject to that quota —
+they are the supported way to run backups without an allocation.
+
+### Retention and pinned backups
+
+Retention is enforced twice: a periodic job runs every six hours, and the same
+rules are applied again as soon as a backup completes. Both passes work from
+each server's **Keep last N** and **Max age (days)** values. A backup marked
+**Pinned** is skipped by both rules and does not consume a "keep last N" slot,
+so the count applies to unpinned backups only — pinning is how one backup
+survives retention indefinitely. It still occupies the server's backup
+allocation, so pinning protects data without moving it off the node.
+
+Pinning needs the `backup.pin` permission (**Pin backups (ignore retention
+limit)** in the role editor). Server ownership does not imply it: grant it
+through a role ([roles](/admin/roles/)) or to an individual
+[subuser](/users/subusers/); `admin.write` and `*` satisfy it too. Holders see
+**Ignore limit** when creating a backup and **Pin** / **Unpin** on each backup
+row.
+
+Backups are gzip-compressed by default. Clearing **Compress backup (gzip)**
+writes an uncompressed `.tar` instead: faster to create and restore, larger on
+disk and slower to transfer — worth it for very large servers, a liability for
+off-site copies.
+
+Server owners see the same controls in their server's **Backups** tab ([user
+backups](/users/backups/)).
 
 ## Rules
 

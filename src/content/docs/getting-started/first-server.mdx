@@ -10,9 +10,9 @@ sources:
   - catalyst-frontend/src/pages/servers/
   - catalyst-frontend/src/components/servers/CreateServerModal.tsx
   - catalyst-frontend/src/components/servers/EulaModal.tsx
-  - catalyst-backend/src/routes/servers.ts
+  - catalyst-backend/src/routes/servers/
   - catalyst-backend/prisma/seed.ts
-last_verified: '2026-09-28'
+last_verified: '2026-10-16'
 ---
 
 This guide creates a working Minecraft (Paper) server. The same steps apply to
@@ -34,12 +34,14 @@ start.
    **Resource Allocation**, **Network**, and **Startup** — plus a live summary
    panel that mirrors the server about to be created.
 2. **Details:** enter a **Server Name** you will recognize, for example
-   `Survival SMP`. **Description** is optional. Choose the **Template** — the
-   searchable list of installed games. For Minecraft: Java Edition, pick
-   **Minecraft Server (Universal)**; its **SERVER_TYPE** variable decides the
-   server software and defaults to Paper (you can change it in **Startup**). If
-   the template offers an **Image Variant**, leave it on **Use default image**
-   unless you need a specific Java runtime.
+   `Survival SMP`. **Description** is optional. **Server Owner** is offered only
+   to administrators who may create users — leave it blank to own the server
+   yourself. Choose the **Template** — the searchable list of installed games.
+   For Minecraft: Java Edition, pick **Minecraft Server (Universal)**; its
+   **SERVER_TYPE** variable decides the server software and defaults to Paper
+   (you can change it in **Startup**). If the template offers an **Image
+   Variant**, leave it on **Use default image** unless you need a specific Java
+   runtime.
 3. **Node:** choose the **Node** to run it on (usually there is only one). The
    location comes from the node.
 4. **Resource Allocation:** **Memory (MB)** and **Disk (MB)** are prefilled from
@@ -77,7 +79,8 @@ do not edit any files:
 2. Scroll to the bottom of the licence — the **I Agree** button enables once you
    reach the end.
 3. Select **I Agree**. Catalyst writes the acceptance for you and starts the
-   server. Select **Decline** to leave the server stopped.
+   server. **Decline** leaves the server stopped and the panel shows its status
+   as **Error**; starting it again asks for the EULA.
 
 ## 3. Join the server
 

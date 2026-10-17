@@ -84,10 +84,10 @@ offering the node to users.
 ## Backup restores fail with "Function not implemented"
 
 On Fedora 44 every archive restore aborts with `Function not implemented`
-(`ENOSYS`) and the server never leaves `restoring`. Fedora's GNU tar issues
-`openat2(2)` when extracting, and systemd's `RestrictSUIDSGID=yes` denies that
-syscall outright: classic seccomp cannot inspect the mode field inside
-`struct open_how`, so systemd blocks the whole call
+(`ENOSYS`) and the server returns to **Stopped** with that error. Fedora's GNU
+tar issues `openat2(2)` when extracting, and systemd's `RestrictSUIDSGID=yes`
+denies that syscall outright: classic seccomp cannot inspect the mode field
+inside `struct open_how`, so systemd blocks the whole call
 ([systemd#43314](https://github.com/systemd/systemd/issues/43314), closed
 upstream as "fix in GNU tar").
 
@@ -96,8 +96,10 @@ directive stays on (`SystemCallFilter=@system-service @mount`,
 `NoNewPrivileges=true`, `ProtectSystem=full`, `ProtectHome=true`,
 `RestrictNamespaces=mnt net uts ipc`, the capability bounding set), and the
 archive path keeps its own protections: restores refuse archive-supplied
-ownership and permissions, reject symlink/device/absolute members before
-extraction, and game servers run as unprivileged container users.
+ownership and permissions, refuse device entries and any member or link that
+would escape the server directory before extraction, and game servers run as
+unprivileged container users. Symbolic and hard links inside the server
+directory restore normally — see [backups](/users/backups/).
 
 1. **Confirm the cause** — on the node run
    `systemd-run -p RestrictSUIDSGID=yes --wait --pipe tar -cf /dev/null -C /tmp .`.

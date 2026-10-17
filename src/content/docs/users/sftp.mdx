@@ -9,9 +9,10 @@ features:
 sources:
   - catalyst-frontend/src/components/files/SftpConnectionInfo.tsx
   - catalyst-frontend/src/components/servers/tabs/ServerSftpTab.tsx
-  - catalyst-backend/src/index.ts
+  - catalyst-backend/src/routes/sftp.ts
+  - catalyst-backend/src/websocket/gateway.ts
   - catalyst-agent/src/sftp_server.rs
-last_verified: '2026-09-28'
+last_verified: '2026-10-16'
 ---
 
 SFTP gives you a fast, resumable connection for big transfers — uploading a
@@ -37,7 +38,8 @@ Open the **SFTP** tab on your server to find your connection details.
    - Protocol: **SFTP** (not plain FTP — Catalyst does not offer insecure FTP).
    - Paste the host, port, username, and password exactly as shown.
 3. You land in your server's root directory — the same files as the **Files**
-   tab.
+   tab. Changes you make over SFTP (uploads, deletes, renames, permission
+   changes) show up there as they happen, without a manual refresh.
 
 Two details worth knowing:
 

@@ -8,7 +8,8 @@ features:
 sources:
   - catalyst-backend/scripts/export-openapi.ts
   - catalyst-backend/src/routes/
-last_verified: '2026-09-28'
+  - api/openapi.json
+last_verified: '2026-10-16'
 ---
 
 import ScalarReference from '../../../components/ScalarReference.astro';
@@ -22,9 +23,10 @@ permission guards it enforces.
 <ScalarReference />
 
 :::note
-The generated contract covers the REST endpoints. The long-lived SSE streams
-(`/api/servers/:id/console/stream`, `/events`, `/metrics/stream`) are not listed
-in it — see [Realtime events](/api/websockets/) for those.
+The generated contract also lists the long-lived SSE endpoints (console, server
+events, metrics, admin events, node agent logs) with their status codes and
+error codes. The event names and payloads they push are described in [Realtime
+events](/api/websockets/).
 :::
 
 :::note
@@ -36,5 +38,5 @@ OpenAPI tool.
 ## Related
 
 - [API & Developers](/api/overview/) — guides, conventions, and the auth model
-- [Realtime events](/api/websockets/) — the SSE streams not covered here
+- [Realtime events](/api/websockets/) — the event names and payloads the SSE endpoints push
 - [Errors](/api/errors/) — stable codes you can branch on

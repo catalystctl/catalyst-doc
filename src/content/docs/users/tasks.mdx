@@ -11,7 +11,8 @@ sources:
   - catalyst-backend/src/routes/tasks.ts
   - catalyst-backend/src/services/task-scheduler.ts
   - catalyst-backend/src/services/create-backup.ts
-last_verified: '2026-10-13'
+  - catalyst-backend/src/server.ts
+last_verified: '2026-10-16'
 ---
 
 The **Tasks** tab (titled **Scheduled Tasks**) runs actions automatically — a
@@ -25,13 +26,14 @@ the panel.
   edit, pause, or delete a task. Reading the task list needs `server.read`.
 - For a **Create backup** task, `backup.create` as well; the **Stop server
   before backup** option needs `server.stop` and **Start server after backup**
-  needs `server.start`.
+  needs `server.start`. A **Send command** task needs `console.write`.
 
 ## Create a task
 
 1. Open your server's **Tasks** tab.
 2. Select **Create task**.
-3. Enter a **Name** (the placeholder suggests `Nightly restart`).
+3. Enter a **Name** (the placeholder suggests `Nightly restart`) and, if you
+   want a note for your team, a **Description**.
 4. Choose the **Action**:
    - **Restart server**
    - **Start server**
@@ -48,18 +50,24 @@ the panel.
      confirmed finished. Enable both for a backup that restarts the server.
    - **Compress backup (gzip)** — on by default. Turn it off to store a plain,
      uncompressed `.tar` archive ([backups](/users/backups/)).
-7. Set the **Start time**. The panel shows which timezone the time is
-   interpreted in — the dialog reads it in your local timezone.
-8. Choose how often it **Repeat**s: **Every minute**, **Every hour**,
-   **Daily**, **Weekly**, or **Monthly**.
-9. For a **Weekly** task, pick the **Day of week**.
+7. Choose how often it **Repeat**s: **Every minute**, **Every N minutes**,
+   **Every hour**, **Daily**, **Weekly**, **Monthly**, or **Custom (cron)**.
+8. Set the detail that repeat needs: an **Interval** for **Every N minutes**,
+   **At minute** for **Every hour**, and a **Time of day** for **Daily**,
+   **Weekly**, and **Monthly** — plus **Day of week** or **Day of month** where
+   those apply. Times are interpreted in your local timezone, and the dialog
+   shows which.
+9. To use a raw cron expression instead, turn on **Advanced** and fill in
+   **Schedule (cron)** — five fields: `minute hour day-of-month month
+   day-of-week`. Turn **Advanced** off to return to the presets when the
+   expression matches one.
 10. Select **Create**.
 
 ## Manage existing tasks
 
-Each task row shows its name, action, repeat interval, and the **Next run**,
-**Last run**, status, and **Runs** counters. When a run fails, the error text
-appears under the row.
+Each task row shows its name, action, schedule expression, any backup options,
+and the **Next run**, **Last run**, status, and **Runs** counters. When a run
+fails, the error text appears under the row.
 
 - **Edit** opens the task's name, optional description, action, command,
   timing, and any backup options.

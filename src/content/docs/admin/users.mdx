@@ -9,7 +9,7 @@ features:
 sources:
   - catalyst-frontend/src/pages/admin/UsersPage.tsx
   - catalyst-backend/src/routes/admin.ts
-last_verified: '2026-09-28'
+last_verified: '2026-10-16'
 ---
 
 Manage accounts under **Admin → Users**.
@@ -22,25 +22,32 @@ Manage accounts under **Admin → Users**.
 
 ## Create an account
 
-You need `user.create`. Select **Create user** and work through the wizard:
+You need `user.create`. Select **Create user** and fill in the numbered
+sections of the form:
 
-1. **Account** — **Username**, **Email**, **Password** (minimum 8 characters).
-2. **Roles & Servers** — assign one or more **Role**s and, optionally, direct
-   server access.
+1. **Account credentials** — **Email**, **Username**, and **Password** (at
+   least 8 characters).
+2. **Roles & Servers** — assign one or more **Roles** (the chips are
+   multi-select and searchable) and, optionally, direct server access.
 3. **Node Access** — grant the account scoped access to specific nodes, or skip.
 4. Select **Create user**.
 
-**Edit user** reopens the same form with an extra **Security** step for the
-account's two-factor state; leaving the password blank keeps the current one.
+**Edit user** reopens the same form with a fourth **Security** section for the
+account's two-factor, passkey, and linked-account state; leaving the password
+blank keeps the current one. Saving needs `user.update`; changing roles also
+needs `user.set_roles`.
 
 ## Find and act on users
 
 - Search by name, email, or ID, and filter by **Role** or **Status** (**Active**,
   **Banned**, **Unverified**).
-- **View details** shows the account, roles, server access, **Two-Factor
-  Authentication**, **Passkeys**, and **Linked Accounts** state, with actions to
-  **Wipe 2FA**, **Wipe all** passkeys, **Unlink** an SSO account, or **Enforce**
-  2FA.
+- **View details** shows the account, its roles, sign-in history,
+  **Two-Factor Authentication**, **Passkeys**, and **Linked Accounts** state.
+  The actions live in **Edit user**'s **Security** section: **Wipe 2FA**, **Wipe
+  all** passkeys, **Enforce** or **Unenforce** 2FA, and **Unlink** an SSO
+  account.
+- Unverified accounts get a **Verify email** action on their row and in the
+  row's overflow menu.
 - Select users to act in bulk: **Ban**, **Unban**, **Verify Emails**, or delete.
   Banning and deleting are destructive; a user who still owns servers cannot be
   deleted.
@@ -55,20 +62,24 @@ invites and add [subusers](/users/subusers/) themselves from the server's
    need a scoped [role](/admin/roles/), not admin.
 2. **Named accounts only.** No shared `admin` login — shared logins make the
    audit log useless and revocation impossible.
-3. **Offboard promptly.** Disable accounts when staff leave; their API keys and
-   sessions should die with the account — verify this in the audit log.
+3. **Offboard promptly.** **Ban** the account when staff leave; their
+   sessions are revoked and their API keys stop authenticating — verify this in
+   the audit log.
 4. **Strong auth.** Enforce strong passwords; enable whatever MFA/SSO the panel
    offers (see [security](/admin/security/)).
 
 ## When users cannot log in
 
-1. Confirm the account exists and is not suspended; check **Status** in
+1. Confirm the account exists and is not banned; check **Status** in
    **Admin → Users**.
-2. Reset the password or **Verify email** from the user's detail view.
+2. Set a new password by editing the user (leave the password blank to keep the
+   current one), or **Verify email** from the user's row if the address is
+   unverified.
 3. Check mail delivery if invites or resets never arrive (see
    [panel issues](/troubleshooting/panel/)).
-4. In **Admin → Audit Logs**, filter the action **Sign-in failed** or the
-   resource type **Login lockout** before resetting anything.
+4. In **Admin → Audit Logs**, filter the action `login_failed` (shown as
+   **Sign-in failed**) or the resource type `auth_lockout` (**Login lockout**)
+   before resetting anything.
 
 ## Related
 

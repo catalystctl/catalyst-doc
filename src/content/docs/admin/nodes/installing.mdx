@@ -9,9 +9,9 @@ features:
 sources:
   - catalyst-frontend/src/lib/deploy-command.ts
   - catalyst-frontend/src/components/nodes/NodeCreateModal.tsx
-  - catalyst-backend/src/index.ts
+  - catalyst-backend/src/server.ts
   - scripts/deploy-agent.sh
-last_verified: '2026-09-28'
+last_verified: '2026-10-16'
 ---
 
 Create the node entry in the panel first, then run the install command the
@@ -33,10 +33,11 @@ and the service — so a fresh machine needs nothing pre-installed.
 
 ## Install the agent
 
-1. In the panel open **Admin → Nodes**, select **Register Node**, and complete
-   the three-step dialog ([registering](/admin/nodes/registering/)). Give the
-   node its hostname, public address, and the memory/CPU capacity of the machine.
-2. The final **Deploy agent** step shows the node's install command:
+1. In the panel open **Admin → Nodes**, select **Register Node**, and fill in
+   the dialog ([registering](/admin/nodes/registering/)). Give the node its
+   hostname, public address, and the memory/CPU capacity of the machine.
+2. After you select **Register node**, the same dialog switches to **Deploy
+   agent** and shows the node's install command:
 
    ```bash
    curl -fsSL -H 'Authorization: Bearer <API key>' 'https://panel.example.com/api/deploy/<deployment token>' | sudo bash -x

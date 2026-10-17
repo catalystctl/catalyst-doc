@@ -10,8 +10,9 @@ features:
 sources:
   - catalyst-frontend/src/components/servers/tabs/ServerUsersTab.tsx
   - catalyst-frontend/src/components/servers/InviteLinkModal.tsx
+  - catalyst-frontend/src/pages/InvitesPage.tsx
   - catalyst-backend/src/routes/servers/invites.ts
-last_verified: '2026-09-28'
+last_verified: '2026-10-16'
 ---
 
 The **Users** tab (titled **Users & Access**) adds subusers: extra accounts with
@@ -42,9 +43,12 @@ only sees what you allow.
 4. Select **Send invite**.
 
 If email delivery is configured, the panel emails the invite. If it is not, an
-**Invite link** dialog appears — select **Copy invite link** and send it to them
-yourself. Anyone with the link can accept it with the assigned permissions, so
-keep it private.
+**Invite link** dialog appears — select **Copy** and send the link to them
+yourself. The invite is bound to the email address you entered: the invitee
+accepts it by signing in with that address, or by creating an account for it on
+the invite page if they do not have one yet. Someone signed in as a different
+account is asked to sign out first. Keep the link private — it grants the
+assigned permissions once the matching account opens it.
 
 Invites expire after 7 days. A pending invite can be **Regenerate**d (the old
 link stops working) or **Cancel**led. Once accepted, the server appears in their

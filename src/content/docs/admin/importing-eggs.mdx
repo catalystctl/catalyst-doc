@@ -10,8 +10,11 @@ sources:
   - catalyst-frontend/src/components/templates/TemplateCreateModal.tsx
   - catalyst-frontend/src/components/templates/NestsManagerModal.tsx
   - catalyst-frontend/src/utils/pterodactylImport.ts
+  - catalyst-frontend/src/utils/eggPort.ts
+  - catalyst-backend/src/utils/egg-import.ts
+  - catalyst-backend/src/utils/egg-port.ts
   - catalyst-backend/src/routes/templates.ts
-last_verified: '2026-09-28'
+last_verified: '2026-10-16'
 ---
 
 Catalyst can import Pterodactyl eggs as templates, so a library built for
@@ -34,8 +37,8 @@ YAML (Pelican) eggs work.
 3. Choose **From URL** and paste a direct link to the egg file, or **From Local
    File** and pick a `.json`, `.yaml`, or `.yml` file.
 4. The panel converts the egg and opens the **New template** form pre-filled.
-   Review the name, nest, runtime images, startup command, variables, and install
-   script.
+   Review the name, nest, runtime images, startup command, variables, ports, and
+   install script.
 5. Select **Create template**.
 
 Selecting several files at once on the local-file route skips the review step and
@@ -61,6 +64,12 @@ which nest it belongs to (optional).
 
 ## What to check by hand
 
+- **Ports:** the template's primary port is derived from the egg — an explicit
+  `ports` array, a literal port in the egg's own config-file bindings, or a
+  variable pinned to one value by its rules — instead of assuming 25565. Eggs
+  that bind `{{server.build.default.port}}` pin nothing, because the panel
+  allocates the real port per server; those templates fall back to 25565 as a
+  placeholder, so correct the **Ports** field before publishing.
 - **Variables:** names, defaults, and validation rules sometimes need renaming
   to match Catalyst conventions.
 - **Images:** confirm the container image exists and is maintained; repoint to

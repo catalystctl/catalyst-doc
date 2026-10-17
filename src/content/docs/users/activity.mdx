@@ -8,13 +8,15 @@ features:
 sources:
   - catalyst-frontend/src/components/servers/tabs/ServerActivityLogTab.tsx
   - catalyst-backend/src/routes/servers/stats.ts
-last_verified: '2026-09-28'
+last_verified: '2026-10-16'
 ---
 
 The **Activity** tab (titled **Activity Log**) is an audit trail for your
 server: power actions, file changes, backup restores, subuser changes, and
 similar events, each stamped with who did it and when. Entries are a flat list,
-newest first, paged 25 at a time.
+newest first, paged 25 at a time. An **Updated …** stamp in the tab header says
+when the list last refreshed — hover it for the exact time — and a failed
+refresh keeps the entries already on screen, with the error shown above them.
 
 ## Read an entry
 

@@ -8,6 +8,8 @@ features:
 sources:
   - catalyst-backend/src/routes/plugins.ts
   - catalyst-backend/src/plugins/safety.ts
+  - catalyst-backend/src/plugins/types.ts
+  - catalyst-backend/src/plugins/custom-permissions.ts
   - catalyst-backend/src/plugins/marketplace/service.ts
   - catalyst-frontend/src/pages/admin/PluginsPage.tsx
   - catalyst-frontend/src/pages/admin/plugins/MarketplacePage.tsx
@@ -24,15 +26,20 @@ with the access you grant them, so every install is a trust decision — see
 ## Prerequisites
 
 - Administrator access — the plugin surfaces need `admin.read`/`admin.write`.
-- Outbound HTTPS from the backend to the marketplace index and the package URL
-  you install from.
+- Outbound HTTP(S) from the backend to the marketplace index and the package
+  URL you install from. Loopback and private addresses are refused by default;
+  a LAN or air-gapped index is reachable once it is a configured source.
 - For a vendor-licensed plugin, the license key from the vendor.
 
 ## Install a plugin
 
-1. Open **Admin → Plugins** and select **Marketplace**.
+1. Open **Admin → Plugins** and select **Marketplace**. The marketplace is a
+   full page (its own sidebar entry under **Extensions**) rather than a dialog,
+   so you can browse, filter, and compare versions without losing your place.
 2. Browse the configured sources. Each entry shows its version and whether a
-   newer one is available.
+   newer one is available; expand an entry for its author, source, checksum,
+   package URL, and homepage. Use the tag and status filters (**Install**,
+   **Update**, **Installed**) to narrow the list.
 3. Select **Install**. A package is a `.catpkg.zip` — a ZIP whose root contains
    `plugin.json`. When the marketplace index publishes a `sha256`, the panel
    verifies the download against it.
@@ -87,21 +94,30 @@ restart. Mounted routes, scheduled tasks, and event listeners stay until you
 disable the plugin. Every change is audit-logged.
 
 Plugins can also expose permissions for panel **roles** (a separate namespace
-from the plugin's own capabilities). Those appear in the role editor under
-**Plugins** — assign them to staff through [roles](/admin/roles/).
+from the plugin's own capabilities). While a plugin is enabled, the permissions
+it declares appear in the role editor under **Plugins** — assign them to staff
+through [roles](/admin/roles/).
 
 ## Configure a plugin
 
 1. Select the plugin's **Settings**.
-2. Fill in the fields the plugin declares in its config schema (strings, numbers,
-   booleans, enums, or free-form values). Password-typed values are never
-   returned to non-admin callers.
-3. Save. Config is stored by the panel and applied on reload.
+2. Fill in the fields the plugin declares in its config schema (strings,
+   numbers, booleans, objects, or arrays, with optional `enum`, `default`, and
+   `min`/`max` constraints). Password-typed values are never returned to
+   non-admin callers.
+3. Save. The panel stores the values and applies them to the running plugin
+   immediately.
 
 ## Update, reload, disable, uninstall
 
-- **Update** — when the marketplace lists a newer version, the row shows
-  **Update available**; installing that listing upgrades the plugin in place.
+- **Update** — the plugin list shows each installed version in its own
+  **Version** column next to the newest version the marketplace publishes. When
+  a newer one exists the row shows **Update available** and gains an **Update**
+  button; the list header shows an **N updates available** link straight to the
+  marketplace's update filter, where **Update all** applies every pending
+  update. Installing that listing upgrades the plugin in place. An upgrade
+  re-prompts for the safety disclaimer when the plugin's permissions changed,
+  so an update never silently widens a plugin's access.
 - **Reload** — re-reads the plugin from disk without restarting the panel.
 - **Disable** — stops the plugin; its files and settings stay installed.
 - **Uninstall** — removes the plugin code and unloads it. Optionally enable

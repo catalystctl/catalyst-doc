@@ -9,7 +9,7 @@ sources:
   - catalyst-frontend/src/components/nodes/NodeCreateModal.tsx
   - catalyst-backend/src/routes/nodes.ts
   - catalyst-frontend/src/pages/admin/NodeAllocationsPage.tsx
-last_verified: '2026-09-28'
+last_verified: '2026-10-16'
 ---
 
 Registration introduces a machine to the panel: identity, credentials, and the
@@ -18,18 +18,21 @@ because the panel is what issues the agent's credential.
 
 ## Prerequisites
 
-- Administrator access — registering a node needs the `admin.write` permission.
+- Administrator access — registering a node needs the `node.create` permission
+  (a role with `admin.write` also passes).
 - The target machine meets the [node requirements](/admin/requirements/).
 - The node's hostname and public address (an IPv4 or IPv6 literal) to hand.
 - A location to group the node under; you can create one in the dialog.
 
 ## Register the node
 
-1. Open **Admin → Nodes** and select **Register Node**.
-2. **Select a location** — where the node physically sits. If no locations exist
-   yet, select **Create a location**, then come back and pick it. Select
-   **Continue**.
-3. Fill in **Node details**:
+1. Open **Admin → Nodes** and select **Register Node**. The dialog is a single
+   screen with numbered sections and a live summary of what you are about to
+   create.
+2. **1 — Location**: where the node physically sits. If no locations exist yet,
+   select **Create a location**, then come back and pick it.
+3. Fill in the remaining sections — **Node details**, **Connection**,
+   **Capacity**, and **Advanced agent paths**:
 
    | Field | Required | Notes |
    | --- | --- | --- |
@@ -42,13 +45,14 @@ because the panel is what issues the agent's credential.
    | **CPU cores** | Yes | Total CPU cores the node may allocate. Default `8`. |
    | **Memory Over-allocation (%)** | No | `0` = none, `-1` = unlimited. |
    | **CPU Over-allocation (%)** | No | Same meaning. |
-   | **SFTP Access** | No | On by default, port `2022`. Untick to disable SFTP on this node. |
+   | **SFTP Access** | No | On by default, port `2022`. Change it later in **Update node**. |
    | **Advanced agent paths** | No | Container-runtime and CNI paths. Leave blank to use agent defaults. |
 
 4. Select **Register node**. The panel creates the node record and its ID.
-5. The **Deploy agent** step shows the install command, which carries a new agent
-   API key. Select **Copy** and run it on the machine —
-   [installing a node](/admin/nodes/installing/) covers the details.
+5. The dialog switches to **Deploy agent** and shows the install command, which
+   carries a new agent API key. Select **Copy** and run it on the machine —
+   [installing a node](/admin/nodes/installing/) covers the details. Select
+   **Done** to close the dialog.
 
 The node's first check-in flips it to online in **Admin → Nodes**. If you lose
 the command, open the node and select **Deploy** to generate a fresh one.

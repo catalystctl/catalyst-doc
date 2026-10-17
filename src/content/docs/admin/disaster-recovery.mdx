@@ -11,7 +11,9 @@ sources:
   - catalyst-docker/.env.example
   - catalyst-docker/update.sh
   - install.sh
-last_verified: '2026-09-28'
+  - catalyst-agent/src/systemd_compat.rs
+  - scripts/deploy-agent.sh
+last_verified: '2026-10-16'
 ---
 
 Disaster recovery is a tested procedure, not a backup job. If you have never
@@ -22,9 +24,9 @@ restored, you do not have recovery — you have a theory.
 1. **Panel database** — everything except the game files: users, servers, roles,
    audit logs. It lives in the `catalyst-postgres-data` volume (Compose prefixes
    the name with the project name).
-2. **Panel configuration** — the compose directory (default
-   `/opt/catalyst-docker`, or the `CATALYST_COMPOSE_DIR` value in `.env`) with
-   its `.env`. The `.env` holds `POSTGRES_PASSWORD`, `BETTER_AUTH_SECRET`,
+2. **Panel configuration** — the compose directory the installer created
+   (`./catalyst-docker` under the directory you ran it from) with its `.env`.
+   The `.env` holds `POSTGRES_PASSWORD`, `BETTER_AUTH_SECRET`,
    `API_KEY_SECRET`, and `BACKUP_CREDENTIALS_ENCRYPTION_KEY`; losing them
    invalidates sessions, API keys, and stored backup credentials even if the
    database survives.
@@ -41,10 +43,11 @@ restored, you do not have recovery — you have a theory.
 Schedule, retention, and the storage backend are covered in
 [backups](/admin/backups/); this section is the command reference. Run these on
 the panel host, from the compose directory. `POSTGRES_USER` and `POSTGRES_DB`
-default to `catalyst` and `catalyst_db`; use your `.env` values.
+default to `catalyst` and `catalyst_db`; use your `.env` values, and read
+`CATALYST_COMPOSE_DIR` there if you have moved the stack.
 
 ```bash
-cd /opt/catalyst-docker            # or your CATALYST_COMPOSE_DIR
+cd ./catalyst-docker                # the directory install.sh created
 docker exec catalyst-postgres pg_dump -U catalyst -d catalyst_db \
   > catalyst-panel-$(date +%F).sql
 tar czf catalyst-config-$(date +%F).tgz \
@@ -100,6 +103,23 @@ that the dump is non-empty before you trust it.
 `bash update.sh --restore <backup-dir>` restores the compose files from the
 backup `update.sh` takes before it rewrites them — useful if an update is what
 broke the stack.
+
+## Restore failures that are not the archive's fault
+
+A restore that dies partway is usually the node, not the backup. Two known
+causes, both fixed in current agent releases — keep nodes updated before
+drilling:
+
+- **`Function not implemented` (`ENOSYS`) on Fedora 44.** Fedora's GNU tar uses
+  `openat2(2)` when extracting, and systemd's `RestrictSUIDSGID=yes` blocks that
+  syscall. The agent unit now ships `RestrictSUIDSGID=no` with the other sandbox
+  directives intact, and a node upgraded in place repairs itself on the next
+  agent start. See
+  [backup restores fail with Function not implemented](/troubleshooting/node/#backup-restores-fail-with-function-not-implemented).
+- **Symbolic and hard links in the archive.** Older agents refused them. Current
+  agents restore links inside the server directory as they were and still refuse
+  archive-supplied ownership, permissions, device entries, and any member or
+  link that would escape the server directory.
 
 ## The recovery drill (quarterly)
 

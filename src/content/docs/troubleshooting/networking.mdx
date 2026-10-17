@@ -13,6 +13,9 @@ sources:
   - catalyst-agent/src/runtime_manager/cni_network.rs
   - catalyst-agent/src/sftp_server.rs
   - catalyst-agent/src/config.rs
+  - catalyst-frontend/nginx.conf
+  - catalyst-frontend/docker-entrypoint.d/16-backend-host.envsh
+  - catalyst-docker/nginx/default.conf.template
   - catalyst-docker/docker-compose.caddy.yml
   - catalyst-docker/docker-compose.traefik.yml
 last_verified: '2026-10-16'
@@ -45,6 +48,28 @@ last_verified: '2026-10-16'
 From the node: resolve the panel hostname, then `curl` the panel URL. Fix DNS
 first, then TLS (cert valid for that name?), then HTTP. See
 [node issues](/troubleshooting/node/).
+
+## Panel loads but every API call returns 502
+
+The page itself renders — static files come from the frontend container — but
+sign-in, the server list and realtime all fail, because the frontend's nginx
+cannot resolve the backend. nginx names the failure in its own log:
+
+```bash
+docker compose logs frontend | grep -i 'backend could not be resolved'
+```
+
+- **Bundled stack** — nginx proxies to the fixed service name `backend`, which
+  it resolves once at startup. A renamed or moved backend service stops the
+  frontend from starting; restore the service name.
+- **Frontend image run directly** (Podman, Kubernetes, host networking) — the
+  resolver comes from the frontend container's own `/etc/resolv.conf`, so a
+  backend name that only resolves through a search domain fails. Set
+  `BACKEND_HOST` to the fully qualified name, and `NGINX_LOCAL_RESOLVERS` when
+  its nameservers are wrong.
+
+A `wget http://backend:3000/health` that succeeds inside the frontend container
+while nginx logs a resolve failure is the signature of a resolver mismatch.
 
 ## TLS warnings in browsers
 

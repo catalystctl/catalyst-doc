@@ -9,6 +9,8 @@ features:
 sources:
   - tools/docs-agent/
   - scripts/
+  - package.json
+  - .github/workflows/docs-ci.yml
 last_verified: '2026-10-16'
 ---
 
@@ -71,8 +73,9 @@ pnpm test         # docs-agent unit tests
 pnpm run build    # the same command Cloudflare Pages runs
 ```
 
-Fix every failure — CI runs the same checks on every pull request.
-`pnpm validate` is the fastest gate while editing.
+Fix every failure — CI runs the same checks on every pull request, plus
+`pnpm validate --strict`, which turns an orphan page (one no sidebar entry
+reaches) into a failure. `pnpm validate` is the fastest gate while editing.
 
 ## API reference
 

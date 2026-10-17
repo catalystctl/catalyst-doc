@@ -11,8 +11,10 @@ sources:
   - catalyst-frontend/src/components/backups/RestoreBackupDialog.tsx
   - catalyst-frontend/src/components/backups/DeleteBackupDialog.tsx
   - catalyst-backend/src/routes/backups.ts
+  - catalyst-backend/src/routes/servers/admin-ops.ts
   - catalyst-backend/src/services/backup-retention.ts
-last_verified: '2026-10-14'
+  - catalyst-agent/src/websocket_handler/backup.rs
+last_verified: '2026-10-16'
 ---
 
 A backup is a restorable snapshot of your server's files. Make one before every
@@ -71,7 +73,8 @@ backup of the *current* files first, so you can go back either way.
 ## Pin a backup
 
 Pinning exempts a backup from the retention rules below, so **Keep last N** and
-**Max age (days)** never delete it. You need the `backup.pin` permission.
+**Max age (days)** never delete it. You need the `backup.pin` permission; owning
+the server does not grant it.
 
 - **Pin:** select **Pin** on the backup's row. A **Pinned** badge appears next to
   it.
@@ -86,7 +89,8 @@ off the node — download anything you must keep permanently.
 ## Backup settings
 
 The **Backup settings** card controls where backups go and how long they are
-kept. You need the `backup.create` permission to change it.
+kept. You need the `backup.create` permission to change it; changing the S3 or
+SFTP credentials also needs admin or node-manage access.
 
 - **Storage mode** — **Local** or **Stream (backend-local)** use the storage
   space your administrator allocated to the server. **S3** and **SFTP** store

@@ -15,7 +15,7 @@ sources:
   - catalyst-backend/src/services/file-tunnel.ts
   - packages/plugin-sdk/src/types.ts
   - catalyst-plugins/example-plugin/backend/index.js
-last_verified: '2026-09-28'
+last_verified: '2026-10-16'
 ---
 
 The backend entry (`backend.entry` in `plugin.json`) is an ES module. The panel
@@ -115,7 +115,10 @@ and revoking the grant re-secures the route on the next request.
 `requirePermission` checks the **user**, not the plugin. The scoped database
 checks the **plugin grant**. You want both: a route that reads servers should
 use `preHandler: ctx.requirePermission('server.read')` and `ctx.db.servers`,
-so a normal user cannot call it and a revoked plugin cannot read.
+so a normal user cannot call it and a revoked plugin cannot read. A token you
+declare in the manifest's `userPermissions` works here too — an admin grants it
+to a role, and `ctx.requirePermission('tickets.view')` then passes for those
+users. See [Data & permissions](/api/plugins/data/#two-permission-namespaces).
 
 Return `{ success: true, ... }` and use `reply.status(code).send(...)` for
 errors. The frontend client in `@catalyst/plugin-sdk/frontend` treats a body

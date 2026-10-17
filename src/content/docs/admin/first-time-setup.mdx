@@ -8,26 +8,35 @@ features:
 sources:
   - catalyst-frontend/src/pages/setup/SetupPage.tsx
   - catalyst-frontend/src/i18n/locales/en/setup.json
+  - catalyst-frontend/src/hooks/useSetupStatus.ts
+  - catalyst-frontend/src/App.tsx
   - catalyst-backend/src/routes/setup.ts
-last_verified: '2026-09-28'
+  - catalyst-backend/src/lib/env-registry.ts
+  - install.sh
+last_verified: '2026-10-16'
 ---
 
 After [installation](/admin/installation/), opening the panel URL shows the
 setup wizard. It runs once and locks itself afterwards. The wizard has three
-steps, and the panel URL itself was already set by the installer.
+steps.
 
 ## Prerequisites
 
 - A completed [installation](/admin/installation/) with the stack running.
 - The panel URL reachable in a browser.
-- The backend has finished its startup migrations (otherwise the wizard may show
-  an error page — see **If the wizard does not appear** below).
+- The backend has finished its startup migrations (otherwise the panel shows a
+  **Retry** screen instead of the wizard — see **If the wizard does not appear**
+  below).
 
 ## Complete the wizard
 
-1. **Welcome.** Set the **Panel Name** (default `Catalyst`) and optionally
-   upload a **Panel Logo**. The logo must be a square image at least 128×128px
-   and no larger than 512KB. Select **Next**.
+1. **Welcome.** Set the **Panel Name** (default `Catalyst`) and confirm the
+   **Public Panel URL**, which is prefilled with the address you opened the
+   panel from. It drives sign-in links, CORS, and generated URLs, so it must be
+   the exact URL users open. The installer already wrote a `PUBLIC_URL` value to
+   `catalyst-docker/.env` — keep the two identical. Optionally upload a
+   **Panel Logo** (recommended: square, at least 128×128px, maximum 512KB).
+   Select **Next**.
 2. **Admin Account.** Create the first administrator:
    - **Email** — used for notifications and recovery.
    - **Username** — at least 3 characters.
@@ -46,7 +55,7 @@ sign-in page instead — sign in with the account you just created.
 :::note
 Completing setup also switches **open self-registration off** and creates the
 built-in **Administrator** and **User** roles. To allow public sign-ups again,
-set `REGISTRATION_ENABLED=true` on the backend container
+set `REGISTRATION_ENABLED=true` in **Admin → Environment**
 ([configuration](/admin/configuration/)).
 :::
 
@@ -66,8 +75,11 @@ rather than deleting data to force it.
 ## If the wizard does not appear
 
 - You see the login page instead: setup already completed — sign in.
-- You see an error page: the backend may still be migrating — wait and check
-  container logs. See [panel issues](/troubleshooting/panel/).
+- You see a **Retry** screen: the panel could not reach the backend (a restart
+  or update, typically). It keeps checking on its own and recovers when the
+  backend answers; select **Retry** to check immediately. An installed panel is
+  never sent back to the wizard because a status check failed. See
+  [panel issues](/troubleshooting/panel/).
 
 ## Related
 

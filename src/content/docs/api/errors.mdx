@@ -8,9 +8,11 @@ features:
 sources:
   - catalyst-backend/src/lib/error-codes/
   - catalyst-backend/src/lib/http-error.ts
+  - catalyst-backend/src/lib/validation.ts
+  - catalyst-backend/src/server.ts
   - catalyst-backend/src/shared-types.ts
   - catalyst-frontend/src/i18n/api-errors.ts
-last_verified: '2026-09-28'
+last_verified: '2026-10-16'
 ---
 
 ## Shape
@@ -28,16 +30,22 @@ English `error` message, and optional extras:
 
 - `params` — values the panel interpolates into the localized message for that
   code. Treat them as display data, not as a stable schema.
-- `details` — present on `VALIDATION_ERROR`; an array of
-  `{ field, message, code?, params? }` entries describing each rejected field.
+- `details` — an array of `{ field, message, code?, params? }` entries
+describing each rejected field. The request validators send it on a `400`, and
+that response may carry no top-level `code`.
+- `requestId` — present on errors the panel's global error handler produces
+(uncaught failures, mapped database errors); quote it in bug reports.
 
 **Branch on `code`, never on the message.** Messages are localized and may
 change; codes are versioned identifiers — renaming one is a breaking change.
 
 :::note
-A few early failures return only `{ "error": "..." }` with no code (for example
-an invalid API key returns `401 Invalid API key`). Check for `code`, but do not
-assume it is always present.
+Not every response carries a `code`. Body, query, and route-parameter
+validation failures return `400 { "error": "Invalid request body", "details":
+[...] }` (the message wording varies by validator), an invalid API key returns
+`401 { "error": "Invalid API key" }`, and an unmatched route returns
+`404 { "error": "Not Found" }`. Check for `code`, but do not assume it is
+always present.
 :::
 
 ## Codes you will meet
@@ -56,10 +64,13 @@ assume it is always present.
 | `NODE_OFFLINE`, `AGENT_COMMAND_FAILED`, `NODE_AGENT_UNREACHABLE` | 503/504 | The node's agent could not be reached or did not answer in time. |
 | `FRAMEWORK_*`, `IMPORT_FETCH_FAILED` | 502 | An upstream fetch (framework download, template import) failed. |
 
-Every code the panel can emit lives in `catalyst-backend/src/lib/error-codes/`
+The stable code registry lives in `catalyst-backend/src/lib/error-codes/`
 (common, auth, servers, infrastructure, admin). Domain codes extend the common
 set — the [API reference](/api/reference/) lists per-endpoint errors, and the
-frontend translates the same codes through its `errors` namespace.
+frontend translates the same codes through its `errors` namespace. A few
+driver-fallback codes are produced only by the generic mapper in
+`catalyst-backend/src/lib/http-error.ts` (`BAD_REQUEST`, `DATABASE_ERROR`,
+`FOREIGN_KEY`, `CONSTRAINT_FAILED`, `INVALID_RELATION`).
 
 ## Handling guidance
 

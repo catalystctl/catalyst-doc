@@ -28,7 +28,7 @@ when a change needs one.
 
 | Screen | What it controls |
 | --- | --- |
-| **Admin → System** | SMTP email, mod manager API keys (CurseForge/Modrinth), default interface language, **Auto Updater**, and system status/diagnostics |
+| **Admin → System** | SMTP email, mod manager API keys (CurseForge/Modrinth), default interface language, and **Auto Updater** |
 | **Admin → Security** | Rate limits, email verification, lockout policy, file-upload limits, and the panel MCP endpoint |
 | **Admin → Environment** | Every environment variable the backend reads, with its source and a restart prompt when required |
 | **Admin → Theme** | Panel identity (panel name, logo, favicon), brand colors, surfaces, and custom CSS |
@@ -47,8 +47,8 @@ panel prompts the signed-in admin with a **Restart panel** button. **Reset to
 Settings with a dedicated editor are left out of this page so each value has one
 place to change it: the panel name under **Theme**, rate limits and console
 output under **Security**, update automation under **System → Auto Updater**,
-OIDC providers under **Theme → SSO**, and marketplace sources in the plugin
-marketplace dialog.
+OIDC providers under **Theme → Advanced**, and marketplace sources in the plugin
+marketplace.
 
 A few variables must stay in `catalyst-docker/.env` because the backend needs
 them before it can reach the database (they are shown read-only in the panel):

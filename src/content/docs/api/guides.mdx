@@ -10,7 +10,8 @@ sources:
   - catalyst-backend/src/routes/servers/power.ts
   - catalyst-backend/src/lib/validation.ts
   - catalyst-backend/src/routes/api-keys.ts
-last_verified: '2026-09-28'
+  - catalyst-backend/src/routes/sse-events.ts
+last_verified: '2026-10-16'
 ---
 
 Copy-pasteable patterns for the jobs integrations do most. Adapt the host,
@@ -79,9 +80,9 @@ The response `data.key` is the full secret and is returned only at creation.
 ## React to crashes in realtime
 
 Subscribe to [server events](/api/websockets/) and trigger on
-`server_state_update` (or `server_state`) when a server leaves `running`, then
-confirm via REST before paging anyone — flapping nodes produce duplicate events
-during reconnects.
+`server_state_update` when a server leaves `running`, then confirm via REST
+before paging anyone — flapping nodes produce duplicate events during
+reconnects.
 
 ## Related
 

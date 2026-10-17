@@ -13,6 +13,9 @@ sources:
   - catalyst-backend/src/routes/servers/network.ts
   - catalyst-backend/src/routes/servers/mod-plugins.ts
   - catalyst-backend/src/routes/servers/stats.ts
+  - catalyst-backend/src/routes/servers/files.ts
+  - catalyst-backend/src/services/file-tunnel.ts
+  - catalyst-frontend/src/i18n/locales/en/errors.json
   - catalyst-frontend/src/components/servers/EulaModal.tsx
 last_verified: '2026-10-16'
 ---
@@ -54,6 +57,24 @@ port. The panel rejects the change with `PORT_ALREADY_IN_USE` ("Port N is
 already in use on this node"). Confirm no other server uses that IP + port
 ([networking](/users/networking/)), kill any ghost process via the node, and
 restart. If it persists, the administrator must free the allocation.
+
+## Files tab hangs, times out, or returns empty files
+
+Every listing, download and upload in the **Files** tab is relayed by the panel
+to the node agent, so the failure is usually the node rather than the file:
+
+- "The node is offline and cannot accept this action." (`NODE_OFFLINE`) — see
+  [node issues](/troubleshooting/node/).
+- "The agent did not respond in time." (`AGENT_TIMEOUT`) — retry once, then
+  check the node's load and free disk.
+- "The file tunnel is busy. Please try again later." (`FILE_TUNNEL_BUSY`) — too
+  many file operations are queued for that node; wait for in-flight transfers
+  to finish.
+
+If the node is healthy, check the panel version: listings that timed out
+without a node error were fixed in v1.79.4, and files that opened or downloaded
+empty were fixed in v1.81.0. Update the panel
+([updating Catalyst](/admin/updating/)).
 
 ## Lag with normal-looking settings
 

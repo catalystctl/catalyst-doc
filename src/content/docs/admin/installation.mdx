@@ -47,7 +47,7 @@ To pin a specific release instead of tracking the newest one, swap `latest` for
 a tag:
 
 ```bash
-curl -fsSL https://github.com/catalystctl/catalyst/releases/download/v1.66.3/install.sh | sudo bash
+curl -fsSL https://github.com/catalystctl/catalyst/releases/download/v1.83.1/install.sh | sudo bash
 ```
 
 That pins the installer script; the stack files still come from `main` unless
@@ -60,7 +60,7 @@ your policy is to inspect a script before running it, download both, check the
 checksum, then run the file:
 
 ```bash
-VERSION=v1.66.3  # replace with the release you want
+VERSION=v1.83.1  # replace with the release you want
 curl -fsSL -o install.sh "https://github.com/catalystctl/catalyst/releases/download/${VERSION}/install.sh"
 curl -fsSL -o install.sh.sha256 "https://github.com/catalystctl/catalyst/releases/download/${VERSION}/install.sh.sha256"
 sha256sum -c install.sh.sha256
@@ -104,14 +104,14 @@ Environment overrides (used with `-y`, or as prompt defaults):
 - `PUBLIC_URL`, `APP_NAME` — pre-answer the prompts.
 - `REMOVE_VOLUMES=1` — with `--uninstall -y`, also delete compose volumes.
 - `INSTALL_VERSION` — git ref for the stack files. Defaults to `main`; a
-  release tag such as `v1.66.3` pins `catalyst-docker/` to that release so a
+  release tag such as `v1.83.1` pins `catalyst-docker/` to that release so a
   verified installer from release X installs stack X.
 - `INSTALL_SHA256` — expected checksum of `install.sh` itself (see above).
 
 Example — non-interactive, pinned stack files, custom port and timezone:
 
 ```bash
-INSTALL_VERSION=v1.66.3 bash install.sh -y \
+INSTALL_VERSION=v1.83.1 bash install.sh -y \
   --set PUBLIC_URL=https://panel.example.com \
   --set FRONTEND_PORT=0.0.0.0:8081 \
   --set TZ=Europe/Berlin

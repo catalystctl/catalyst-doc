@@ -8,7 +8,7 @@ features:
 sources:
   - catalyst-frontend/src/components/servers/ServerControls.tsx
   - catalyst-backend/src/routes/servers/power.ts
-last_verified: '2026-09-28'
+last_verified: '2026-10-16'
 ---
 
 Power controls sit in the server header on the server page, and on the card or
@@ -23,7 +23,7 @@ row for each server on the **Servers** page.
 | Action | What it does | When to use it |
 | --- | --- | --- |
 | **Start** | Boots the server. | After creating, editing configs, or a crash. |
-| **Restart** | Stops gracefully, then starts. | After config or plugin changes. |
+| **Restart** | Stops gracefully, then starts, using your saved startup command. | After config or plugin changes. |
 | **Stop** | Asks the game to shut down cleanly. | Before editing world files or upgrading. |
 | **Kill** | Force-stops the server immediately. | Only when Stop/Restart hang (the world may not save). |
 
