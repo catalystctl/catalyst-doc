@@ -36,6 +36,27 @@ when a change needs one.
 | **Admin → Plugins** | Installed plugins and marketplace |
 | **Profile** | Your own language, password, passkeys, and API keys |
 
+## Mod manager API keys
+
+**Admin → System → Mod Manager API Keys** stores the keys the Mod Manager uses
+to search and download mods, datapacks and modpacks. Keys are write-only in the
+panel: once saved, only the last four characters are shown.
+
+1. Open **Admin → System**, section **Mod Manager API Keys**.
+2. Paste the key into **CurseForge API Key** and/or **Modrinth API Key** and
+   save.
+3. Ask a user to open the Mod Manager tab and confirm the provider appears in
+   the provider selector.
+
+CurseForge requires a key for every request. Modrinth is hidden from the
+provider selector when its key is empty, so an unconfigured Modrinth key looks
+exactly like "the provider does not exist" rather than an error. If a user
+reports that a provider is missing from the Mod Manager, check this section
+first.
+
+A key shared by many servers is rate limited by the provider; heavy use shows
+up as search returning fewer results or downloads failing intermittently.
+
 ## Environment variables in the panel
 
 **Admin → Environment** lists every variable the backend reads that does not
