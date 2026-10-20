@@ -8,10 +8,12 @@ features:
   - mods-and-plugins
 sources:
   - catalyst-frontend/src/components/servers/tabs/ServerModManagerTab.tsx
+  - catalyst-frontend/src/components/servers/tabs/ModpackInstallPanel.tsx
   - catalyst-frontend/src/components/servers/tabs/ServerPluginManagerTab.tsx
   - catalyst-frontend/src/components/servers/tabs/UpdateConfirmModal.tsx
   - catalyst-backend/src/routes/servers/mod-plugins.ts
-last_verified: '2026-10-16'
+  - catalyst-backend/src/routes/servers/modpacks.ts
+last_verified: '2026-10-19'
 ---
 
 Servers based on supported templates get a **Mod Manager** or **Plugin Manager**
@@ -20,6 +22,10 @@ what you pick, and tracks updates — no manual jar wrangling. The **Mod Manager
 needs the `mods.manage` permission and the **Plugin Manager** needs
 `plugins.manage`; the tabs are hidden when the template has no manager
 configured.
+
+A template chooses which content types its manager offers: **Mods**,
+**Datapacks**, and **Modpacks**. Only the enabled ones appear in the target
+selector.
 
 ## Prerequisites
 
@@ -32,16 +38,78 @@ configured.
 
 1. Open the **Mod Manager** tab. It opens on the **Browse** sub-tab.
 2. Type a name in the search box (for example `jei`) and either press Enter or
-   select **Search**. Narrow the results with the provider, loader, target
-   (**Mods**, **Datapacks**, or **Modpacks**) and game version filters.
-3. Pick a result and choose the **Version** you want in **Select version**.
-4. Select **Install**.
-5. [Restart](/users/power/) the server so the game loads it.
-6. Check the [console](/users/console/) for load errors. A red stack trace on
+   select **Search**.
+3. Narrow the results with the provider, **Mod loader**, **Content type**
+   (**Mods**, **Datapacks**, or **Modpacks**), **Sort by** and **Category**
+   filters. Leave the game version empty to search every version.
+4. Pick a result and choose the **Version** you want in **Select version**.
+5. Select **Install**.
+6. [Restart](/users/power/) the server so the game loads it.
+7. Check the [console](/users/console/) for load errors. A red stack trace on
    boot usually names the incompatible mod and the version it wants.
 
 The **Installed** sub-tab lists every file the manager tracks and moves it to the
 right folder for you.
+
+:::note[Filters]
+- **Mod loader** defaults to **Any loader**, so a search is not silently
+  narrowed to one loader. Pick one only when you know the pack requires it.
+- **Sort by** offers **Default order**, **Downloads**, **Followers**,
+  **Newest**, **Recently updated** and **Relevance**. When the search box is
+  empty the default is **Downloads**; with a query it is **Relevance**.
+- **Category** lists the provider's categories for the current content type
+  (for example `adventure`, `quests`, `technology` for modpacks).
+- The game version box shows the version detected from the template in grey
+  text as a suggestion — it is not applied until you type one. Filtering by
+  your server's version can hide most modpacks, which often target an older
+  game version.
+:::
+
+## Install a modpack
+
+A modpack is a whole curated collection: dozens of mods plus configs, worlds and
+resource packs. Use the **Install pack** sub-tab instead of adding its mods one
+by one.
+
+1. Open the **Mod Manager** and select the **Install pack** sub-tab. It is only
+   shown when the template enables the **Modpacks** content type.
+2. Choose the source:
+   - **Modpack archive** — select a `.zip`, a Modrinth `.mrpack`/`.mr`, or a
+     tarball (`.tar`, `.tar.gz`, `.tgz`, `.tar.xz`, `.tar.bz2`, `.tar.zst`).
+   - **Or install from a URL** — paste a direct link to the archive.
+3. Optionally set **Install into** to a subdirectory. Leave it empty to install
+   into the server root, which is what most packs expect.
+4. Select **Install modpack**.
+5. Watch the progress. The install runs in the background, so you can leave the
+   tab; the steps are **Extracting archive**, **Downloading mods**, **Applying
+   overrides** and **Finishing up**, with a count of files at each step.
+6. [Restart](/users/power/) to load the pack, then read the
+   [console](/users/console/) for errors.
+
+When it finishes the panel reports how many mods were downloaded, how many
+override files were applied, and anything skipped. Warnings mean an individual
+file could not be fetched — the rest of the pack still installs and you can add
+that file by hand later.
+
+What the manager handles for you:
+
+- **Modrinth and CurseForge packs** are read from their manifest: the pack's
+  files are downloaded from the provider, not re-uploaded.
+- **Client-only files are skipped** — shaders, client mods and
+  `client-overrides/` never reach the server and would only waste space.
+- **Overrides are applied** into the server root, so the pack's configs land
+  where the game expects them.
+- **Pack scaffolding is removed** afterwards — no manifest or metadata files are
+  left in the server directory.
+
+:::caution
+A modpack overwrites the configs it ships. Back up first
+([backups](/users/backups/)) if the server already has a working setup, and
+install into a fresh server when you can.
+:::
+
+The **Installed** sub-tab lists the mods the pack installed, so you can still
+[check for updates](#keep-mods-and-plugins-up-to-date) afterwards.
 
 ## Install a plugin
 
