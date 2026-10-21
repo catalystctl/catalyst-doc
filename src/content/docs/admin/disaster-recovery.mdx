@@ -12,18 +12,16 @@ sources:
   - catalyst-docker/update.sh
   - install.sh
   - catalyst-agent/src/systemd_compat.rs
+  - catalyst-agent/src/websocket_handler/backup.rs
   - scripts/deploy-agent.sh
-last_verified: '2026-10-16'
+last_verified: '2026-10-20'
 ---
-
-Disaster recovery is a tested procedure, not a backup job. If you have never
-restored, you do not have recovery — you have a theory.
 
 ## What you must be able to rebuild
 
-1. **Panel database** — everything except the game files: users, servers, roles,
-   audit logs. It lives in the `catalyst-postgres-data` volume (Compose prefixes
-   the name with the project name).
+1. **Panel database** — users, servers, roles, audit logs: everything except
+   the game files. It lives in the `catalyst-postgres-data` volume (Compose
+   prefixes the name with the project name).
 2. **Panel configuration** — the compose directory the installer created
    (`./catalyst-docker` under the directory you ran it from) with its `.env`.
    The `.env` holds `POSTGRES_PASSWORD`, `BETTER_AUTH_SECRET`,
@@ -31,9 +29,8 @@ restored, you do not have recovery — you have a theory.
    invalidates sessions, API keys, and stored backup credentials even if the
    database survives.
 3. **Node agents** — reproducible: reinstall from the panel with a fresh
-   **Deploy** command ([installing a node](/admin/nodes/installing/)). Node
-   game data restores from user backups ([user backups](/users/backups/)) and
-   any node-level copies you keep.
+   **Deploy** command ([installing a node](/admin/nodes/installing/)). Game data
+   comes back from user backups ([user backups](/users/backups/)).
 4. **File volumes** — `catalyst-server-data`, `catalyst-backup-data`, and
    `catalyst-plugin-data` on the panel host. Redis has **no** volume: it is an
    ephemeral cache and is rebuilt from the database automatically.
@@ -123,26 +120,14 @@ drilling:
 
 ## The recovery drill (quarterly)
 
-1. Take a fresh dump, config archive, and file archive.
-2. Restore them into a scratch host as above.
-3. Log in, open servers, list backups, check the audit log.
-4. Time the whole thing. If it takes six hours, your RTO is six hours — plan
-   staffing and communication around the truth, not the hope.
-5. Write down everything that was confusing and fix the docs or automation.
+If you have never restored, you do not have recovery. Take a fresh dump, config
+archive, and file archive; restore them into a scratch host as above; log in,
+open servers, list backups, check the audit log; and time the whole thing — that
+duration is your real RTO.
 
-## During a real incident
-
-1. Declare: who is in charge, where status is posted, when the next update lands.
-2. Protect the evidence: snapshot failing disks and volumes before wiping or
-   recreating anything.
-3. Restore in dependency order: database → panel → nodes → verify servers.
-4. Tell users what happened and what you changed — trust compounds.
-
-## Keep off the burning host
-
-Recovery instructions, credentials for restores, and contact lists must live
-somewhere other than the infrastructure they recover. A runbook on the dead
-panel helps no one.
+During a real incident: declare who is in charge and where status is posted,
+restore in dependency order (database → panel → nodes → verify servers), and
+keep the recovery instructions somewhere other than the host they recover.
 
 ## Related
 

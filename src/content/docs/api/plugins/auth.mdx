@@ -15,7 +15,7 @@ sources:
   - catalyst-frontend/src/i18n/locales/en/auth.json
   - catalyst-plugins/discord-oauth/
   - catalyst-plugins/oidc-sso/
-last_verified: '2026-10-16'
+last_verified: '2026-10-20'
 ---
 
 A sign-in plugin puts a button on the login page and, after the external
@@ -53,8 +53,8 @@ While the plugin is **enabled**, each entry becomes a
 `sso.continueWithProvider`). The button links to
 `/api/plugins/<name>/<authorizePath>`. `authorizePath` defaults to
 `authorize`. `id` is 1–32 characters, `label` is 1–64, and you may declare at
-most 8 providers. Enable the plugin from **Admin → Plugins** and the buttons
-appear — there is no separate sign-in settings screen.
+most 8 providers. Enable the plugin from **Admin → Extensions → Plugins** and
+the buttons appear — there is no separate sign-in settings screen.
 
 The list is public (`GET /api/auth/oauth-providers`) so the login page can
 render it before anyone has a session. It returns

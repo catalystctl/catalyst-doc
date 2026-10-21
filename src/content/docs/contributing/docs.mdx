@@ -11,14 +11,14 @@ sources:
   - scripts/
   - package.json
   - .github/workflows/docs-ci.yml
-last_verified: '2026-10-16'
+  - AGENTS.md
+last_verified: '2026-10-20'
 ---
 
 ## Prerequisites
 
-- A local clone of the docs repository (this site's source).
-- Node.js ≥ 20 and pnpm. The repository pins `pnpm@9.15.9` via
-  `packageManager`; CI installs `pnpm@latest`.
+- A clone of the docs repository (this site's source).
+- Node.js ≥ 20 and pnpm. The repository pins `pnpm@9.15.9` in `packageManager`.
 
 ## Edit
 
@@ -37,63 +37,64 @@ features:              # one or more tags from the canonical vocabulary
   - backups
 sources:               # repo paths whose changes should trigger review
   - catalyst-backend/src/routes/backups.ts
-last_verified: '2026-09-28'   # bump only when you verify against source
+last_verified: YYYY-MM-DD   # bump only when you verify against source
 ---
 ```
 
 Rules: task-oriented prose, one **primary** audience per page (the first
-frontmatter entry — add further audiences only when the task genuinely spans
-them), Catalyst terminology (`panel`, `node`, `server`, `template`, `allocation`, `task` — never reuse the Pterodactyl product name for a Catalyst server, and never call a server a *container* or an *instance*: *container* only means the Docker/OCI runtime object), no invented flags/ports/defaults.
+frontmatter entry — add more only when the task genuinely spans them), Catalyst
+terminology (`panel`, `node`, `server`, `template`, `allocation`, `task` — never
+reuse the Pterodactyl product name for a Catalyst server, and never call a server
+*a container* or *an instance*; *container* only means the Docker/OCI runtime
+object), and no invented flags, ports, or defaults.
 
-- `features` must use the canonical 30-tag vocabulary listed in `AGENTS.md`.
-  `scripts/validate-docs.mjs` hard-fails an unknown tag, and
-  `tools/docs-agent/lib/classify.mjs` matches the same tags when it maps
-  changed code paths to pages — an invented tag also drops the page out of
-  change→docs mapping, so never invent one.
-- `api_tags` is **not** part of the frontmatter contract — do not add it.
-- Asides use `:::note[Title]` on one line (no space after `:::`). A spaced
-  directive (`::: note`) renders literally and now fails validation. Valid
-  kinds: `note`, `tip`, `caution`, `danger`.
-- A new page also needs a sidebar entry in `astro.config.mjs`. The sidebar is
-  nested (Starlight `items:` groups); nesting does not change URLs.
-
-`scripts/validate-docs.mjs` requires all six fields on every page except
-`index.mdx`: a missing/empty `features` or `sources` list, an unknown `feature`
-tag, an unknown or duplicated `audience` value, and a missing or malformed
-`last_verified` are all hard failures, as is a spaced aside directive. See
-`AGENTS.md` for the full conventions.
+[`AGENTS.md`](https://github.com/catalystctl/catalyst-doc/blob/main/AGENTS.md) is
+the authoritative contract — it holds the per-field requirements, the canonical
+30-tag `features` vocabulary that `scripts/validate-docs.mjs` enforces, and the
+aside syntax (`:::note[Title]`, no space after `:::`; kinds `note`, `tip`,
+`caution`, `danger`). A new page also needs a sidebar entry in
+`astro.config.mjs`; the sidebar is nested (Starlight `items:` groups) and nesting
+does not change URLs.
 
 ## Validate
 
 ```bash
 pnpm install
 pnpm dev          # preview at http://localhost:4321
-pnpm validate     # links, slugs, frontmatter, assets, OpenAPI, terminology
+pnpm validate     # links, slugs, frontmatter, features, assets, OpenAPI, terminology
 pnpm test         # docs-agent unit tests
 pnpm run build    # the same command Cloudflare Pages runs
 ```
 
-Fix every failure — CI runs the same checks on every pull request, plus
-`pnpm validate --strict`, which turns an orphan page (one no sidebar entry
-reaches) into a failure. `pnpm validate` is the fastest gate while editing.
+The checks are plain Node scripts, runnable without the pnpm aliases:
+
+```bash
+node scripts/validate-docs.mjs      # pnpm validate
+node scripts/check-terminology.mjs  # pnpm check-terminology
+node scripts/sync-openapi.mjs --check
+```
+
+Fix every failure — CI runs `pnpm validate --strict` on every pull request, which
+also turns an orphan page (one no sidebar entry reaches) into a failure.
 
 ## API reference
 
-Never hand-edit `api/openapi.json`. Regenerate it from a Catalyst checkout
-(`--from-checkout` runs that repo's `openapi:export` script):
+Never hand-edit `api/openapi.json` or `public/openapi.json`. Regenerate from a
+Catalyst checkout (`--from-checkout` runs that repo's `openapi:export` script and
+refreshes the served copy):
 
 ```bash
-pnpm sync-openapi --from-checkout ../catalyst
+node scripts/sync-openapi.mjs --from-checkout ../catalyst
 ```
 
-then commit the result. The Scalar viewer (`api/reference`) renders whatever is
-committed.
+Commit the result. The Scalar viewer (`api/reference`) renders whatever is
+committed, and `--check` fails when `public/openapi.json` drifts from
+`api/openapi.json`.
 
 ## The docs agent
 
-For larger sync work, run the docs agent (`tools/docs-agent/`) in `audit`,
-`diff`, `feature`, `validate`, or `api` mode. It maps Catalyst changes to
-affected pages and opens reviewable changes:
+For larger sync work, run the docs agent (`tools/docs-agent/`) in `audit`, `diff`,
+`feature`, `validate`, or `api` mode. It maps Catalyst changes to affected pages:
 
 ```bash
 pnpm docs-agent audit --source-repo ../catalyst --docs-repo .
@@ -106,12 +107,10 @@ committing; `--dry-run` writes nothing. Details in its README.
 
 ## Publish
 
-Merge to `main` → Cloudflare Pages builds and deploys to
-`docs.catalystctl.com` automatically. Pull requests get preview deployments.
-Deployment details: `DEPLOYMENT.md`.
+Merge to `main` → Cloudflare Pages builds and deploys to `docs.catalystctl.com`.
+Pull requests get preview deployments. Deployment details: `DEPLOYMENT.md`.
 
 ## Related
 
 - [API reference](/api/reference/) — the generated endpoint reference this page regenerates.
-- [API overview](/api/overview/) — hand-written API concepts that sit alongside the reference.
 - [Catalyst repository](https://github.com/catalystctl/catalyst) — the product source the docs describe.

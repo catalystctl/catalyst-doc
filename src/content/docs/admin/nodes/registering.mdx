@@ -8,8 +8,9 @@ features:
 sources:
   - catalyst-frontend/src/components/nodes/NodeCreateModal.tsx
   - catalyst-backend/src/routes/nodes.ts
+  - catalyst-backend/src/server.ts
   - catalyst-frontend/src/pages/admin/NodeAllocationsPage.tsx
-last_verified: '2026-10-16'
+last_verified: '2026-10-20'
 ---
 
 Registration introduces a machine to the panel: identity, credentials, and the
@@ -75,11 +76,11 @@ free, so you can see when a node is running out.
 ## Credential hygiene
 
 - The agent API key is a long-lived secret issued with the install command and
-  shown only there. If one leaks, rotate it immediately: open the node, select
-  **Regenerate Key**, and update `/opt/catalyst-agent/config.toml` on the node.
+  shown only there. If one leaks, rotate it: open the node, select **Regenerate
+  Key**, and update `/opt/catalyst-agent/config.toml` on the node.
 - One key per node — never copy a key between machines.
-- Deployment tokens (the token in the install command's URL) are single-use and
-  expire after 24 hours; the API key in the command does not expire.
+- The deployment token in the install command's URL is single-use and expires
+  after 24 hours; the API key in the command does not expire.
 
 ## Related
 

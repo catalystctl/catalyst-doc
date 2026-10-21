@@ -9,34 +9,26 @@ sources:
   - catalyst-backend/scripts/export-openapi.ts
   - catalyst-backend/src/routes/
   - api/openapi.json
-last_verified: '2026-10-16'
+last_verified: '2026-10-20'
 ---
 
 import ScalarReference from '../../../components/ScalarReference.astro';
 
 This reference is **generated** from the backend's route definitions
 (`catalyst-backend/scripts/export-openapi.ts` → `api/openapi.json`), so it
-tracks the code instead of drifting from it. Each operation carries an
-`x-catalyst.source` pointer back to the route file and line, plus the
-permission guards it enforces.
+tracks the code instead of drifting from it. Every operation also carries an
+`x-catalyst` block with the `source` file and line, the `permissionGuards` it
+enforces, and the `errorCodes` it can return.
 
 <ScalarReference />
 
 :::note
-The generated contract also lists the long-lived SSE endpoints (console, server
-events, metrics, admin events, node agent logs) with their status codes and
-error codes. The event names and payloads they push are described in [Realtime
-events](/api/websockets/).
+The contract also lists the long-lived SSE endpoints (console, server events,
+metrics, admin events, node agent logs) with their status codes. The event names
+and payloads they push are in [Realtime events](/api/websockets/).
 :::
 
 :::note
 The viewer loads from a CDN with JavaScript enabled. Offline or script-blocked
-readers can use the raw [openapi.json](/openapi.json) directly with any
-OpenAPI tool.
+readers can use the raw [openapi.json](/openapi.json) with any OpenAPI tool.
 :::
-
-## Related
-
-- [API & Developers](/api/overview/) — guides, conventions, and the auth model
-- [Realtime events](/api/websockets/) — the event names and payloads the SSE endpoints push
-- [Errors](/api/errors/) — stable codes you can branch on

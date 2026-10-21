@@ -9,10 +9,10 @@ sources:
   - catalyst-backend/src/lib/error-codes/
   - catalyst-backend/src/lib/http-error.ts
   - catalyst-backend/src/lib/validation.ts
+  - catalyst-backend/src/middleware/authenticate.ts
   - catalyst-backend/src/server.ts
-  - catalyst-backend/src/shared-types.ts
   - catalyst-frontend/src/i18n/api-errors.ts
-last_verified: '2026-10-16'
+last_verified: '2026-10-20'
 ---
 
 ## Shape
@@ -28,24 +28,23 @@ English `error` message, and optional extras:
 }
 ```
 
-- `params` — values the panel interpolates into the localized message for that
-  code. Treat them as display data, not as a stable schema.
+- `params` — values the panel interpolates into the localized message. Treat
+  them as display data, not as a stable schema.
 - `details` — an array of `{ field, message, code?, params? }` entries
-describing each rejected field. The request validators send it on a `400`, and
-that response may carry no top-level `code`.
+  describing each rejected field, sent on validation failures.
 - `requestId` — present on errors the panel's global error handler produces
-(uncaught failures, mapped database errors); quote it in bug reports.
+  (uncaught failures, mapped database errors); quote it in bug reports.
 
 **Branch on `code`, never on the message.** Messages are localized and may
 change; codes are versioned identifiers — renaming one is a breaking change.
 
 :::note
-Not every response carries a `code`. Body, query, and route-parameter
-validation failures return `400 { "error": "Invalid request body", "details":
-[...] }` (the message wording varies by validator), an invalid API key returns
+Not every response carries a `code`. Body, query, and route-parameter validation
+failures return `400 { "error": "Invalid request body", "details": [...] }` (the
+wording varies by validator), an invalid API key returns
 `401 { "error": "Invalid API key" }`, and an unmatched route returns
-`404 { "error": "Not Found" }`. Check for `code`, but do not assume it is
-always present.
+`404 { "error": "Not Found" }`. Check for `code`, but do not assume it is always
+present.
 :::
 
 ## Codes you will meet
@@ -54,36 +53,35 @@ always present.
 | --- | --- | --- |
 | `VALIDATION_ERROR` | 400 | Request shape or values rejected. Read `details` for fields. |
 | `INSUFFICIENT_RESOURCES` | 400 | Node lacks memory/CPU/disk/allocations for the request. |
-| `UNAUTHORIZED` / `AUTH_REQUIRED` | 401 | No valid session or API key. |
+| `UNAUTHORIZED`, `AUTH_REQUIRED`, `AUTH_EXPIRED` | 401 | No valid session or API key. |
 | `PERMISSION_DENIED` | 403 | Authenticated but not allowed ([authorization](/api/authorization/)). |
+| `ACCOUNT_BANNED`, `ACCOUNT_LOCKED` | 403 | The key's or session's account is banned or temporarily locked. |
 | `NOT_FOUND` | 404 | No such resource (or hidden from this identity). |
 | `CONFLICT` | 409 | State conflict — duplicate name, already exists, busy. |
-| `SERVER_SUSPENDED` | 423 | The server is suspended; the body adds `suspendedAt` and `suspensionReason`. Some routes return it as 403. |
+| `SERVER_SUSPENDED` | 423 | The server is suspended; the body adds `suspendedAt` and `suspensionReason`. A few routes return it as 403. |
 | `RATE_LIMITED` | 429 | Slow down ([rate limits](/api/rate-limits/)). |
 | `INTERNAL_ERROR` | 500 | Panel-side failure. Retry with backoff, then report. |
-| `NODE_OFFLINE`, `AGENT_COMMAND_FAILED`, `NODE_AGENT_UNREACHABLE` | 503/504 | The node's agent could not be reached or did not answer in time. |
+| `NODE_OFFLINE`, `AGENT_COMMAND_FAILED`, `AGENT_TIMEOUT`, `NODE_AGENT_UNREACHABLE` | 503/504 | The node's agent could not be reached or did not answer in time. |
 | `FRAMEWORK_*`, `IMPORT_FETCH_FAILED` | 502 | An upstream fetch (framework download, template import) failed. |
 
-The stable code registry lives in `catalyst-backend/src/lib/error-codes/`
-(common, auth, servers, infrastructure, admin). Domain codes extend the common
-set — the [API reference](/api/reference/) lists per-endpoint errors, and the
-frontend translates the same codes through its `errors` namespace. A few
-driver-fallback codes are produced only by the generic mapper in
-`catalyst-backend/src/lib/http-error.ts` (`BAD_REQUEST`, `DATABASE_ERROR`,
-`FOREIGN_KEY`, `CONSTRAINT_FAILED`, `INVALID_RELATION`).
+The registry lives in `catalyst-backend/src/lib/error-codes/` (common, auth,
+servers, infrastructure, admin); domain codes extend the common set. The
+[API reference](/api/reference/) lists per-endpoint error codes, and the panel
+translates the same codes through its `errors` namespace. A few driver-fallback
+codes come only from the generic mapper in `catalyst-backend/src/lib/http-error.ts`:
+`BAD_REQUEST`, `DATABASE_ERROR`, `FOREIGN_KEY`, `CONSTRAINT_FAILED`,
+`INVALID_RELATION`.
 
 ## Handling guidance
 
-1. **Retry** on 429 (after `Retry-After`), 502/503/504, and network failures —
+1. **Retry** on 429 (after `retry-after`), 502/503/504, and network failures —
    with exponential backoff and a cap.
 2. **Do not blindly retry** 400/403/404/409/423 — the request itself must change.
 3. **Surface the code to your users** alongside your own message; it is what
    support will ask for.
-4. **Log request ID, endpoint, code, and timestamp** on every failure. "It broke
-   yesterday" is not debuggable.
+4. **Log request ID, endpoint, code, and timestamp** on every failure.
 
 ## Related
 
 - [Authorization & permissions](/api/authorization/) — why a request gets a `403`
 - [Rate limits](/api/rate-limits/) — handling `429`
-- [API reference](/api/reference/) — per-endpoint error codes

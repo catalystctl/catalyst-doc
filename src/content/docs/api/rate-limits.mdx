@@ -8,11 +8,11 @@ features:
 sources:
   - catalyst-backend/src/server.ts
   - catalyst-backend/src/routes/auth.ts
-  - catalyst-backend/src/services/mailer.ts
   - catalyst-backend/src/lib/rate-limiter.ts
   - catalyst-backend/src/lib/rate-limit-store.ts
   - catalyst-backend/src/services/api-key-service.ts
-last_verified: '2026-10-16'
+  - catalyst-backend/src/services/mailer.ts
+last_verified: '2026-10-20'
 ---
 
 ## The limits
@@ -22,36 +22,39 @@ client rather than per IP: the bucket key combines the connection, the API key
 (hashed), or the authenticated user ID. Two integrations behind one NAT gateway
 do not share a budget.
 
-On top of that, each API key has its **own request budget**, set when the key is
-created:
+Each API key also has its **own request budget**, set when the key is created:
 
 | Setting | Default | Allowed range |
 | --- | --- | --- |
 | Rate limit | 100 requests | 1–10000 |
 | Time window | 60 s | 1 s–3600 s (1000–3600000 ms) |
 
-Edit the budget later with **Edit key** in **Admin → Access Control → API
-Keys**. When a key exhausts its budget, requests made with it fail
-authentication with `401` until the window refills.
+Change it later with **Edit key** in **Admin → Access Control → API Keys**. When
+a key exhausts its budget, requests made with it fail authentication with `401`
+until the window refills.
 
-Some areas are not on the global bucket:
+Some routes are exempt from the global bucket, and some override it:
 
 - **SSE streams** (`/api/servers/:id/console/stream`, `/events`,
-  `/metrics/stream`, `/api/admin/events`) set `rateLimit: false` — they are
-  long-lived connections, not polled requests.
+  `/metrics/stream`, `/api/admin/events`, `/api/nodes/:id/agent/logs/stream`)
+  set `rateLimit: false` — they are long-lived connections, not polled requests.
 - **Agent-internal endpoints** (`/api/internal/*`, `/api/agent/*`, `/ws`,
-  `/api/sftp/*`, file-tunnel traffic) bypass rate limiting, since nodes have
-  their own message-level limits.
-- **Sign-in and auth routes** (`/api/auth/*`) carry a separate
-  operator-configured limit (default 60 requests per minute). Individual auth
-  routes set tighter caps that override it: `POST /api/auth/login` allows 30
-  requests per 15 minutes and `POST /api/auth/register` 20 per 15 minutes.
-- Individual routes may set tighter limits — for example, listing backups is
-  capped at 30 requests per minute.
+  `/api/sftp/*`, file-tunnel traffic) bypass the limiter when the request carries
+  valid node credentials. The same paths without them are limited like any other
+  request (`/ws` allows 10,000 per minute).
+- **Route-level overrides** replace the global limit for that route:
+  `POST /api/auth/login` allows 30 requests per 15 minutes and
+  `POST /api/auth/register` 20 per 15 minutes; the rest of `/api/auth/*` uses the
+  operator-configured limit (default 60 per minute); the backup routes allow 30
+  per minute.
+
+:::note
+Counters are shared across workers and hosts only when Redis is configured.
+Without it, each backend process enforces its own budget, so the effective limit
+multiplies by the number of workers.
+:::
 
 ## Response headers
-
-Throttled and successful responses carry the standard rate-limit headers:
 
 | Header | Meaning |
 | --- | --- |
@@ -65,20 +68,19 @@ A `429` carries code `RATE_LIMITED`.
 ## Stay friendly
 
 - **Poll rarely.** Dashboards refreshing every second per server will eat the
-  budget and get throttled. Prefer 10–30 s intervals, and use
-  [event streams](/api/websockets/) for live data instead of polling (streams
-  are long-lived and not counted like REST calls).
-- **Back off on 429.** Honor `retry-after` and the `x-ratelimit-*` headers,
-  then retry with exponential backoff.
+  budget. Prefer 10–30 s intervals, and use
+  [event streams](/api/websockets/) for live data instead of polling.
+- **Back off on 429.** Honor `retry-after` and the `x-ratelimit-*` headers, then
+  retry with exponential backoff.
 - **Batch and cache.** Fetch lists once and derive views client-side; cache
-  slow-moving data (templates, nests, permissions catalog).
+  slow-moving data (templates, nests, the permission catalog).
 
 ## If you are limited during normal use
 
 1. Reduce poll frequency and parallel fan-out first.
 2. Move live views to event streams.
-3. Raise the key's own rate limit, and talk to the panel administrator — the
-   global limit is operator-configured.
+3. Raise the key's own rate limit, or **Auth requests** under
+   **Admin → Security** — the 1,200/min global limit is fixed, not a setting.
 
 ## Related
 

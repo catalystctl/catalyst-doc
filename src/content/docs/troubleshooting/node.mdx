@@ -14,7 +14,7 @@ sources:
   - catalyst-agent/src/runtime_manager/image_and_spec.rs
   - catalyst-agent/src/systemd_compat.rs
   - scripts/deploy-agent.sh
-last_verified: '2026-10-16'
+last_verified: '2026-10-20'
 ---
 
 ## Prerequisites
@@ -44,15 +44,33 @@ Running servers keep running — only management is down. Check in order:
 - Version mismatch: an agent far newer/older than the panel may be rejected —
   keep them in step ([updating a node](/admin/nodes/updating/)).
 
+## Agent unit will not start (SELinux label, start limit)
+
+If `systemctl status catalyst-agent` shows the unit failing within a second or
+restarting forever, check the exact exit reason in
+`journalctl -u catalyst-agent -n 50 --no-pager`:
+
+- **`status=203/EXEC` with `Permission denied`** — the binary carries the wrong
+  SELinux label. Agents installed before v1.85.0 were moved into place from
+  `/tmp`, which keeps the source label (`user_tmp_t`), and systemd may not execute
+  that. Re-run the node install command from the panel — it runs
+  `deploy-agent.sh`, which now installs with `install(1)` and calls `restorecon`
+  ([installing a node](/admin/nodes/installing/)) — or fix it in place:
+  `sudo restorecon -F /opt/catalyst-agent/catalyst-agent && sudo systemctl restart catalyst-agent`.
+- **`start request repeated too quickly`** — the unit hit its crash-loop bound
+  (10 starts per 60 s) instead of restarting silently forever. Fix the underlying
+  start failure above, then clear the counter with
+  `sudo systemctl reset-failed catalyst-agent && sudo systemctl start catalyst-agent`.
+
+A node running agent v1.85.0 or later bounds the loop this way; an older unit
+keeps retrying forever and buries the real error in the journal.
+
 ## All servers on one node suffer
 
-That is a node problem, not N server problems:
-
-1. Disk full? Memory exhausted? Check node metrics first.
-2. Recent OS/runtime/agent update? Consider rollback per
-   [updating a node](/admin/nodes/updating/).
-3. Migrate critical servers to a healthy node while you investigate — the fleet
-   exists for exactly this.
+That is a node problem, not N server problems. Check node metrics first (disk
+full, memory exhausted), consider rolling back a recent OS/runtime/agent update
+([updating a node](/admin/nodes/updating/)), and migrate critical servers to a
+healthy node while you investigate.
 
 ## Servers fail to start on one node
 
@@ -119,8 +137,8 @@ directory restore normally — see [backups](/users/backups/).
 Agent version (`catalyst-agent --version`), the agent log tail
 (`journalctl -u catalyst-agent -n 100 --no-pager`), node OS and free resources
 (`df -h`, `free -m`), and whether the panel URL is reachable from the node with
-`curl`. The host-level `diagnose.sh` collects all of this in one redacted file
-([diagnostics bundle](/troubleshooting/diagnostics-bundle/)).
+`curl`. The [diagnostics bundle](/troubleshooting/diagnostics-bundle/) collects
+all of this in one redacted file.
 
 ## Related
 

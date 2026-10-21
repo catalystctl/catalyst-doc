@@ -11,7 +11,7 @@ sources:
   - catalyst-backend/src/routes/auth.ts
   - catalyst-backend/src/middleware/authenticate.ts
   - catalyst-frontend/src/components/apikeys/CreateApiKeyDialog.tsx
-last_verified: '2026-10-16'
+last_verified: '2026-10-20'
 ---
 
 ## Two credential types
@@ -21,73 +21,64 @@ last_verified: '2026-10-16'
 | **Session** | The panel UI and browser flows | Session cookie |
 | **API key** | Scripts, bots, integrations | `Authorization: Bearer <key>` header |
 
-Use API keys for anything programmatic. Do not automate logins or scrape
-session cookies — sessions expire, rotate, and are tied to browser behavior.
-
-## Prerequisites
-
-Anyone with `apikey.read` (or the legacy `apikey.manage`, or
-`admin.read`/`admin.write`) can open the API keys page; non-admins with
-`apikey.read` see and manage only their own keys. Creating, editing, or
-revoking a key needs `apikey.write` (or legacy `apikey.manage`, or
-`admin.write`). You also need somewhere to store the key — the panel shows it
-once.
+Use API keys for anything programmatic — do not automate logins or scrape
+session cookies. `Authorization: Bearer` is the only header the panel
+authenticates an API key from; a request without it falls back to session-cookie
+auth.
 
 ## Create an API key in the panel
 
-1. Sign in to the panel.
-2. Open **Admin → Access Control → API Keys**.
-3. Select **Create API Key**.
-4. Fill in the dialog:
+You need `apikey.read` to see the page and `apikey.write` to create a key
+(`admin.read` covers reading, `admin.write` covers both). Non-admins see and
+manage only their own keys.
+
+1. Sign in and open **Admin → Access Control → API Keys**.
+2. Select **Create API Key**.
+3. Fill in the dialog:
    - **Name \*** — a descriptive label, for example `Billing System Integration`.
    - **Permissions** — leave **All my permissions** on to inherit everything
-     your account can currently do, or switch it off and tick individual
-     scopes. You cannot grant a scope you do not hold yourself.
+     your account can do, or switch it off and tick individual scopes. You
+     cannot grant a scope you do not hold yourself.
    - **Expiration** — `90 days (recommended)` by default; also `7 days`,
      `30 days`, `180 days`, `1 year`, or `Never expires`.
    - **Rate Limit** — requests per minute for this key. The default is `100`;
      see [rate limits](/api/rate-limits/).
-5. Select **Create API key**.
-6. Copy the key from **Your API Key** and store it in a secret manager. It is
-   shown **once** and cannot be retrieved later — only revoked and recreated.
+4. Select **Create API key**.
+5. Copy the key from **Your API Key** into a secret manager. It is shown
+   **once** — later you can only revoke and recreate it.
 
-Every key is prefixed with `catalyst_`. Send it as a bearer token:
+Every key starts with `catalyst_`:
 
 ```bash
 curl -H "Authorization: Bearer $CATALYST_API_KEY" \
   https://panel.example.com/api/servers
 ```
 
-The `Authorization` header is the only header the panel authenticates API keys
-from; a request without it falls back to session-cookie auth.
-
 ## Manage keys in the panel
 
-- The list shows each key's status (Active, Disabled, Expired), permissions,
-  rate limit, request count, and last-used time.
-- **Edit key** can change the name, the enabled state, and the rate limit.
+- The list shows each key's status (active, disabled, expired), permissions,
+  rate limit, request count, and last use.
+- **Edit key** changes the name, the enabled state, and the rate limit.
   Permissions and expiry are fixed at creation — revoke the key and create a
   new one to change them.
 - **Revoke key** deletes the key immediately; requests using it fail with
   `401`. Revoking an agent (node) key disconnects that node's agent, so the
-  panel asks for explicit confirmation first.
+  panel asks you to confirm by typing the node ID first.
 
 ## Expiry and live permission checks
 
 - An expired or disabled key is rejected with `401` before the request reaches
   the route.
-- An API key never outlives its owner's permissions. On every request the panel
+- A key never outlives its owner's permissions. On every request the panel
   re-resolves the owner's current role permissions and rejects a key whose
   scopes are no longer held (`403`). A key created with **All my permissions**
-  tracks the owner's current permissions, so a demoted or role-less owner
-  shrinks (or zeroes) the key automatically.
+  tracks the owner's current permissions, so a demoted owner shrinks (or zeroes)
+  the key automatically.
 
-## Automation
+## Automate key management
 
-Create and revoke keys from a script with the same endpoints the panel uses.
-Mutating calls require `apikey.write` (or the legacy `apikey.manage`, or
-`admin.write`); the list and usage reads accept `apikey.read` (or legacy
-`apikey.manage`) and `admin.read`.
+The panel's own endpoints work from a script. Mutating calls need
+`apikey.write`; the list and usage reads need `apikey.read`.
 
 ```bash
 BASE=https://panel.example.com
@@ -110,13 +101,13 @@ curl -X DELETE -H "$AUTH" "$BASE/api/admin/api-keys/<keyId>"
 Create the replacement key first, deploy it, then delete the old one — never
 delete-then-create.
 
-## Node authentication (reference)
+## Node credentials
 
-Nodes authenticate to the panel with a separate node ID + agent API key pair
-over the agent channel (`/ws?nodeId=<id>`), managed through node registration
-([registering a node](/admin/nodes/registering/)). Node credentials are never
-valid for the user-facing API, and user API keys are never valid for the node
-agent channel.
+Nodes authenticate with their own node ID + agent API key over the agent channel
+(`/ws?nodeId=<id>`), managed through
+[registering a node](/admin/nodes/registering/). Node credentials are never
+valid for the user-facing API, and user API keys are never valid for the agent
+channel.
 
 ## Related
 

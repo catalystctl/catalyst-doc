@@ -13,8 +13,9 @@ sources:
   - catalyst-backend/src/services/auto-update-settings.ts
   - catalyst-backend/src/services/node-update-policy.ts
   - catalyst-docker/update.sh
+  - catalyst-backend/docker-entrypoint.sh
   - install.sh
-last_verified: '2026-10-16'
+last_verified: '2026-10-20'
 ---
 
 ## Prerequisites
@@ -29,8 +30,7 @@ last_verified: '2026-10-16'
 
 1. **Read the release notes.** Note breaking changes, migration steps, and
    minimum versions.
-2. **Back up the database** ([admin backups](/admin/backups/)). This is the
-   rollback for everything except node agents.
+2. **Back up the database** ([admin backups](/admin/backups/)).
 3. **Update the panel** (below). Database migrations run automatically at
    backend startup.
 4. **Verify the panel**: log in, open a server console, check a backup listing.
@@ -102,10 +102,6 @@ Watch the backend logs until migrations finish (`docker compose logs -f backend`
 
 ## Rules
 
-- Never update everything at once. Panel first, one canary node, then the fleet.
-- Leave a node on **Manual** until you have watched one canary on the new agent
-  build for a day. A node is only updated automatically if you approved it.
-- Never skip the pre-update database backup, even for "tiny" releases.
 - Pin production to release tags, not `main`. Track `main` only in a lab.
 - If the panel fails to start after an update, read the container logs before
   doing anything — most failures are a migration waiting on a lock or an env
@@ -115,14 +111,15 @@ Watch the backend logs until migrations finish (`docker compose logs -f backend`
 
 - Panel: restore the database backup, then restart the previous images.
 - Nodes: reinstall the previous agent build on the affected node.
-- After any rollback, verify the same four checks as an update before
-  declaring victory.
+- After any rollback, repeat the four verification checks above.
 
 ## Recovering from a failed migration
 
 The backend runs `prisma migrate deploy` on every container start
-(`catalyst-backend/docker-entrypoint.sh`). A migration that fails leaves the
-backend crash-looping with a Prisma error in the logs. Recover in this order.
+(`catalyst-backend/docker-entrypoint.sh`). If a migration fails, the entrypoint
+logs `migrate deploy failed`, refuses a destructive `db push` (unless
+`ALLOW_DATA_LOSS=1` is set) and starts the backend anyway — which then errors at
+runtime on the missing schema. Recover in this order.
 
 1. **Take a dump first**, even if the panel is down — the pre-update backup is
    the supported rollback ([disaster recovery](/admin/disaster-recovery/)).
@@ -156,8 +153,9 @@ backend crash-looping with a Prisma error in the logs. Recover in this order.
 Never edit or delete an already-applied migration, and do not hand-edit
 `_prisma_migrations`. If a migration must be re-applied after a correction, use
 Prisma's own `prisma migrate resolve --rolled-back <name>` from inside the
-backend image — then redeploy. Editing migration files or the table directly
-leaves the schema and the migration history disagreeing.
+backend image — then redeploy. Setting `ALLOW_DATA_LOSS=1` makes the entrypoint
+fall back to `prisma db push --accept-data-loss`, which can drop columns; use it
+only on a throwaway database.
 :::
 
 ## Related

@@ -13,22 +13,22 @@ sources:
   - catalyst-backend/src/routes/alerts.ts
   - catalyst-backend/src/routes/metrics.ts
   - catalyst-backend/src/routes/dashboard.ts
-last_verified: '2026-10-16'
+last_verified: '2026-10-20'
 ---
 
 ## What to watch
 
 | Layer | Signals | Where |
 | --- | --- | --- |
-| Panel | HTTP errors, login failures, DB/Redis health | Admin dashboard (`/admin`) **System Health**, **System Errors** |
+| Panel | HTTP errors, login failures, DB/Redis health | **Admin → Overview** (**System Health**), **System Errors** |
 | Nodes | Reachability, CPU/memory/disk, agent version drift | **Admin → Nodes**, node detail stats |
-| Servers | Crash loops, backup failures, quota usage | **Admin → Servers**, per-server **Metrics** and **Backups** tabs |
-| Platform | Disk free everywhere, certificate expiry, backup age | Dashboard, alerts, host monitoring |
+| Servers | Crash loops, backup failures, quota usage | **Servers**, per-server **Metrics** and **Backups** tabs |
+| Platform | Disk free everywhere, certificate expiry, backup age | Alerts plus your own host monitoring |
 
 The admin dashboard shows **System Health** (**Database**, **Cluster Nodes**)
-and the cluster resource chart. Export the same numbers to your existing
-monitoring (Prometheus/Grafana, Uptime Kuma, plain log shipping) rather than
-living in the panel UI.
+and the cluster resource chart. Ship the same numbers to your existing
+monitoring (Prometheus/Grafana, Uptime Kuma, log shipping) rather than living in
+the panel UI.
 
 ## System Errors
 
@@ -40,14 +40,15 @@ header shows **Live** when the realtime stream is connected (otherwise
 1. Filter with **Level** (**All levels**, **Warning**, **Error**, **Critical**),
    **Component** (for example `auth, server...`), **Node**, **Status** (**All**,
    **Resolved**, **Unresolved**), **From**/**To**, and **Quick range**
-   (**Custom**, **Last 1h/6h/24h/7d**). Active filters show as chips; **Clear**
-   resets them.
+   (**Custom**, **Last 1h**, **Last 6h**, **Last 24h**, **Last 7d**). Active
+   filters show as chips; **Clear** resets them.
 2. Per row, **View details** opens the stack trace and metadata, **Copy for AI**
    copies a Markdown report, and **Resolve** marks one error handled.
 3. **Resolve all** marks every error matching the current filters resolved
    (disabled while you are filtering to resolved errors).
-4. **Export** downloads the filtered errors as JSON or Markdown — Markdown is
-   the better format for pasting into an assistant.
+4. **Export** opens a dialog: pick a **Time range** and a **Format** — JSON, or
+   Markdown for pasting into an assistant. Up to 5,000 of the most recent
+   errors are included.
 5. **Download diagnostics** captures panel, node, server, and config data for a
    time window as one redacted ZIP — see
    [diagnostics bundle](/troubleshooting/diagnostics-bundle/).
@@ -76,10 +77,10 @@ under **Admin → Security**.
 5. Select **Create rule**. Incidents appear under **Alert history**; use
    **Resolve** or **Resolve all** once handled.
 
-At minimum, page on: panel down, node unreachable > 5 min, disk > 85%,
-database backup older than expected, and certificate expiring < 14 days.
-Everything else can stay a dashboard. Prune stale rules quarterly — they train
-people to ignore the channel.
+At minimum, page on: panel down, node unreachable > 5 min, disk > 85%, and a
+panel database backup older than expected. Certificate expiry is not something
+the panel watches — track it in your host monitoring. Prune stale rules
+quarterly; they train people to ignore the channel.
 
 ## Logs that matter
 

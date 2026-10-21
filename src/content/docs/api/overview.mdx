@@ -8,22 +8,23 @@ features:
 sources:
   - catalyst-backend/src/routes/
   - catalyst-backend/src/lib/error-codes/
-last_verified: '2026-10-16'
+  - catalyst-backend/scripts/export-openapi.ts
+  - catalyst-backend/src/server.ts
+last_verified: '2026-10-20'
 ---
 
-Catalyst exposes a REST API for everything the panel does, plus realtime
-channels for console output, metrics, and events.
+Catalyst exposes a REST API for everything the panel does, plus realtime streams
+for console output, server events, and metrics.
 
 ## Start here
 
-1. [Authentication](/api/authentication/) — create an API key in the panel and
-   send it as a bearer token.
+1. [Authentication](/api/authentication/) — create an API key and send it as a
+   bearer token.
 2. [Authorization](/api/authorization/) — the permission model and every
    permission string.
 3. [Errors](/api/errors/) — stable codes you can branch on.
 4. [Pagination](/api/pagination/) and [rate limits](/api/rate-limits/).
-5. [Realtime events](/api/websockets/) — console streams, server events,
-   metrics.
+5. [Realtime events](/api/websockets/) — console, server events, metrics.
 6. [Guides](/api/guides/) — common workflows end to end.
 7. [Plugin development](/api/plugins/) — extend the panel itself.
 8. [API reference](/api/reference/) — generated endpoint documentation.
@@ -31,25 +32,19 @@ channels for console output, metrics, and events.
 ## Conventions
 
 - **Base path `/api`** (for example `/api/servers`, `/api/nodes`), over HTTPS.
-- JSON everywhere, UTF-8.
+- JSON bodies, UTF-8.
 - **API keys** are created in the panel and sent as
-  `Authorization: Bearer <key>`.
-- **Pagination parameters differ per endpoint** — some use `page`/`limit`,
-  `GET /api/servers` uses `limit`/`offset`. Check
-  [Pagination](/api/pagination/) or the reference before writing a generic
-  page walker.
+  `Authorization: Bearer <key>`. A request without that header falls back to
+  session-cookie auth.
+- **Pagination differs per endpoint** — some use `page`/`limit`, `GET
+  /api/servers` uses `limit`/`offset`. Check [Pagination](/api/pagination/)
+  before writing a generic page walker.
 - Errors carry a stable machine-readable `code` in addition to the message —
   branch on the code, never on English text.
 
 ## Source of truth
 
-The [API reference](/api/reference/) is the generated contract; the raw
-OpenAPI document is served at `/openapi.json`. If a guide here disagrees with
-the reference, the reference (and the actual behavior) wins — report the
-mismatch so the guide gets fixed.
-
-## Related
-
-- [Authentication](/api/authentication/) · [Authorization](/api/authorization/) · [Errors](/api/errors/)
-- [Pagination](/api/pagination/) · [Rate limits](/api/rate-limits/) · [Realtime events](/api/websockets/)
-- [Guides](/api/guides/) · [Plugin development](/api/plugins/) · [API reference](/api/reference/)
+The [API reference](/api/reference/) is generated from the backend's route
+definitions, so it tracks the code. The same document is served raw at
+`/openapi.json`. If a guide here disagrees with the reference, the reference and
+the actual behaviour win — report the mismatch so the guide gets fixed.

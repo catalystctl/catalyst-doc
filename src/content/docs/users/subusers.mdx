@@ -12,69 +12,67 @@ sources:
   - catalyst-frontend/src/components/servers/InviteLinkModal.tsx
   - catalyst-frontend/src/pages/InvitesPage.tsx
   - catalyst-backend/src/routes/servers/invites.ts
-last_verified: '2026-10-16'
+  - catalyst-backend/src/routes/servers/_helpers.ts
+last_verified: '2026-10-20'
 ---
 
 The **Users** tab (titled **Users & Access**) adds subusers: extra accounts with
-limited access to your server. Your friend logs in with their own account and
-only sees what you allow.
+limited access to your server. Your friend signs in with their own account and
+sees only what you allow.
 
 ## Prerequisites
 
-- A server you own or administer — you can only manage subusers on a server you
-  own or administer.
-- The permissions you intend to grant; you cannot grant a permission you do not
+- A server you own or administer — plain subusers cannot invite others.
+- The permissions you intend to grant: you cannot grant a permission you do not
   hold yourself.
 - For invites by email, a panel with email delivery configured. Without it, the
   panel shows a copyable invite link instead.
 
 ## Invite a subuser
 
-1. Open your server's **Users** tab and find **Invite user**.
+1. Open the server's **Users** tab and find **Invite user**.
 2. Enter their panel account email.
-3. Pick a permission preset:
-   - **Read-only** — view the server, console, files, databases, and alerts.
+3. Pick a preset:
+   - **Read-only** — view the server, console, files, databases and alerts.
    - **Power user** — read-only plus power actions, console commands, file
-     editing, backups, and database management.
-   - **Full access** — every server permission, including scheduled tasks,
-     transferring the server, and deleting it.
-   - **Custom** — tick exactly the permissions you want to grant; they are
-     grouped by area (console, file, server, …).
+     editing, backups and database management.
+   - **Full access** — the full preset: also startup changes, ports, tasks,
+     cloning, mods and plugins, transfer, and deleting the server. It does not
+     include `backup.pin` ([pinning a backup](/users/backups/#pin-a-backup) is
+     reserved for explicit grants).
+   - **Custom** — tick exactly the permissions you want; they are grouped by
+     area (console, file, server, …).
 4. Select **Send invite**.
 
-If email delivery is configured, the panel emails the invite. If it is not, an
-**Invite link** dialog appears — select **Copy** and send the link to them
-yourself. The invite is bound to the email address you entered: the invitee
-accepts it by signing in with that address, or by creating an account for it on
-the invite page if they do not have one yet. Someone signed in as a different
-account is asked to sign out first. Keep the link private — it grants the
-assigned permissions once the matching account opens it.
+When email delivery is available the panel emails the invite; otherwise — or if
+delivery fails — an **Invite link** dialog appears. Select **Copy** and send the
+link yourself. The invite is bound to the email you entered: the invitee accepts
+it by signing in with that address, or by creating an account for it on the
+invite page. Someone signed in as a different account is asked to sign out
+first. Keep the link private — it grants the assigned permissions to whoever
+opens it with that account.
 
-Invites expire after 7 days. A pending invite can be **Regenerate**d (the old
-link stops working) or **Cancel**led. Once accepted, the server appears in their
-list.
+Invites expire after 7 days. A pending invite has **Copy link** to share it
+again, **Regenerate** (the old link stops working), and **Cancel**. Once
+accepted, the server appears in the subuser's list.
 
 ## Adjust or remove access
 
-The **Active access** section lists everyone with access and their permissions.
-For a subuser, toggle individual permission chips and select **Save permissions**,
-or select **Remove** to revoke access. Removal is immediate: open sessions lose
-access. The owner is marked **Owner** and cannot be removed here.
-
-You cannot grant a permission you do not hold yourself, and you can only manage
-subusers on a server you own or administer.
+**Active access** lists everyone with access and their permissions. For a
+subuser, toggle the permission chips and select **Save permissions**, or select
+**Remove** to revoke access. Removal is immediate. The owner is marked **Owner**
+and cannot be removed here.
 
 ## Least privilege, always
 
-- Every permission is a way to break something. Console access can run
-  destructive commands; file access can delete worlds; power access can stop
-  the server mid-event.
+- Every permission is a way to break something: console access can run
+  destructive commands, file access can delete worlds, power access can stop the
+  server mid-event.
 - Remove subusers who no longer play. Stale access is the most common source of
   "someone griefed my server files" stories.
 - Never share your own login instead — then nobody can tell who did what in
   [Activity](/users/activity/), and you cannot revoke access without changing
   your password.
-- If you suspect misuse, check **Activity** first so you know what changed.
 
 ## Related
 

@@ -1,12 +1,13 @@
 ---
 title: Backups
-description: Create, restore, download, and prune backups of your server.
+description: Create, restore, download, pin, and prune backups of your server.
 audience:
   - user
 features:
   - backups
 sources:
   - catalyst-frontend/src/components/backups/BackupSection.tsx
+  - catalyst-frontend/src/components/backups/BackupList.tsx
   - catalyst-frontend/src/components/backups/CreateBackupModal.tsx
   - catalyst-frontend/src/components/backups/RestoreBackupDialog.tsx
   - catalyst-frontend/src/components/backups/DeleteBackupDialog.tsx
@@ -14,7 +15,7 @@ sources:
   - catalyst-backend/src/routes/servers/admin-ops.ts
   - catalyst-backend/src/services/backup-retention.ts
   - catalyst-agent/src/websocket_handler/backup.rs
-last_verified: '2026-10-16'
+last_verified: '2026-10-20'
 ---
 
 A backup is a restorable snapshot of your server's files. Make one before every
@@ -22,104 +23,94 @@ risky change — updates, new plugins, world edits, reinstalls.
 
 ## Prerequisites
 
-- A server you own or can access, with the `backup.read` permission to see the
-  list.
-- The `backup.create` permission to make a backup, and `backup.restore` to
-  restore one.
+- `backup.read` to see the list, `backup.create` to make a backup,
+  `backup.restore` to restore one, `backup.delete` to delete one, and
+  `backup.download` to download one.
 - For a restore, the server must be stopped.
 
 ## Create a backup
 
-1. Open **Backups** and select **Create backup**. The same button appears when
-   the list is empty.
-2. Optionally give it a name, for example `before-1.21-update`. Leave the name
-   blank and the panel generates one from the current timestamp.
-3. Leave **Compress backup (gzip)** checked unless you specifically need a plain
-   archive. Unchecking it writes an uncompressed `.tar`, which is faster to
-   create and to restore but larger on disk and slower to transfer.
-4. Select **Create backup** in the dialog and wait for the status to reach
-   **Completed** before stopping the server or making changes.
+1. Open **Backups** and select **Create backup** (the same button appears when
+   the list is empty).
+2. Optionally give it a name, for example `before-1.21-update`. Leave it blank
+   and the panel generates one from the current timestamp.
+3. Leave **Compress backup (gzip)** checked unless you need a plain archive.
+   Unchecking it writes an uncompressed `.tar`, which is faster to create and
+   restore but larger on disk and slower to transfer.
+4. Select **Create backup** and wait for the status to reach **Completed**
+   before stopping the server or changing files.
 
 ## Restore a backup
 
-1. **Stop the server first.** **Restore** stays disabled until the server is
-   stopped.
-2. Open **Backups**, find the snapshot, and select **Restore**.
-3. Confirm the dialog. It names the backup and warns that *"the server must be
-   stopped before restoring and current files will be overwritten."*
-4. Wait for the restore to finish, then start the server and verify the world
-   loads correctly before deleting the backup you restored from.
+1. **Stop the server first** — **Restore** stays disabled until it is stopped.
+2. Find the snapshot and select **Restore**.
+3. Confirm the dialog. It names the backup and warns that the server must be
+   stopped and that current files will be overwritten.
+4. Wait for the restore to finish, then start the server and check the world
+   loads before deleting the backup you restored from.
 
-The restore runs on the node: the archive is extracted into a staging directory
-and only swapped over the live files once the whole tree has been checked.
-Symbolic and hard links in the snapshot are restored as they were. If the
-restore is refused — an unreadable archive, not enough free space, or a link
-pointing outside the server directory — the server returns to **Stopped**, the
-panel reports the reason, and your current files are left untouched.
+The restore runs on the node: the archive is extracted into a staging
+directory and only swapped over the live files once the whole tree has been
+validated. Symbolic links are restored as they were. If the restore is refused —
+an unreadable archive, not enough free space, or a link pointing outside the
+server directory — the server returns to **Stopped**, the panel reports the
+reason, and your current files are left untouched.
 
 :::caution
-Restore overwrites the server's current files. When in doubt, download a fresh
-backup of the *current* files first, so you can go back either way.
+Restore overwrites the server's current files. When in doubt, back up the
+*current* files first, so you can go back either way.
 :::
 
 ## Download and delete
 
-- **Download** saves the snapshot as a `.tar.gz` file, or a `.tar` file for an
-  uncompressed backup — keep critical backups off-site, since a backup on the
-  same node does not survive node loss.
+- **Download** saves the snapshot as a `.tar.gz`, or a `.tar` for an
+  uncompressed backup. Keep critical backups off-site: a backup on the same node
+  does not survive node loss.
 - **Delete** removes a snapshot. The confirmation names the backup and warns
-  *"This action cannot be undone."*
+  that the action cannot be undone.
 
 ## Pin a backup
 
-Pinning exempts a backup from the retention rules below, so **Keep last N** and
-**Max age (days)** never delete it. You need the `backup.pin` permission; owning
-the server does not grant it.
+Pinned backups are exempt from the retention rules below and do not count
+towards **Keep last N**. Pinning needs the `backup.pin` permission — owning the
+server does not grant it, because exempting a backup from the retention limit is
+an administrator decision. Panel administrators hold it through `admin.write`.
 
-- **Pin:** select **Pin** on the backup's row. A **Pinned** badge appears next to
-  it.
-- **Unpin:** select **Unpin**; the backup becomes subject to the retention rules
-  again.
-- You can also tick **Ignore limit** when creating a backup to pin it from the
-  start.
+- **Pin** on a backup's row adds a **Pinned** badge; **Unpin** makes it subject
+  to the retention rules again.
+- **Ignore limit** in the create dialog pins a backup from the start.
 
-Pinned backups still use your storage allocation, and pinning does not copy them
-off the node — download anything you must keep permanently.
+Pinned backups still use the server's storage allocation, and pinning does not
+copy them off the node — download anything you must keep permanently.
 
 ## Backup settings
 
 The **Backup settings** card controls where backups go and how long they are
-kept. You need the `backup.create` permission to change it; changing the S3 or
-SFTP credentials also needs admin or node-manage access.
+kept. Changing it needs `backup.create`; changing the storage mode or the S3 /
+SFTP credentials additionally needs admin or node-manage access.
 
-- **Storage mode** — **Local** or **Stream (backend-local)** use the storage
-  space your administrator allocated to the server. **S3** and **SFTP** store
-  backups on infrastructure you provide, and work even when no local allocation
-  is available.
+- **Storage mode** — **Local** and **Stream (backend-local)** use the backup
+  space allocated to the server. **S3** and **SFTP** store backups on
+  infrastructure you provide and work without a local allocation.
 - **Keep last N** — keep at most N backups (0 = unlimited, up to 1000).
 - **Max age (days)** — delete backups older than N days (0 = unlimited, up to
   3650).
 - **Save settings** applies the change.
 
-A background job enforces these rules roughly every six hours. Backups that fall
-outside the rules are deleted automatically, unless they are pinned (see
-[Pin a backup](#pin-a-backup)). Pinned backups are skipped by the retention job,
-so pinning is how you keep one indefinitely — but it still lives on the same
-node, so download anything you must preserve off-site.
+A background job enforces these rules about every six hours.
 
-When the server has no provider allocation, the tab shows a warning: *"Provider
-backup allocation is not available for this server. Local and Stream storage
-modes require an allocation. Configure your own S3 or SFTP storage to enable
+When the server has no provider allocation, the tab warns: *"Provider backup
+allocation is not available for this server. Local and Stream storage modes
+require an allocation. Configure your own S3 or SFTP storage to enable
 backups."* Configure S3 or SFTP above, or ask your administrator for an
 allocation.
 
 ## Good habits
 
-- Backup cadence: before changes (manual) plus a recurring [Task](/users/tasks/)
-  for daily/weekly safety nets.
-- Download critical backups off-site — a backup on the same node does not
-  protect against node loss. Administrators handle node-level disaster recovery
-  ([admin backups](/admin/backups/)).
+- Back up before changes, plus a recurring [task](/users/tasks/) for daily or
+  weekly safety nets.
+- Download critical backups off-site. Node-level disaster recovery is an
+  administrator concern ([admin backups](/admin/backups/)).
 
 ## Related
 

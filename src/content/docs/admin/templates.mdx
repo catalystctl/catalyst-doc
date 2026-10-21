@@ -11,7 +11,7 @@ sources:
   - catalyst-frontend/src/utils/eggPort.ts
   - catalyst-backend/src/utils/egg-port.ts
   - catalyst-backend/src/routes/templates.ts
-last_verified: '2026-10-16'
+last_verified: '2026-10-20'
 ---
 
 **Templates** define installable games: container image, install script,
@@ -68,12 +68,10 @@ offer it to users.
   under you on the worst possible day.
 - **Keep variables minimal.** Every variable is support surface — expose what
   users actually change, hide the rest in sane defaults.
-- **Version your changes.** When a template update changes behavior, note what
-  and when; existing servers usually keep their old effective config until they
-  are reinstalled, so say whether users must act.
-- **Retire broken templates** instead of leaving them for users to discover.
-  Select the templates and use the bulk delete action; a template in use by an
-  existing server cannot be deleted.
+- **Note behavioural changes.** Existing servers usually keep their old
+  effective config until they are reinstalled, so say whether users must act.
+- **Retire broken templates.** Select them and use the bulk delete action; a
+  template in use by an existing server cannot be deleted.
 
 ## Nests
 

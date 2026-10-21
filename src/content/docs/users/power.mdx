@@ -8,7 +8,7 @@ features:
 sources:
   - catalyst-frontend/src/components/servers/ServerControls.tsx
   - catalyst-backend/src/routes/servers/power.ts
-last_verified: '2026-10-16'
+last_verified: '2026-10-20'
 ---
 
 Power controls sit in the server header on the server page, and on the card or
@@ -33,13 +33,14 @@ need the matching permission: **Start** needs `server.start`, **Stop** needs
 `server.stop`, **Kill** needs `server.kill`, and **Restart** needs **both**
 `server.start` and `server.stop`. Without them the controls are hidden.
 
-The first time you press **Kill** you get a confirmation: *"This will
+Pressing **Kill** always asks for confirmation first: *"This will
 force-terminate the server process immediately without saving. Data may be
 lost. Are you sure?"*
 
-While a server is installing, the header offers **Cancel install**.
-It kills the stuck installer and resets the server to stopped; partial install
-files are kept. You can then reinstall or start normally.
+While a server is installing, the header offers **Cancel install** (needs
+`server.install` or `server.reinstall`). It kills the stuck installer and resets
+the server to stopped; partial install files are kept. You can then reinstall or
+start normally.
 
 ## The safe order
 

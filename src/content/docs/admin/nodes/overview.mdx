@@ -7,10 +7,11 @@ features:
   - nodes
 sources:
   - catalyst-backend/src/routes/nodes.ts
+  - catalyst-backend/src/websocket/gateway.ts
   - catalyst-frontend/src/pages/admin/NodesPage.tsx
   - catalyst-frontend/src/pages/nodes/NodeDetailsPage.tsx
   - catalyst-agent/src/main.rs
-last_verified: '2026-10-16'
+last_verified: '2026-10-20'
 ---
 
 A node is a Linux machine that runs game servers. The panel never runs games
@@ -54,6 +55,6 @@ players notice.
 
 ## Related
 
-- [Administrator guide](/admin/overview/) — where nodes fit in.
 - [Registering a node](/admin/nodes/registering/), [installing a node](/admin/nodes/installing/), and [updating a node](/admin/nodes/updating/).
 - [Node requirements](/admin/requirements/) — kernel, cgroups, and disk quota.
+- [Administrator guide](/admin/overview/) — where nodes fit in.

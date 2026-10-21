@@ -12,56 +12,50 @@ sources:
   - catalyst-backend/src/routes/sftp.ts
   - catalyst-backend/src/websocket/gateway.ts
   - catalyst-agent/src/sftp_server.rs
-last_verified: '2026-10-16'
+last_verified: '2026-10-20'
 ---
 
 SFTP gives you a fast, resumable connection for big transfers — uploading a
 modpack, downloading a world, syncing with an external editor. For small edits,
-the built-in editor in the [Files tab](/users/files/) is faster; reach for SFTP
-when you are moving a lot of data.
+the editor in the [Files tab](/users/files/) is faster.
 
 ## Prerequisites
 
-- A server you can access, with the `file.read` permission (the **SFTP** tab
-  appears with the same access as the **Files** tab).
-- SFTP enabled on the node — if it is off, the tab says so.
+- A server you can access, with `file.read` — the **SFTP** tab appears with the
+  same access as the **Files** tab, so a write-only subuser never sees it.
+- SFTP enabled on the node. If it is off, the tab says so.
 - An SFTP client such as FileZilla, WinSCP, or Cyberduck.
-
-Open the **SFTP** tab on your server to find your connection details.
 
 ## Connect
 
-1. Open your server's **SFTP** tab. It shows **Host**, **Port**, **Username**,
-   and **Password**, each with a copy button, plus a **Quick Connect URI** you
-   can paste into a client that understands `sftp://` URLs.
-2. In your SFTP client (FileZilla, WinSCP, Cyberduck):
-   - Protocol: **SFTP** (not plain FTP — Catalyst does not offer insecure FTP).
-   - Paste the host, port, username, and password exactly as shown.
-3. You land in your server's root directory — the same files as the **Files**
-   tab. Changes you make over SFTP (uploads, deletes, renames, permission
-   changes) show up there as they happen, without a manual refresh.
+1. Open the server's **SFTP** tab. It shows **Host**, **Port**, **Username** and
+   **Password**, each with a copy button, plus a **Quick Connect URI** you can
+   paste into a client that understands `sftp://` URLs.
+2. In your client, choose protocol **SFTP** — Catalyst does not offer plain FTP
+   — and paste the host, port, username and password exactly as shown.
+3. You land in your server's root directory, the same files as the **Files**
+   tab. Uploads, deletes, renames and permission changes show up there as they
+   happen.
 
-Two details worth knowing:
+Two details:
 
-- **The username is your server's ID**, and the **host and port belong to the
-  node** that runs your server.
-- **The password is a temporary token, not your panel password.** It expires;
-  the tab shows how long is left. Pick a **Token lifetime** and select **Rotate
-  password** (or **Generate new** once it has expired) to issue a fresh one.
+- The **username is the server's ID**, and the host and port belong to the
+  **node** that runs the server.
+- The **password is a temporary token, not your panel password.** The tab shows
+  how long is left. Pick a **Token lifetime** and select **Rotate password** —
+  or **Generate new** once it has expired — to issue a fresh one.
 
 Every user gets their own credentials. If you are the owner, **Active SFTP
 Sessions** lists each user's session with its expiry and a revoke button, plus
 **Revoke all sessions**. Removing a user from the server revokes their SFTP
-session immediately.
+sessions immediately.
 
-If the tab says *"SFTP is disabled on this server"*, SFTP has been turned off
-for the node — ask your administrator to enable it.
+If the tab says *"SFTP is disabled on this server."*, SFTP is turned off for the
+node — ask your administrator to enable it.
 
 ## Good practice
 
 - **Stop the server** before uploading or replacing world data or databases.
-- Uploads go through the same permission checks as the file manager: you can
-  only touch your own server.
 - If your client warns about an unknown host key on first connect, verify the
   fingerprint with your administrator before accepting it.
 
@@ -69,10 +63,11 @@ for the node — ask your administrator to enable it.
 
 - **Authentication failed:** credentials rotate — copy them fresh from the SFTP
   tab instead of reusing a saved password.
-- **Connection refused/timed out:** the node may block the SFTP port, or your
-  network may block outbound SSH. See [networking issues](/troubleshooting/networking/).
-- **Transfers stall on huge folders:** archive them first (zip), upload one file,
-  then extract it in the **Files** tab.
+- **Connection refused or timed out:** the node may block the SFTP port, or your
+  network may block outbound SSH. See
+  [networking issues](/troubleshooting/networking/).
+- **Transfers stall on huge folders:** archive them first, upload one file, then
+  extract it in the **Files** tab.
 
 ## Related
 

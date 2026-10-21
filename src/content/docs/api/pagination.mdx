@@ -12,19 +12,19 @@ sources:
   - catalyst-backend/src/routes/backups.ts
   - catalyst-backend/src/routes/alerts.ts
   - catalyst-backend/src/routes/templates.ts
-last_verified: '2026-10-16'
+  - catalyst-backend/src/routes/nodes.ts
+last_verified: '2026-10-20'
 ---
 
 ## Pagination is per-endpoint, not universal
 
-Catalyst does **not** use one pagination scheme everywhere. Before writing
-generic page-walking code, check the endpoint in the
-[API reference](/api/reference/). The patterns in use:
+Catalyst does **not** use one pagination scheme everywhere. Check the endpoint in
+the [API reference](/api/reference/) before writing generic page-walking code.
 
 ### `page` + `limit` with a `pagination` block
 
-`GET /api/admin/users`, `GET /api/admin/servers`, and `GET /api/alerts` return
-the collection plus a `pagination` object:
+`GET /api/admin/users`, `GET /api/admin/servers`, `GET /api/alerts`, and
+`GET /api/nodes/:id/allocations` always return a `pagination` object:
 
 ```json
 {
@@ -33,26 +33,32 @@ the collection plus a `pagination` object:
 }
 ```
 
-| Endpoint | `page` default | `limit` default |
-| --- | --- | --- |
-| `GET /api/admin/users` | 1 | 20 |
-| `GET /api/admin/servers` | 1 | 20 |
-| `GET /api/alerts` | 1 | 50 |
+| Endpoint | `page` default | `limit` default | `limit` cap |
+| --- | --- | --- | --- |
+| `GET /api/admin/users` | 1 | 20 | 100 |
+| `GET /api/admin/servers` | 1 | 20 | 100 |
+| `GET /api/alerts` | 1 | 50 | 100 |
+| `GET /api/nodes/:id/allocations` | 1 | 50 | 100 |
 
-These endpoints also accept endpoint-specific filters such as `search`
-(`/api/admin/users`, `/api/admin/servers`), `status`, and `owner`
-(`/api/admin/servers`).
+These also accept filters such as `search` (`/api/admin/users`,
+`/api/admin/servers`), `status`, and `owner` (`/api/admin/servers`).
 
 ```bash
 curl -H "Authorization: Bearer $CATALYST_API_KEY" \
   "https://panel.example.com/api/admin/servers?page=2&limit=50&search=survival"
 ```
 
+Endpoints built on the shared pagination helper — `GET /api/servers/:id/tasks`,
+`GET /api/alerts/:id/deliveries`, and `GET /api/nodes/:id` (its server list) —
+add the same `pagination` block **only when you pass `page` or `limit`**; without
+them they return the whole collection. `page` defaults to 1 and `limit` to 50,
+capped at 100.
+
 ### `page` + `limit` with flat counts
 
-`GET /api/servers/:serverId/backups` returns `backups` plus flat `total`,
-`page`, `pageSize`, and `totalPages` fields. `page` defaults to 1 and `limit`
-to 50, capped at 100.
+`GET /api/servers/:serverId/backups` returns `backups` plus flat `total`, `page`,
+`pageSize`, and `totalPages` fields. `page` defaults to 1, `limit` to 50, capped
+at 100.
 
 ### `limit` + `offset` returning `{ success, data }`
 
@@ -68,8 +74,8 @@ curl -H "Authorization: Bearer $CATALYST_API_KEY" \
 ```
 
 `limit` defaults to 50 (max 500); `offset` defaults to 0. `GET /api/templates`
-accepts optional `limit`/`offset` in the same shape — and returns **all**
-templates when `limit` is omitted.
+accepts the same `limit`/`offset` (max 100) and returns **all** templates when
+`limit` is omitted.
 
 ### Full lists
 
@@ -81,12 +87,9 @@ locations, nests, roles, and server allocations. Do not assume `total` or
 
 - **Cap your `limit`.** Ask for what you will display (20–100). Full exports
   belong in bulk endpoints or repeated pages, not `limit=100000`.
-- **Paginate to exhaustion** (`page++` until a short/empty page, or advance
-  `offset` by the number of rows returned) rather than assuming a total —
-  totals shift while you read.
-- **Treat pages as snapshots.** Items created or deleted mid-walk can shift
-  offsets; for sync jobs, prefer filtering by updated time where offered and
-  reconcile.
+- **Paginate to exhaustion** (`page++` until a short or empty page, or advance
+  `offset` by the rows returned) rather than trusting a total — totals shift
+  while you read, so reconcile sync jobs instead of assuming a stable window.
 - **Cache sparingly.** Lists change constantly (server states, node health).
   Cache seconds, not hours, or re-fetch on user action.
 
@@ -94,4 +97,3 @@ locations, nests, roles, and server allocations. Do not assume `total` or
 
 - [API reference](/api/reference/) — the parameters each endpoint accepts
 - [Rate limits](/api/rate-limits/) — page walking and request budgets
-- [Errors](/api/errors/) — handling failures mid-walk

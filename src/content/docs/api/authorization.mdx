@@ -13,24 +13,23 @@ sources:
   - catalyst-backend/src/plugins/custom-permissions.ts
   - catalyst-backend/src/routes/roles.ts
   - catalyst-backend/src/routes/api-keys.ts
-last_verified: '2026-10-16'
+  - catalyst-backend/src/shared-types.ts
+last_verified: '2026-10-20'
 ---
 
 ## The model
 
-- **Users** get powers through [roles](/admin/roles/). A request is allowed
-  when the caller's effective permission set satisfies the permission the route
-  requires. Roles may also carry server-scoped and node-scoped grants, which are
-  merged in for the specific server being touched.
-- **API keys** carry their own scopes, chosen at creation, but can never exceed
+- **Users** get powers through [roles](/admin/roles/). A request is allowed when
+  the caller's effective permission set satisfies the permission the route
+  requires. Roles may also carry server-scoped and node-scoped grants, merged in
+  for the specific server being touched.
+- **API keys** carry their own scopes, chosen at creation, and can never exceed
   their owner's permissions — see
   [Expiry and live permission checks](/api/authentication/#expiry-and-live-permission-checks).
-- **Subusers** are granted a subset of the server-scoped permission list by the
-  server owner.
+- **Subusers** are granted a subset of the server-scoped list by the server
+  owner.
 
 ## Admin bits
-
-Three permission values have implied meaning:
 
 | Value | Grants |
 | --- | --- |
@@ -43,9 +42,8 @@ resources.
 
 ## Permission catalog
 
-These are the exact permission strings the panel offers in the API key and role
-editors. Fetch the live catalog from
-`GET /api/admin/api-keys/permissions-catalog`.
+These are the exact strings the API key and role editors offer. Fetch them live
+from `GET /api/admin/api-keys/permissions-catalog`.
 
 | Category | Permissions |
 | --- | --- |
@@ -61,22 +59,19 @@ editors. Fetch the live catalog from
 | Console | `console.read`, `console.write` |
 | Databases | `database.read`, `database.create`, `database.delete`, `database.rotate` |
 | Alerts | `alert.read`, `alert.create`, `alert.update`, `alert.delete` |
-| API keys | `apikey.manage`, `apikey.read`, `apikey.write` |
-| Server content | `mods.manage`, `plugins.manage` |
-| Panel operations | `migration.manage`, `update.trigger`, `diagnostics.download` |
+| API Keys | `apikey.manage`, `apikey.read`, `apikey.write` |
+| Server Content | `mods.manage`, `plugins.manage` |
+| Panel Operations | `migration.manage`, `update.trigger`, `diagnostics.download` |
 
-The role editor's catalog (`GET /api/roles/permissions-catalog`) also appends a
-**Plugins** category for permissions that enabled plugins expose through their
-manifest's `userPermissions`. Those tokens only exist while the plugin is
-installed and enabled. The API-key catalog
-(`GET /api/admin/api-keys/permissions-catalog`) returns only the built-in
-categories above.
+`GET /api/roles/permissions-catalog` appends a **Plugins** category for tokens
+that enabled plugins declare in their manifest's `userPermissions`; those tokens
+only exist while the plugin is installed and enabled. The API-key catalog
+returns only the built-in categories above.
 
 ### Server-scoped permissions
 
-The grantable set for a specific server — subuser grants and the role wizard's
-scoped-access step — is the server permission list returned by
-`GET /api/permissions/server`:
+The grantable set for one server — subuser grants and the role wizard's
+scoped-access step — is `GET /api/permissions/server`:
 
 `server.read`, `server.start`, `server.stop`, `server.kill`, `server.install`,
 `server.reinstall`, `server.rebuild`, `server.update`, `server.network`,
@@ -90,26 +85,21 @@ scoped-access step — is the server permission list returned by
 
 Server owners and full admins implicitly hold the whole set for their servers.
 
-## What to do when you get 403
+## When you get a 403
 
-A `403` with code `PERMISSION_DENIED` means authentication worked but the
-identity lacks the permission — not that the endpoint is wrong:
+`PERMISSION_DENIED` means authentication worked but the identity lacks the
+permission — not that the endpoint is wrong:
 
 1. Check which identity you sent (session user vs. which API key).
 2. Compare its permissions against the endpoint's requirement in the
    [API reference](/api/reference/).
-3. Ask an administrator to widen the role/scope, or use a better-scoped key.
-   Remember that an API key is also rejected when the owner no longer holds a
-   scope the key was granted.
+3. Ask an administrator to widen the role or scope, or use a better-scoped key.
+   A key is also rejected when its owner no longer holds a scope the key was
+   granted.
 
-## Design guidance for integrators
-
-- Request the smallest scope that works today; widen deliberately later.
-- Distinguish "not found" from "forbidden" carefully in your UX: returning 404
-  for things the caller may not see avoids leaking existence — match the API's
-  behavior rather than inventing your own.
-- Permission names are stable identifiers. Cache the catalog, but re-fetch when
-  you see unknown-permission errors after a panel upgrade.
+Request the smallest scope that works today and widen later. Permission names
+are stable identifiers: cache the catalog, but re-fetch it after a panel upgrade
+if you start seeing unknown permissions.
 
 ## Related
 

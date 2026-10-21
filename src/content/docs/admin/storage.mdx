@@ -11,7 +11,7 @@ sources:
   - catalyst-backend/src/lib/redis.ts
   - catalyst-agent/src/storage_manager.rs
   - catalyst-agent/src/websocket_handler/backup.rs
-last_verified: '2026-10-16'
+last_verified: '2026-10-20'
 ---
 
 ## Panel host
@@ -51,9 +51,9 @@ images, logs, and temporary backup staging. Plan for it:
 1. **Separate filesystems** (or at least quotas) for server data vs. images/logs,
    so a log flood cannot wedge game I/O.
 2. **Image pruning** on a schedule — old game images accumulate silently.
-3. **Backup retention** that matches disk. Backups are staged under the agent's
-   data root and stored on the panel host (or S3), so their long-term footprint
-   is the panel's, not the node's, but large transfers still need node headroom.
+3. **Backup retention** that matches disk. The agent stages each archive under
+   its data root before it is transferred to the panel, S3, or SFTP, so large
+   backups still need node headroom.
 4. **Alert at 80%, act at 90%.** A full disk stops servers ugly. Wire node disk
    into [monitoring](/admin/monitoring/).
 

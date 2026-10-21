@@ -8,6 +8,8 @@ features:
 sources:
   - catalyst-backend/src/plugins/types.ts
   - catalyst-backend/src/plugins/context.ts
+  - catalyst-backend/src/plugins/capabilities.ts
+  - catalyst-backend/src/plugins/route-table.ts
   - catalyst-backend/src/plugins/host-events.ts
   - catalyst-backend/src/plugins/loader.ts
   - catalyst-backend/src/plugins/registry.ts
@@ -15,7 +17,7 @@ sources:
   - catalyst-backend/src/services/file-tunnel.ts
   - packages/plugin-sdk/src/types.ts
   - catalyst-plugins/example-plugin/backend/index.js
-last_verified: '2026-10-16'
+last_verified: '2026-10-20'
 ---
 
 The backend entry (`backend.entry` in `plugin.json`) is an ES module. The panel
@@ -32,10 +34,16 @@ export default {
 
 | Hook | When | Register routes? |
 | --- | --- | --- |
-| `onLoad` | Plugin discovered, before it is enabled | Yes. This is the only hook that may register routes. |
-| `onEnable` | Admin enables it, or the panel starts with it already enabled | No. Register tasks, WebSocket handlers, and event listeners here. |
-| `onDisable` | Admin disables it | No. The host stops tasks and drops WebSocket handlers. Event listeners stay until unload. |
+| `onLoad` | The plugin is activated: an admin enabled it, or the panel started with it already enabled and its consent is current. | Yes. This is the only hook that may register routes. |
+| `onEnable` | An admin enables it, or the panel starts with it already enabled | No. Register tasks, WebSocket handlers, and event listeners here. |
+| `onDisable` | An admin disables it | No. The host stops tasks and drops WebSocket handlers. Event listeners stay until unload. |
 | `onUnload` | Plugin removed from the registry (uninstall, or a reload) | No. Last chance to release anything you opened yourself. Event listeners come off here. |
+
+Nothing executes before an accepted safety disclaimer. Discovery only reads
+`plugin.json`: the backend module is not imported and `onLoad` does not run
+until an admin enables the plugin. An update that changes the version or the
+declared permissions drops back to that state, so the new code stays inert
+until it is accepted again.
 
 Routes stay mounted after disable and return `503` until the next enable.
 Tasks do not survive a restart; `onEnable` must register them again.
@@ -50,7 +58,7 @@ Every hook receives the same context.
 | `originalConfig` | The `config` block exactly as declared in `plugin.json`, before admin values were merged in. |
 | `installId` | Stable, opaque identity for this panel install. See [Plugin licensing](/api/plugins/licensing/). |
 | `logger` | Pino logger, child-bound to the plugin name. |
-| `wsGateway` | The raw WebSocket gateway, for code that needs it directly. |
+| `wsGateway` | Scoped WebSocket host. `sendToAgent` needs `console.write` or `server.write`; `broadcastToAuthenticated` and `sendToClient` are ungated. Host internals (client and agent maps) are not reachable. |
 | `db` | Scoped database. See [Data](/api/plugins/data/). |
 | `registerRoute(options)` | Mount a route under `/api/plugins/<name>`. |
 | `registerMiddleware(handler, { scope })` | `scope` is `'global'` (default) or `'route'`. |
@@ -58,15 +66,14 @@ Every hook receives the same context.
 | `hasPermission(request, ...tokens)` | Soft check. `*` on the user satisfies it. |
 | `getUserId(request)` | `request.user.userId` (falling back to `.id`), or `null`. |
 | `getConfig(key)` / `setConfig(key, value)` | Plugin config values. See [Data](/api/plugins/data/). |
-| `getStorage` / `setStorage` / `deleteStorage` | Plugin-scoped key-value store. |
-| `collection(name)` | Document collection. |
+| `getStorage` / `setStorage` / `deleteStorage`, `collection(name)` | Plugin-scoped key-value store and document collections. See [Data](/api/plugins/data/). |
 | `scheduleTask(cron, handler)` | Scheduled work. Host clears it on disable. |
 | `on(event, handler)` / `emit(event, data)` | Event bus shared by plugins and the host. |
 | `emitTyped(event, data)` | Same as `emit`, plus a warning when a declared payload field is missing or the event is undeclared. It never rejects the emit. |
 | `onWebSocketMessage(type, handler)` | Handle `plugin:<name>:<type>`. |
 | `sendWebSocketMessage(target, message)` | `target` is a client id, or `'*'` to broadcast. |
 | `exposeApi(name, handler)` / `callPluginApi(plugin, api, params)` | Plugin-to-plugin calls. Caller needs `plugin.rpc`. |
-| `fileTunnel` | Present on a normal panel. File operations on a node's server directory. |
+| `fileTunnel` | Present on a normal panel. File operations on a node's server directory, gated per operation. |
 | `auth` | Present on a normal panel. Sign-in bridge. See [Sign-in](/api/plugins/auth/). |
 | `getDeclaredEvents()` | The manifest `events` map. |
 
@@ -83,8 +90,8 @@ ctx.registerRoute({
 });
 ```
 
-`url: '/hello'` becomes `GET /api/plugins/my-plugin/hello`. Methods are the
-usual HTTP verbs. The SDK builder produces the same objects:
+`url: '/hello'` becomes `GET /api/plugins/my-plugin/hello`. The SDK builder
+produces the same objects:
 
 ```typescript
 import { defineRoutes } from '@catalyst/plugin-sdk';
@@ -93,9 +100,7 @@ const routes = defineRoutes((router) => {
   router
     .get('/hello', async () => ({ success: true }))
     .post('/echo', async (request) => ({ success: true, echoed: request.body }))
-    .put('/items/:id', async () => ({ success: true }))
-    .patch('/items/:id', async () => ({ success: true }))
-    .del('/items/:id', async () => ({ success: true }));
+    .put('/items/:id', async () => ({ success: true }));
 });
 for (const route of routes) ctx.registerRoute(route);
 ```
@@ -111,6 +116,35 @@ Auth modes, set on `config.auth`:
 `optional` and `public` only stick when the plugin holds a live `routes.public`
 grant. Without it the route is downgraded to `required` (a warning is logged),
 and revoking the grant re-secures the route on the next request.
+
+### Caller permissions on a route
+
+`config.requiredPermissions` makes the host check the **caller** before your
+handler runs, so authorization does not depend on your code remembering it:
+
+```javascript
+ctx.registerRoute({
+  method: 'POST',
+  url: '/settings',
+  config: { requiredPermissions: ['admin.write'] },
+  handler: async (request) => ({ success: true }),
+});
+```
+
+- The caller must hold at least one listed token (OR), evaluated with `hasGrant`
+  semantics against the caller's panel permissions — see
+  [the permission table](/api/plugins/manifest/#permissions-you-can-declare).
+- The check runs after authentication and before any plugin hook. A caller who
+  fails it gets `403` with `code: "PLUGIN_ROUTE_FORBIDDEN"`.
+- `public` routes skip the check entirely. On an `optional` route an
+  anonymous caller has no permissions, so it fails the check and gets `403`.
+- Tokens are trimmed, deduped, shape-validated, and capped at 16. A token that
+  fails the shape check (for example a scoped `server.read:srv_1`) is dropped
+  and logged as a warning, because a dropped token makes the route *less*
+  restricted than you asked for.
+- Declaring a token the plugin itself has not been granted is also logged. The
+  route still registers, but it will deny every caller until the grant exists.
+- Omitting the list keeps the default: any authenticated caller passes.
 
 `requirePermission` checks the **user**, not the plugin. The scoped database
 checks the **plugin grant**. You want both: a route that reads servers should
@@ -149,19 +183,15 @@ A node agent reporting a status change on its own does not emit them.
 
 | Event | When | Payload |
 | --- | --- | --- |
-| `server:status-changed` | A power action changes status | `{ serverId, status, timestamp }` |
-| `server:started` | Status becomes `starting` **or** `running` | same |
-| `server:stopped` | Status becomes `stopping` **or** `stopped` | same |
+| `server:status-changed` | A power action changes status | `{ serverId, status, action, timestamp }` |
+| `server:started` | Status becomes `starting` — a start or restart was accepted | same |
+| `server:stopped` | Status becomes `stopping` or `stopped` | same |
 
-`server:started` fires twice on a normal start. If you only care that the
-server is up, ignore payloads whose `status` is not `'running'`.
-
-```javascript
-ctx.on('server:started', async (data) => {
-  if (data.status !== 'running') return;
-  ctx.logger.info({ serverId: data.serverId }, 'server is up');
-});
-```
+`server:started` fires on start-accept with `status: 'starting'` — one event per
+accepted start or restart. The host also emits it for a `running` status, but no
+caller sends that today, so filter on `status` rather than counting firings. For
+confirmed-up, wait for the panel's `server_state_update` frame or poll
+`GET /api/servers/:id`.
 
 Your own events are plain strings. Prefix them with the plugin name
 (`my-plugin:ready`) so another plugin can subscribe without colliding.
@@ -181,6 +211,10 @@ The host prefixes the type: clients send and receive
 `plugin:my-plugin:ping`. `sendWebSocketMessage('*', message)` broadcasts.
 Register handlers in `onEnable`; disable removes them.
 
+To push a frame into a node's agent console, use
+`ctx.wsGateway.sendToAgent(nodeId, message)`. It throws when the grant is gone
+and re-reads it on every call, so a revocation applies without a reload.
+
 ## Plugin-to-plugin calls
 
 ```javascript
@@ -196,9 +230,8 @@ const count = await ctx.callPluginApi('ticketing-plugin', 'getOpenCount', {
 ```
 
 The grant is checked on every call. Calls time out at 10 seconds. After 5
-consecutive failures the host opens a circuit for about 30 seconds and further
-calls throw; one probe is then allowed through. Handle that error instead of
-retrying in a loop.
+consecutive failures the host opens a circuit for about 30 seconds; one probe
+is then allowed through. Handle that error instead of retrying in a loop.
 
 ## File tunnel
 
@@ -210,13 +243,28 @@ copies content between servers on the same node.
 ```javascript
 const result = await ctx.fileTunnel.queueRequest(
   nodeId,        // node the server runs on
-  'list',        // list | download | upload | write | create | delete | rename | permissions | compress | decompress
+  'list',        // see the operation table below
   serverUuid,    // server UUID, not the panel id
   '/cstrike',    // path inside the server directory
   {},            // operation-specific data
 );
 if (!result.success) throw new Error(result.error);
 ```
+
+Every operation is classified and gated on the plugin's live grants:
+
+| Operation | Class | Needs |
+| --- | --- | --- |
+| `list`, `download`, `archive-contents` | read | `files.read`, `files.write`, `server.read`, or `server.write` |
+| `upload`, `write`, `create`, `delete`, `rename`, `permissions`, `compress`, `decompress`, `install-url` | write | `files.write` or `server.write` |
+| anything else | unknown | denied |
+
+`install-url` makes the node fetch a URL into the server directory, so it
+counts as a write. An operation the classifier does not know fails closed — a
+plugin cannot reach a new agent capability before the host gate learns about
+it. Grants are re-read on every call, so a revocation applies to the next
+operation without a reload; the call throws `Permission denied: …` and the
+host logs a warning.
 
 `download` returns bytes on `result.body`. `upload` takes those bytes as the
 last argument. Requests are capped per node and time out (60 seconds, longer
@@ -225,27 +273,18 @@ tunnel — check `ctx.fileTunnel` before calling it.
 
 The tunnel does not filter by server ownership. A plugin that holds a node id
 and a server UUID can read that server's files. Declare `files.read` /
-`files.write` in the manifest so the consent dialog says so, and check
+`files.write` so the consent dialog and the gate agree, and check
 `requirePermission` plus `ctx.db.servers` before you touch a path.
 
 ## Middleware
 
-```javascript
-ctx.registerMiddleware(async (request, reply, done) => {
-  reply.raw.on('finish', () => {
-    ctx.logger.debug({ path: request.url, method: request.method }, 'observed');
-  });
-  done();
-}, { scope: 'route' });
-```
+`registerMiddleware(handler, { scope })` takes a Fastify-shaped
+`(request, reply, done)` handler; pass an error to `done(err)`. Register it from
+`onEnable` if it should only run while enabled.
 
-The handler is Fastify-shaped: `(request, reply, done)`. Pass an error to
-`done(err)`. Register it from `onEnable` if it should only run while enabled.
-
-Only the `'global'` scope runs today: the loader collects `scope: 'global'`
-middleware and runs it before the enabled check on every route of the plugin.
-`scope: 'route'` is accepted and stored but never applied, so treat `'global'`
-as the only working value.
+Only the `'global'` scope runs: the loader collects `scope: 'global'` middleware
+and runs it before the enabled check on every route of the plugin.
+`scope: 'route'` is accepted and stored but never applied, so leave it alone.
 
 ## Request limits
 
@@ -267,21 +306,11 @@ environment variable on the backend.
 
 ## Testing without a panel
 
-```typescript
-import { createTestPlugin } from '@catalyst/plugin-sdk/testing';
-
-const harness = createTestPlugin(plugin, manifest, {
-  greeting: { type: 'string', default: 'Hi' },
-});
-const ctx = await harness.load();
-await harness.enable();
-await harness.disable();
-await harness.unload();
-```
-
-`createMockContext()` records `registerRoute` calls and stores collections in
-memory, including `$set`, `$unset`, `$inc`, `$push`, `$pull`, and dotted paths.
-Schema-shaped config values are unwrapped the same way the host unwraps them.
+`@catalyst/plugin-sdk/testing` exports `createTestPlugin` (load/enable/disable/
+unload a plugin against a mock context) and `createMockContext` (records
+`registerRoute` calls, keeps collections in memory with `$set`, `$unset`,
+`$inc`, `$push`, `$pull` and dotted paths). `createMockLicense` covers the
+licensing flow. See [Create a plugin](/api/plugins/creating/#5-develop-against-the-sdk).
 
 ## Related
 

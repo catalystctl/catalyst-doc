@@ -12,7 +12,7 @@ sources:
   - catalyst-frontend/vite.config.ts
   - catalyst-plugins/example-plugin/
   - catalyst-plugins/sdk-frontend/
-last_verified: '2026-10-16'
+last_verified: '2026-10-20'
 ---
 
 ## Prerequisites
@@ -154,14 +154,15 @@ A server tab component receives `{ serverId: string }`.
 Installing is an operator action in the panel, not a CLI step on the server. On
 the target panel:
 
-1. Open **Admin → Plugins**.
-2. Click **Marketplace**.
-3. Find your plugin in the list and click **Install**.
-4. Close the dialog. The plugin now shows in the list, disabled.
+1. Open **Admin → Extensions → Marketplace**.
+2. Find your plugin in the list and select **Install**.
+3. Return to **Admin → Extensions → Plugins**. The plugin now shows in the list,
+   disabled.
 
-That is the whole install. The panel downloads the `.catpkg.zip`, checks its
-`sha256` when the index provides one, extracts it, and validates `plugin.json`.
-The code is on disk and **not running** until you enable it.
+That is the whole install. The panel downloads the `.catpkg.zip`, verifies its
+`sha256` against the index entry, extracts it, and validates `plugin.json`. An
+index entry without a `sha256` cannot be installed. The code is on disk and
+**not running** until you enable it.
 
 For the panel to see your plugin, publish the package first:
 
@@ -170,10 +171,10 @@ node "$CATALYST_REPO/packages/plugin-sdk/cli/dist/index.js" pack
 ```
 
 That writes `my-plugin-1.0.0.catpkg.zip` and a `.sha256` sidecar in the plugin
-directory. Put both behind HTTPS and add an index entry — see
-[Packaging](/api/plugins/packaging/). Add your index under **Marketplace →
-Marketplaces** (or with `PLUGIN_MARKETPLACE_URLS`) if it is not the official
-one.
+directory. Put both behind HTTPS and add an index entry with the digest from the
+sidecar — see [Packaging](/api/plugins/packaging/). Add your index in the
+marketplace's **Marketplaces** rail (or with `PLUGIN_MARKETPLACE_URLS`) if it is
+not the official one.
 
 **As a local checkout** (the path the official repository uses): drop the
 directory into a checkout of `catalyst-plugins` and rebuild the panel image.
@@ -183,9 +184,10 @@ not compile it in.
 
 ## 4. Enable it
 
-1. On **Admin → Plugins**, click **Enable** on the plugin row.
-2. The safety-consent dialog opens. Tick the acknowledgement and click
-   **Accept & Enable**. It lists every permission the manifest declares.
+1. On **Admin → Extensions → Plugins**, select **Enable** on the plugin row.
+2. The safety-consent dialog opens. Tick the acknowledgement and select
+   **Accept & Enable**. It lists every permission the manifest declares. Until
+   you do, the backend module is never imported and `onLoad` never runs.
 3. Confirm the route:
 
 ```bash

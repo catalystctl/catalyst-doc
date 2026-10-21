@@ -11,7 +11,10 @@ sources:
   - catalyst-docker/caddy/Caddyfile
   - catalyst-docker/.env.example
   - catalyst-agent/src/config.rs
-last_verified: '2026-10-16'
+  - catalyst-agent/src/firewall_manager.rs
+  - catalyst-agent/src/sftp_server.rs
+  - install.sh
+last_verified: '2026-10-20'
 ---
 
 ## Panel access (HTTPS)
@@ -63,16 +66,25 @@ panel) is broken — not the games. See [node issues](/troubleshooting/node/).
 ## Game traffic
 
 Players connect directly to nodes, so each game port in your allocations must
-be reachable from the internet (or your LAN): firewall rules, security groups,
-and NAT forwards all have to agree. UDP matters — many games use UDP, and a
-TCP-only test will mislead you. Debugging steps live in
+be reachable from the internet (or your LAN). UDP matters — many games use UDP,
+and a TCP-only test will mislead you.
+
+The agent opens the ports itself: when a server starts it allows the server's
+allocated ports through the firewall it detects (`ufw`, `firewalld`, or
+`ipset`/`iptables`) and removes them when the server is deleted. On `firewalld`
+it writes both the runtime and the permanent rule, so the port is reachable
+immediately and survives a reboot, without reloading the daemon. Anything in
+front of the node — a cloud security group, an upstream NAT — is still yours to
+configure. The panel port is the one thing nobody opens for you: the installer
+checks `firewalld`/`ufw` and prints the command
+([installation](/admin/installation/)). Debugging steps live in
 [networking issues](/troubleshooting/networking/).
 
 ## SFTP
 
 SFTP is served by the node agent, not the panel — the default port is `2022`.
-The per-node port is configured in **Admin → Nodes** and written into the
-agent's config; open it on the node if you offer SFTP to users.
+The per-node port is set in **Admin → Nodes** and written into the agent's
+config; the agent opens it on the node's firewall when it starts.
 
 ## Checklist for a new site
 

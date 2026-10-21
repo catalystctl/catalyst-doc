@@ -14,7 +14,7 @@ sources:
   - catalyst-backend/src/utils/egg-import.ts
   - catalyst-backend/src/utils/egg-port.ts
   - catalyst-backend/src/routes/templates.ts
-last_verified: '2026-10-16'
+last_verified: '2026-10-20'
 ---
 
 Catalyst can import Pterodactyl eggs as templates, so a library built for
@@ -47,20 +47,19 @@ creates each template directly — a single file opens the editable form.
 ## Import the whole Pterodactyl library
 
 1. Open **Admin → Templates** and select **Import**.
-2. Under **Import All Pterodactyl Eggs**, select **Import All**. The panel warns
-   this may take 1–2 minutes while it fetches the eggs from GitHub.
+2. Under **Import All Pterodactyl Eggs**, select **Import All** (the button
+   shows how many eggs it will fetch). The panel warns this may take 1–2 minutes
+   while it fetches the eggs from GitHub.
 3. The result reports how many templates were imported, skipped (already exist),
    and failed. Expand **Error details** to see which eggs failed and why.
 4. **Nests are created automatically** from the egg categories in the repository,
    so the imported library arrives pre-grouped.
 
-## Organize templates with nests
+## Organize the imported templates
 
-Nests are the template categories. Open **Admin → Templates → Manage nests** to
-add, edit, or delete one; the dialog has **Add nest** and takes a name, optional
-author, description, and icon URL. Deleting a nest leaves its templates
-ungrouped. When you create a template by hand, the **New template** wizard asks
-which nest it belongs to (optional).
+Nests are the template categories, and the batch import creates them from the
+repository's egg folders. Add, rename, or delete nests under **Manage nests** on
+the Templates page ([templates](/admin/templates/#nests)).
 
 ## What to check by hand
 

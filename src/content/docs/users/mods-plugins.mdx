@@ -1,6 +1,6 @@
 ---
 title: Mods & Plugins
-description: Extend your server with the built-in mod and plugin managers.
+description: Install and update mods, datapacks, modpacks, and plugins from the panel.
 audience:
   - user
 features:
@@ -11,149 +11,139 @@ sources:
   - catalyst-frontend/src/components/servers/tabs/ModpackInstallPanel.tsx
   - catalyst-frontend/src/components/servers/tabs/ServerPluginManagerTab.tsx
   - catalyst-frontend/src/components/servers/tabs/UpdateConfirmModal.tsx
+  - catalyst-frontend/src/services/api/providerKeys.ts
   - catalyst-backend/src/routes/servers/mod-plugins.ts
   - catalyst-backend/src/routes/servers/modpacks.ts
-last_verified: '2026-10-19'
+  - catalyst-backend/src/services/modpack-installer.ts
+  - catalyst-backend/src/lib/modpack-archive.ts
+last_verified: '2026-10-20'
 ---
 
-Servers based on supported templates get a **Mod Manager** or **Plugin Manager**
-tab: a one-click catalogue that searches the mod and plugin providers, installs
-what you pick, and tracks updates — no manual jar wrangling. The **Mod Manager**
-needs the `mods.manage` permission and the **Plugin Manager** needs
-`plugins.manage`; the tabs are hidden when the template has no manager
-configured.
-
-A template chooses which content types its manager offers: **Mods**,
-**Datapacks**, and **Modpacks**. Only the enabled ones appear in the target
-selector.
+A template that configures a **Mod Manager** or a **Plugin Manager** gives the
+server that tab; a template that configures neither has no such tab. Which one
+you get depends on the template, not on the game, and a template may configure
+both. The **Mod Manager** covers mods, datapacks and modpacks (`mods.manage`);
+the **Plugin Manager** covers plugins (`plugins.manage`).
 
 ## Prerequisites
 
-- A template that ships a Mod Manager or Plugin Manager — otherwise the tab is
-  not shown.
-- `mods.manage` for mods and datapacks, `plugins.manage` for plugins.
+- A template with one of the two managers — otherwise the tab is not shown.
+- `mods.manage` or `plugins.manage` for installing, updating, and removing.
 - A [restart](/users/power/) after every install, update, or removal.
 
-## Install a mod
+## Provider API keys
 
-1. Open the **Mod Manager** tab. It opens on the **Browse** sub-tab.
-2. Type a name in the search box (for example `jei`) and either press Enter or
-   select **Search**.
-3. Narrow the results with the provider, **Mod loader**, **Content type**
-   (**Mods**, **Datapacks**, or **Modpacks**), **Sort by** and **Category**
-   filters. Leave the game version empty to search every version.
-4. Pick a result and choose the **Version** you want in **Select version**.
-5. Select **Install**.
-6. [Restart](/users/power/) the server so the game loads it.
-7. Check the [console](/users/console/) for load errors. A red stack trace on
-   boot usually names the incompatible mod and the version it wants.
+The managers search third-party providers. Modrinth and CurseForge each need an
+API key, and a provider without one is hidden from the **Provider** list. If
+every provider the template offers needs a key that is not configured, the tab
+shows **No providers available** — ask an administrator to add it under
+**Admin → System → Mod Manager API Keys**.
 
-The **Installed** sub-tab lists every file the manager tracks and moves it to the
-right folder for you.
+## Install a mod or datapack
 
-:::note[Filters]
-- **Mod loader** defaults to **Any loader**, so a search is not silently
-  narrowed to one loader. Pick one only when you know the pack requires it.
-- **Sort by** offers **Default order**, **Downloads**, **Followers**,
-  **Newest**, **Recently updated** and **Relevance**. When the search box is
-  empty the default is **Downloads**; with a query it is **Relevance**.
-- **Category** lists the provider's categories for the current content type
-  (for example `adventure`, `quests`, `technology` for modpacks).
-- The game version box shows the version detected from the template in grey
-  text as a suggestion — it is not applied until you type one. Filtering by
-  your server's version can hide most modpacks, which often target an older
-  game version.
-:::
+1. Open the **Mod Manager** tab and its **Browse** sub-tab.
+2. Type in the search box. Results update as you type; Enter or **Search**
+   restarts the search at page 1.
+3. Narrow the results with **Provider**, **Mod loader**, **Content type**,
+   **Sort by**, **Category**, and the game version box.
+4. Pick a result, choose a release in **Select version**, then select
+   **Install**.
+5. [Restart](/users/power/) the server, then read the
+   [console](/users/console/) for load errors.
+
+Filter behaviour:
+
+- **Mod loader** starts on **Any loader**; the options are Forge, NeoForge,
+  Fabric and Quilt, and the filter appears only for Minecraft providers.
+- **Content type** offers only what the template enables: **Mods**,
+  **Datapacks**, **Modpacks**.
+- **Sort by** — **Default order**, **Downloads**, **Followers**, **Newest**,
+  **Recently updated**, **Relevance**. Default order means relevance while
+  searching and downloads while browsing.
+- **Category** appears only for Modrinth, the only provider that publishes its
+  categories.
+- The game version box starts empty and shows **Any version (server: X)** as a
+  placeholder — no version filter is applied until you type one. Modrinth
+  suggests versions as you type.
+
+The **Installed** sub-tab lists every file the manager tracks, with
+**Has Updates**, **Tracked** and **Untracked** filters and name/size/date
+sorting.
 
 ## Install a modpack
 
-A modpack is a whole curated collection: dozens of mods plus configs, worlds and
-resource packs. Use the **Install pack** sub-tab instead of adding its mods one
-by one.
-
-1. Open the **Mod Manager** and select the **Install pack** sub-tab. It is only
-   shown when the template enables the **Modpacks** content type.
-2. Choose the source:
-   - **Modpack archive** — select a `.zip`, a Modrinth `.mrpack`/`.mr`, or a
-     tarball (`.tar`, `.tar.gz`, `.tgz`, `.tar.xz`, `.tar.bz2`, `.tar.zst`).
-   - **Or install from a URL** — paste a direct link to the archive.
+1. Open the **Mod Manager** and select the **Install pack** sub-tab. It only
+   exists when the template enables the **Modpacks** content type.
+2. Choose **Modpack archive** — `.zip`, `.mrpack`, `.mr`, `.tar`, `.tar.gz`,
+   `.tgz`, `.tar.xz`, `.txz`, `.tar.bz2`, `.tbz2` — or paste a direct `http`
+   or `https` link in **Or install from a URL**. The backend also extracts
+   `.tar.zst` and `.tzst`, which the file picker does not list.
 3. Optionally set **Install into** to a subdirectory. Leave it empty to install
    into the server root, which is what most packs expect.
-4. Select **Install modpack**.
-5. Watch the progress. The install runs in the background, so you can leave the
-   tab; the steps are **Extracting archive**, **Downloading mods**, **Applying
-   overrides** and **Finishing up**, with a count of files at each step.
-6. [Restart](/users/power/) to load the pack, then read the
+4. Select **Install modpack**. The install runs on the node, so you can leave
+   the tab; the phases are **Extracting archive**, **Downloading mods**,
+   **Applying overrides** and **Finishing up**, with a file count at each.
+5. [Restart](/users/power/) to load the pack, then read the
    [console](/users/console/) for errors.
 
-When it finishes the panel reports how many mods were downloaded, how many
-override files were applied, and anything skipped. Warnings mean an individual
-file could not be fetched — the rest of the pack still installs and you can add
-that file by hand later.
+The finished panel reports **Pack format**, **Mods downloaded** and **Overrides
+applied**, plus **Skipped entries** when anything was left out. Warnings mean an
+individual file could not be fetched — the rest of the pack still installs, and
+you can add that file by hand later.
 
-What the manager handles for you:
+For Modrinth and CurseForge packs the manager reads the pack manifest:
 
-- **Modrinth and CurseForge packs** are read from their manifest: the pack's
-  files are downloaded from the provider, not re-uploaded.
-- **Client-only files are skipped** — shaders, client mods and
-  `client-overrides/` never reach the server and would only waste space.
-- **Overrides are applied** into the server root, so the pack's configs land
-  where the game expects them.
-- **Pack scaffolding is removed** afterwards — no manifest or metadata files are
-  left in the server directory.
+- files are downloaded from the provider instead of being re-uploaded;
+- client-only files are skipped — `env.server = "unsupported"` entries and
+  anything under `client-overrides/` never reach the server;
+- the pack's `overrides/` are merged into the install directory, after the
+  manifest files, so the author's configs win;
+- the manifest and pack scaffolding are removed from the server directory
+  afterwards.
 
 :::caution
 A modpack overwrites the configs it ships. Back up first
-([backups](/users/backups/)) if the server already has a working setup, and
-install into a fresh server when you can.
+([backups](/users/backups/)) if the server already has a working setup.
 :::
 
-The **Installed** sub-tab lists the mods the pack installed, so you can still
-[check for updates](#keep-mods-and-plugins-up-to-date) afterwards.
+The pack's mods appear in **Installed**, so **Check Updates** covers them.
 
 ## Install a plugin
 
 1. Open the **Plugin Manager** tab and its **Browse** sub-tab.
-2. Search, optionally filtering by game version and sorting by **Newest**,
-   **Popular**, **Top rated**, **Trending**, or **Recently updated**.
-3. Pick the plugin and its **Version**, then select **Install**.
-4. [Restart](/users/power/) the server so the game loads it.
+2. Search, optionally filtering by game version (**Any game version**, or
+   **Server version (X)** for the detected version) and by provider.
+3. Sort with **Trending**, **Popular**, **Top rated**, **Recently updated** or
+   **Newest**.
+4. Pick the plugin and its **Version**, select **Install**, then restart the
+   server.
 
 ## Keep mods and plugins up to date
 
 1. Open the manager's **Installed** sub-tab.
 2. Select **Check Updates**. Anything with a newer release is flagged, and the
-   tab badge and **Has Updates** filter show the count.
-3. Select the items you want (or leave the selection empty to update everything
-   with an update), then select **Update**. The confirmation dialog warns that
-   an update can break compatibility — back up first
+   tab badge and the **Has Updates** filter show the count.
+3. Select the items to update, or leave the selection empty to update
+   everything that has an update, then select **Update**. The confirmation
+   warns that an update can break compatibility — back up first
    ([backups](/users/backups/)).
 4. Restart the server.
 
-A mod the panel did not install shows as **untracked**; it has no version
-metadata, so you update it manually through [Files](/users/files/). If every
-provider needs an API key that is not configured, the tab tells you to ask an
-administrator to add one under **Admin → System → Mod Manager API Keys**.
+A mod the panel did not install shows as **untracked**: it has no version
+metadata, so you update it by hand through [Files](/users/files/).
 
 ## Remove a mod or plugin
 
 In the **Installed** sub-tab, tick the files (or use **Select all**) and select
 **Remove**, then confirm. Restart the server. Leftover configs in `config/` or
-`plugins/` are harmless but can confuse replacements.
+`plugins/` are harmless but can confuse a replacement.
 
 ## Rules for a stable server
 
-1. **Backup first.** Mods touch worlds and configs; see [backups](/users/backups/).
-2. **Match versions.** A plugin built for game version X on server version Y is
-   the top cause of boot failures. The manager filters versions for you —
-   manual uploads via [Files](/users/files/) do not.
-3. **Add one at a time** and restart between additions. Ten mods at once means
-   ten suspects when it crashes.
-
-## When it breaks
-
-Read the error in the [console](/users/console/) first — it almost always says
-which mod failed and why. Then see [server issues](/troubleshooting/server/).
+1. **Match versions.** A mod built for a different game version is the top
+   cause of boot failures. The manager filters versions for you; manual uploads
+   through [Files](/users/files/) do not.
+2. **Add one at a time**, so a crash has one suspect instead of ten.
 
 ## Related
 

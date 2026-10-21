@@ -9,10 +9,11 @@ sources:
   - catalyst-backend/src/plugins/marketplace/packaging.ts
   - catalyst-backend/src/plugins/marketplace/service.ts
   - catalyst-backend/src/routes/plugins.ts
+  - catalyst-backend/src/lib/env-registry.ts
   - packages/plugin-sdk/cli/src/index.ts
   - catalyst-plugins/scripts/build-packages.sh
   - catalyst-plugins/scripts/build-bundles.mjs
-last_verified: '2026-10-16'
+last_verified: '2026-10-20'
 ---
 
 Panels install plugins from a marketplace index. The official index is
@@ -25,7 +26,8 @@ browsed by default. You can run your own index without being listed there.
   [Plugin Manifest](/api/plugins/manifest/).
 - A Catalyst checkout to build the SDK CLI from; the CLI is not published to
   npm. See [Create a plugin](/api/plugins/creating/).
-- HTTPS hosting for the package and index if others should install it.
+- HTTPS hosting for the package. Panels refuse plaintext `http` downloads from
+  any host that is not a configured index host.
 
 ## Package layout
 
@@ -69,7 +71,8 @@ plaintext — the panel validates it before anything runs. See
 
 The CLI ships in the Catalyst repository, not on npm, and nothing links its
 binary, so invoke it by path. Build it once, then `pack` from the plugin
-directory:
+directory — see [Create a plugin](/api/plugins/creating/#1-scaffold) for why
+there is no `catalyst-plugin` command on `PATH`:
 
 ```bash
 # once, from the Catalyst checkout root
@@ -81,11 +84,8 @@ node "$CATALYST_REPO/packages/plugin-sdk/cli/dist/index.js" pack
 node "$CATALYST_REPO/packages/plugin-sdk/cli/dist/index.js" pack --out dist
 ```
 
-`catalyst-plugin` is not on `PATH` (`pnpm --filter @catalyst/plugin-sdk-cli …`
-matches no workspace project, and `npx catalyst-plugin` fails), so alias the
-`node …/dist/index.js` line if you prefer a short command. `pack` imports
-`archiver`, which is a devDependency of `packages/plugin-sdk` that
-`pnpm install` hoists to the workspace root; without an install it prints
+`pack` needs `archiver` resolvable — a devDependency of `packages/plugin-sdk`
+that `pnpm install` hoists to the workspace root; without an install it prints
 `archiver is unavailable`.
 
 `pack` writes `<name>-<version>.catpkg.zip` and `<name>-<version>.catpkg.zip.sha256`.
@@ -127,49 +127,63 @@ Serve JSON over HTTPS. The panel accepts either a bare array or:
 }
 ```
 
-Required per entry: `name`, `downloadUrl`. Recommended: `version`, `sha256`,
-`displayName`, `description`, `author`. `tags` keeps the first 12 strings.
-`sha256` is optional and should not be — the installer checks it when the
-index provides it, and skips the check when the field is absent.
+| Field | Required | Notes |
+| --- | --- | --- |
+| `name` | yes | Must equal the packaged plugin's `plugin.json` name. |
+| `downloadUrl` | yes | Absolute URL of the `.catpkg.zip`. |
+| `sha256` | yes in practice | Lowercase hex digest of the zip. The panel lists an entry without it but refuses to install it (`CHECKSUM_REQUIRED`). |
+| `version` | no | Shown in the version column; drives the update badge. |
+| `displayName`, `description`, `author`, `homepage` | no | Display only. |
+| `tags` | no | Filter chips in the marketplace; the first 12 strings are kept. |
+| `licensing` | no | `{ licenseServer, buyUrl, encrypted }` for the browse badge. The installed `plugin.json` is authoritative. |
 
-`downloadUrl` must be `http` or `https`. Hosts that resolve to loopback,
-link-local, or private addresses are refused unless the host is one of the
-configured index hosts or the panel has `PLUGIN_MARKETPLACE_ALLOW_LOCAL=true`.
+`sha256` is a hard requirement for installation: the panel verifies the
+downloaded bytes against it before extracting anything, and a missing or
+mismatched digest aborts the install.
 
-The panel caches each index for 5 minutes. One failing source does not hide
-the others.
+`downloadUrl` must be `https`. Two exceptions are treated as trusted: a host
+that is also one of your configured index hosts, and any host when the panel
+sets `PLUGIN_MARKETPLACE_ALLOW_LOCAL=true`. Hosts that resolve to loopback,
+link-local, or private addresses are refused in the same cases.
+
+Redirects are followed up to 5 hops, and the protocol and private-address
+checks are re-applied to every hop, so a public URL cannot redirect the
+download at an internal address. Index URLs themselves are fetched as-is,
+including LAN hosts, because an admin configured them.
+
+The panel caches each index for 5 minutes; browsing with a forced refresh
+sends `Cache-Control: no-cache`. One failing source does not hide the others.
 
 ## Point a panel at your index
 
-An admin adds the URL under **Admin → Plugins → Marketplace → Marketplaces**,
-or sets environment variables on the backend:
+An admin adds the URL in the **Marketplaces** rail of
+**Admin → Extensions → Marketplace**, or sets environment variables on the
+backend:
 
 | Variable | Effect |
 | --- | --- |
 | `PLUGIN_MARKETPLACE_URLS` | Comma-separated extra index URLs, browsed together with the official index. |
 | `PLUGIN_MARKETPLACE_DISABLE_OFFICIAL` | `true` skips the official index. Use on air-gapped installs. |
-| `PLUGIN_MARKETPLACE_ALLOW_LOCAL` | `true` permits downloading from loopback and private hosts. Leave unset on a public panel. |
+| `PLUGIN_MARKETPLACE_ALLOW_LOCAL` | `true` permits plaintext `http` downloads and loopback/private hosts other than your configured index hosts. Leave unset on a public panel. |
 
 When two sources list the same `name`, the newest `version` wins.
 
 ## Install, update, uninstall
 
-All three are clicks in **Admin → Plugins**:
+All three are clicks in **Admin → Extensions** — the operator steps live in
+[Plugins](/admin/plugins/#update-reload-disable-uninstall). What matters when
+you publish:
 
-1. An admin clicks **Marketplace**, finds the plugin in the list, and clicks
-   **Install**.
-2. The panel downloads, checks `sha256` when present, extracts, and validates
-   `plugin.json`. The code is on disk and **not running**.
-3. The admin clicks **Enable** on the row and accepts the safety disclaimer
-   (**Accept & Enable**). See [Data & permissions](/api/plugins/data/).
-4. A higher `version` in the index shows an **Update** badge; **Update**
-   replaces the directory. The version change forces the disclaimer again.
-5. **Uninstall…** removes the directory. Tick **Also delete stored data** only
-   when the stored keys, collections, and consent history should go too.
+- The panel downloads the zip, verifies `sha256`, extracts, and validates
+  `plugin.json`. The code lands on disk **not running**.
+- An admin then enables it and accepts the safety disclaimer.
+- A higher `version` in the index offers **Update**, which replaces the
+directory. A version or permission change forces the disclaimer again and
+  leaves the plugin disabled until it is accepted.
 
-`POST /api/plugins/install` with `{ "url", "sha256"? }` is the same flow.
-`POST /api/plugins/:name/reload` re-reads the directory without a panel
-restart.
+`POST /api/plugins/install` with `{ "url", "sha256" }` is the same flow;
+`sha256` is a required 64-hex digest. `POST /api/plugins/:name/reload`
+re-reads the directory without a panel restart.
 
 ## Get listed officially
 

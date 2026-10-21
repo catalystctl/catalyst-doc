@@ -11,7 +11,7 @@ sources:
   - catalyst-frontend/src/components/files/FileEditor.tsx
   - catalyst-frontend/src/components/files/FileUploader.tsx
   - catalyst-backend/src/routes/servers/files.ts
-last_verified: '2026-10-16'
+last_verified: '2026-10-20'
 ---
 
 The **Files** tab is a file manager for your server: configs, worlds, plugins,
@@ -34,9 +34,9 @@ list move around the current folder.
   (or **Ctrl+S**), then [restart](/users/power/) the server so the game re-reads
   the file. **Revert** undoes your changes; closing with unsaved edits asks
   first.
-- **Upload:** select **Upload**, then **Choose Files** or drag files into the
-  dialog. You can also drop files straight onto the file list. Files larger than
-  the upload limit your administrator set are rejected with the limit shown.
+- **Upload:** select **Upload**, then **Choose Files** in the upload panel, or
+  drop files straight onto the file list. Files larger than the upload limit
+  your administrator set are rejected with the limit shown.
 - **Download:** open a file's menu (the **⋯** button or right-click) and choose
   **Download**. Directories cannot be downloaded as a batch in the browser —
   use [SFTP](/users/sftp/) to pull a whole folder.
@@ -75,11 +75,9 @@ undo in the file manager — [a backup](/users/backups/) is the undo.
 | Source/CS2 | `cfg/`, `addons/`, `maps/` |
 | Generic | Check your template's documentation or ask your host. |
 
-:::note
-Exact paths depend on the template your server was created from. If a path here
-does not exist on your server, look at the template description or ask your
-administrator rather than creating it by hand.
-:::
+Exact paths depend on the template. If a path listed here does not exist on your
+server, read the template description or ask your administrator rather than
+creating it by hand.
 
 ## Related
 

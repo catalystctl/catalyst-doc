@@ -11,9 +11,10 @@ sources:
   - catalyst-backend/src/routes/mcp.ts
   - catalyst-backend/src/mcp/tools.ts
   - catalyst-backend/src/services/mcp-settings.ts
+  - catalyst-backend/src/services/mailer.ts
   - catalyst-docker/docker-compose.yml
   - catalyst-docker/.env.example
-last_verified: '2026-10-16'
+last_verified: '2026-10-20'
 ---
 
 ## Panel
@@ -22,11 +23,8 @@ last_verified: '2026-10-16'
 - Keep the panel updated — security fixes ship in releases ([updating](/admin/updating/)).
 - Restrict who can reach the admin UI by network (VPN, allowlist) in addition
   to passwords.
-- Never expose the database or Redis ports to the internet. The bundled compose
-  stack publishes PostgreSQL on `127.0.0.1:5432` and Redis on `127.0.0.1:6379`
-  (both loopback-only) by default. To keep Redis off the host entirely, add a
-  `ports: []` override for the `redis` service — commenting out `REDIS_PORT`
-  does not unpublish it ([configuration](/admin/configuration/)).
+- Never expose the database or Redis ports to the internet; the bundled compose
+  stack binds both to loopback ([configuration](/admin/configuration/)).
 
 ## Accounts and access
 
@@ -53,14 +51,17 @@ each section.
 - **Lockout Policy** — **Max attempts**, **Window (minutes)**, **Duration
   (minutes)**, and **Audit retention (days)**. Failed sign-ins lock out per
   email + IP combination.
-- **File Uploads** — **Tunnel requests**, **Max upload size (MB)** (up to
+- **File uploads** — **Tunnel requests**, **Max upload size (MB)** (up to
   10240 MB), **Max pending per node**, and **Max concurrent (agent)**. The
-  upload size applies to the file browser and SFTP on every node; **Max
-  concurrent** needs an agent restart to take effect.
+  upload size caps a single file in the file browser on every node; SFTP
+  transfers are limited only by the server's remaining disk. **Max concurrent**
+  needs an agent restart to take effect.
 - **Auth Lockouts** — recent lockout entries with a **Clear lockout** action.
 
-Registrations are governed by the `REGISTRATION_ENABLED` environment variable
-and the stored security setting ([configuration](/admin/configuration/)).
+Open self-registration is not on this page. It is governed by
+`REGISTRATION_ENABLED`, which overrides the stored setting: set it in **Admin →
+Environment** and restart the panel ([configuration](/admin/configuration/)).
+The setup wizard turns the stored setting off.
 
 ## Panel MCP endpoint (AI assistants)
 

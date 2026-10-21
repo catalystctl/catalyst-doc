@@ -9,7 +9,7 @@ sources:
   - catalyst-frontend/src/components/servers/tabs/ServerAdminTab.tsx
   - catalyst-frontend/src/pages/admin/NodeAllocationsPage.tsx
   - catalyst-backend/src/routes/servers/network.ts
-last_verified: '2026-10-16'
+last_verified: '2026-10-20'
 ---
 
 An **allocation** is an IP address + port pair on your node. Your **primary**
@@ -26,29 +26,26 @@ extra ports (query, RCON, voice, Bedrock vs. Java).
 ## Find your server's address
 
 The address is shown in the server header and on the server card in your list —
-`IP:port`, using the primary allocation. Share it exactly as shown: if your host
-provides a hostname or does not require the default port, they will tell you —
-otherwise always include the port. Details:
-[connecting to your server](/getting-started/connecting/).
+`IP:port`, using the primary allocation. See
+[connecting to your server](/getting-started/connecting/) for how to read and
+share it.
 
 ## See and manage allocations
 
-Allocations are managed in the server's **Admin** tab under **Ports**, which
-needs the `server.network` permission (panel administrators have it through
-`admin.write`). The node owns the pool of addresses; if you need another port
-(for example, for a plugin's web map), ask your administrator.
-
-What the **Ports** section does, when you have access:
+Allocations are managed in the server's **Admin** tab under **Ports**. The node
+owns the pool of addresses; if you need another port (for example for a
+plugin's web map), ask your administrator.
 
 1. Pick a free address from the **Select allocation** list and set the port it
    maps to inside the server (the field the panel labels **Container port**).
 2. Select **Add allocation**.
 3. Each row shows the host address (`IP:host port`) mapped to the server-side
-   port, and marks the **Primary** one with a star.
-4. **Set primary** promotes a secondary allocation; **Remove allocation**
-   deletes one. Removing an allocation from a running server closes its
-   firewall rule immediately and disconnects anyone using that port, so the
-   panel asks you to confirm first.
+   port, marks the **Primary** one with a star, and labels the rest
+   **Secondary**.
+4. **Set primary** promotes a secondary allocation; **Remove allocation** deletes
+   one. Removing an allocation from a running server closes its firewall rule
+   immediately and disconnects anyone using that port, so the panel asks you to
+   confirm first.
 
 If the node's pool is empty, the section links straight to the node's
 allocations page.

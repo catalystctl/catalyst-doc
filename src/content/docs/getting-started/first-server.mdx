@@ -12,7 +12,7 @@ sources:
   - catalyst-frontend/src/components/servers/EulaModal.tsx
   - catalyst-backend/src/routes/servers/
   - catalyst-backend/prisma/seed.ts
-last_verified: '2026-10-16'
+last_verified: '2026-10-20'
 ---
 
 This guide creates a working Minecraft (Paper) server. The same steps apply to
@@ -22,43 +22,41 @@ start.
 ## Prerequisites
 
 - An account on a Catalyst panel (your host or administrator provides this).
-- Permission to create servers. If the **New server** button is missing, ask
-  your administrator for the `server.create` permission or access to a node.
+- Permission to create servers. If the **New server** button is missing, ask your
+  administrator for `server.create` or access to a node.
 - A node with free memory, disk, and at least one free allocation. If creation
   fails, ask your administrator — see [server issues](/troubleshooting/server/).
 
 ## 1. Create the server
 
 1. Open **Servers** and select **New server**. The **Create new server** dialog
-   is one scrollable form with five numbered sections — **Details**, **Node**,
-   **Resource Allocation**, **Network**, and **Startup** — plus a live summary
-   panel that mirrors the server about to be created.
+   has five numbered sections — **Details**, **Node**, **Resource Allocation**,
+   **Network**, **Startup** — and a summary panel that mirrors the server about to
+   be created.
 2. **Details:** enter a **Server Name** you will recognize, for example
-   `Survival SMP`. **Description** is optional. **Server Owner** is offered only
-   to administrators who may create users — leave it blank to own the server
-   yourself. Choose the **Template** — the searchable list of installed games.
-   For Minecraft: Java Edition, pick **Minecraft Server (Universal)**; its
-   **SERVER_TYPE** variable decides the server software and defaults to Paper
-   (you can change it in **Startup**). If the template offers an **Image
-   Variant**, leave it on **Use default image** unless you need a specific Java
-   runtime.
+   `Survival SMP`. **Description** is optional. **Server Owner** appears only if
+   you hold `user.create`, `admin.write`, or `*`, and assigning someone else needs
+   `user.create` — leave it blank to own the server yourself. Choose the
+   **Template**: for Minecraft: Java Edition pick **Minecraft Server
+   (Universal)**. Its **SERVER_TYPE** variable picks the server software and
+   defaults to Paper. If the template offers an **Image Variant**, leave it on
+   **Use default image** unless you need a specific Java runtime.
 3. **Node:** choose the **Node** to run it on (usually there is only one). The
    location comes from the node.
 4. **Resource Allocation:** **Memory (MB)** and **Disk (MB)** are prefilled from
-   the template and **CPU Cores** defaults to `1`; accept them unless you know
-   you need more. **Swap (MB)**, **Backup (MB)**, and **Database Allocation**
-   can stay blank to use the provider defaults.
-5. **Network:** leave **Network Mode** on **Host (port mapping)** — the usual
-   choice. Under **Primary Allocation**, pick an **Allocation** (IP + port) for
-   players to join through; **Primary Port** fills in from that allocation
-   automatically. (Choose **Macvlan** only if your administrator told you to.)
+   the template and **CPU Cores** defaults to `1`; accept them unless you know you
+   need more. **Swap (MB)**, **Backup (MB)**, and **Database Allocation** can stay
+   blank to use the provider defaults.
+5. **Network:** leave **Network Mode** on **Host (port mapping)**. Under **Primary
+   Allocation**, pick an **Allocation** (IP + port) for players to join through;
+   **Primary Port** fills in from that allocation automatically. (Choose
+   **Macvlan** only if your administrator told you to.)
 6. **Startup:** these are the template's **Environment Variables**; the defaults
-   are a good starting point. Anything marked with a red `*` is required. For
-   the Minecraft template, leave **SERVER_TYPE** on `paper` and tick the
-   **EULA** checkbox to accept the Minecraft licence up front (otherwise
-   Catalyst asks after install).
-7. If something is missing or out of range, the panel lists the reason at the
-   bottom of the dialog and **Create server** stays disabled.
+   are a good starting point, and anything marked with a red `*` is required. For
+   the Minecraft template, leave **SERVER_TYPE** on `paper` and tick **EULA** to
+   accept the Minecraft licence up front (otherwise Catalyst asks after install).
+7. If something is missing or out of range, the dialog lists the reason at the
+   bottom and **Create server** stays disabled.
 8. Select **Create server**. Catalyst creates the server and starts the install
    automatically, then opens its **Console**. Installation can take a few
    minutes — watch the output in the **Console** tab.
@@ -71,16 +69,16 @@ no longer need so they stop consuming memory and disk.
 ## 2. Accept the Minecraft EULA
 
 Minecraft servers refuse to run until the EULA is accepted. If you did not tick
-the **EULA** checkbox during creation, Catalyst asks for it in the panel, so you
-do not edit any files:
+**EULA** during creation, Catalyst asks for it in the panel, so you do not edit
+any files:
 
 1. When installation finishes, or when you select **Start** in the server
    header, the **Minecraft EULA** dialog appears and the server waits.
-2. Scroll to the bottom of the licence — the **I Agree** button enables once you
-   reach the end.
+2. Scroll to the bottom of the licence — **I Agree** enables once you reach the
+   end (or immediately if the text fits without scrolling).
 3. Select **I Agree**. Catalyst writes the acceptance for you and starts the
-   server. **Decline** leaves the server stopped and the panel shows its status
-   as **Error**; starting it again asks for the EULA.
+   server. **Decline** leaves the server stopped with status **Error**; starting
+   it again asks for the EULA.
 
 ## 3. Join the server
 

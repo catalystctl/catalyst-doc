@@ -12,16 +12,17 @@ sources:
   - catalyst-backend/src/routes/metrics-stream.ts
   - catalyst-backend/src/routes/admin-events.ts
   - catalyst-backend/src/websocket/gateway.ts
+  - catalyst-backend/src/services/api-key-service.ts
   - catalyst-frontend/src/services/api/sse-hub.ts
-last_verified: '2026-10-16'
+last_verified: '2026-10-20'
 ---
 
 Polling the REST API for live state is wasteful. For anything realtime — console
 output, power transitions, metric ticks — subscribe to a stream.
 
 Browser-facing realtime is **Server-Sent Events (SSE)**. The panel's WebSocket
-gateway at `/ws` carries the node-agent control plane and plugin clients, not
-the console or metrics views.
+gateway at `/ws` carries the node-agent control plane and plugin clients, not the
+console or metrics views.
 
 ## Channels
 
@@ -30,85 +31,92 @@ the console or metrics views.
 | Console output | SSE | `GET /api/servers/:serverId/console/stream` |
 | Console input | REST | `POST /api/servers/:serverId/console/command` |
 | Server events (state, backups, tasks, alerts) | SSE | `GET /api/servers/:serverId/events` |
-| All user servers | SSE | `GET /api/servers/all-servers/events` |
+| All your servers | SSE | `GET /api/servers/all-servers/events` |
 | Server metrics | SSE | `GET /api/servers/:serverId/metrics/stream` |
 | Admin entity events | SSE | `GET /api/admin/events` |
 | Node agents and plugins | WebSocket | `GET /ws` |
 
-The three console/event/metrics streams send a `: heartbeat` comment every 25 s
-to keep proxies from closing idle connections. Their routing is server-scoped:
-you must be the owner, hold the relevant permission on that server, or be an
-admin.
+Every stream sends a `: heartbeat` comment and a named `ping` event
+(`{ "t": <epoch ms> }`) every 25 s, so proxies keep the connection open and your
+client can detect a half-open one.
 
 ## Authentication
 
 - **Console stream, console command, and metrics stream** accept a session
-  cookie or an API key (`Authorization: Bearer`) — the same auth as REST.
+  cookie or an API key (`Authorization: Bearer`) — the same auth as REST. The
+  console requires `console.read` and the metrics stream `server.read` on that
+  server; the owner, a subuser with the permission, and admins all qualify. An
+  API key must also hold the permission itself, not just its owner.
 - **Server events** (`/events`, `/all-servers/events`) and **admin events**
-  require a **session cookie**; an API key is not accepted on those two
-  channels.
+  require a **session cookie**; an API key is not accepted there.
 - **Admin events** additionally requires `admin.read`.
 
-Unauthenticated or unauthorized subscribers are rejected with an HTTP status
-before any data flows.
+Unauthenticated or unauthorized subscribers get an HTTP status before any data
+flows (`401`, `403`, `404`, or `503` below).
 
 ## Access limits
 
-Long-lived streams are capped. Over the cap, the connection is refused with
-`503`:
+Long-lived streams are capped per backend process. Over the cap the connection is
+refused with `503`:
 
 | Code | Cap |
 | --- | --- |
 | `CONSOLE_VIEWER_LIMIT_REACHED` | 50 concurrent console viewers per server |
 | `SSE_SUBSCRIBER_LIMIT_REACHED` | 100 concurrent event subscribers per server |
 | `SSE_SUBSCRIBER_LIMIT_REACHED` | 200 concurrent subscribers on `/api/servers/all-servers/events`, which shares its registry with the metrics streams |
+| `SSE_SUBSCRIBER_LIMIT_REACHED` | 150 concurrent subscribers on `/api/admin/events` |
 
 ## Console events
-
-The console stream emits five named SSE events:
 
 | Event | Payload |
 | --- | --- |
 | `connected` | `{ serverId, timestamp }` |
-| `console_output` | `{ serverId, stream, data, timestamp, logId }` — `stream` is `stdout`/`stderr` |
-| `eula_required` | `{ serverId, serverUuid, eulaText }` |
-| `ping` | `{ t }` — epoch milliseconds, sent every 25 s as a named heartbeat the client can watch |
+| `console_output` | `{ serverId, stream, data, timestamp, logId }` — `stream` is `stdout`/`stderr`; `logId` is the persisted log row id |
+| `eula_required` | `{ serverId, serverUuid, eulaText, timestamp }` |
+| `ping` | `{ t }` — epoch milliseconds |
 | `error` | `{ serverId?, error }` |
+
+The metrics stream sends `connected`, then a `resource_stats` event on every
+agent tick (plus one immediately on subscribe).
 
 ## Server and admin events
 
-The event stream uses the SSE **event name** (what `addEventListener` receives)
-as its type discriminator; most payloads also carry a `type` field. Switch on
-the event name and ignore unknown names — new event types are added over time
-and must not break your client.
+The SSE **event name** (what `addEventListener` receives) is the type
+discriminator; most payloads also carry a `type` field. Switch on the event name
+and ignore unknown names — new event types are added over time and must not break
+your client.
 
-Server event names include:
+Server event names:
 
 - `server_state_update` — power/state transitions
 - `resource_stats` — CPU, memory, disk, network tick
 - `backup_started`, `backup_complete`, `backup_restore_started`,
-  `backup_restore_complete`, `backup_delete_started`, `backup_delete_complete`
-- `task_progress`, `task_complete`
+  `backup_restore_complete`, `backup_restore_failed`, `backup_delete_started`,
+  `backup_delete_complete`, `backup_updated`, `backup_deleted`
+- `task_progress`, `task_complete`, `task_created`, `task_updated`, `task_deleted`
 - `server_operation_progress` — dense install/transfer/clone progress
 - `server_files_changed`, `storage_resize_complete`, `eula_required`, `alert`
 - `server_created`, `server_updated`, `server_deleted`, `server_suspended`,
-  `server_unsuspended`
-- `mod_install_complete`, `mod_uninstall_complete`, `mod_update_complete` and
-  the matching `plugin_*` events
+  `server_unsuspended`, `clone_failed`
+- `database_created`, `database_deleted`, `database_password_rotated`
+- `mod_install_complete`, `mod_uninstall_complete`, `mod_update_complete` and the
+  matching `plugin_*` events
+- `permissions_updated` — the caller's permission set changed
+- `resync` — the panel lost events (bus reconnect); re-fetch authoritative state
 
 The admin stream (`/api/admin/events`) carries entity-level create/update/delete
 events (`user_*`, `node_*`, `template_*`, `alert_*`, `role_*`, `api_key_*`,
-`task_*`, `database_*`, `agent_update_*`, `node_metrics_updated`,
-`audit_log_created`, `auth_lockout_created`/`auth_lockout_cleared`, …).
+`location_*`, `nest_*`, `task_*`, `database_*`, `network_*`, `allocation_*`,
+`agent_update_*`, `node_metrics_updated`, `audit_log_created`,
+`auth_lockout_created`/`auth_lockout_cleared`, `panel_update_*`, …).
 
 ## Client rules
 
-1. **Let EventSource reconnect.** The browser retries the connection
-   automatically. There is no server-side resume cursor: treat every reconnect
-   as fresh and re-fetch authoritative state over REST to close any gap.
-2. **Handle the HTTP failures** (`401`, `403`, `503` above) instead of
-   reconnect-spinning; a refused stream will not recover without a change on
-   your side.
+1. **Let EventSource reconnect.** There is no server-side resume cursor: treat
+   every reconnect as fresh and re-fetch authoritative state over REST.
+2. **Handle the HTTP failures** (`401`, `403`, `503`) instead of
+   reconnect-spinning; a refused stream will not recover without a change on your
+   side.
 3. **One connection per view**, then fan out locally. The panel's own SSE hub
    already shares one `EventSource` per URL across all widgets.
 4. Fall back to REST polling only when streams are unavailable, and say so in
@@ -137,7 +145,7 @@ await fetch(`/api/servers/${serverId}/console/command`, {
 });
 ```
 
-The command body is `{ "command": "..." }` (max 4096 characters) and requires
+The command body is `{ "command": "..." }` (1–4096 characters) and requires
 `console.write`.
 
 ## The WebSocket gateway
@@ -145,15 +153,12 @@ The command body is `{ "command": "..." }` (max 4096 characters) and requires
 `GET /ws` is the bidirectional channel:
 
 - **Nodes** connect as `/ws?nodeId=<id>` and authenticate with the node's agent
-  API key in the handshake.
+  API key in the `node_handshake` message; a socket that has not authenticated
+  within 10 s is closed.
 - **Plugin/browser clients** connect to the same path and authenticate with the
-  session cookie on the upgrade, or by sending a `client_handshake` message with
-  a session token within the first 3 seconds. Plugin traffic is addressed by
-  message type `plugin:{pluginName}:{eventType}` with a `data` payload.
-
-The generated [API reference](/api/reference/) covers the REST endpoints the
-streams pair with (console command, power actions, lists). The long-lived SSE
-paths above are the contract for the streams themselves.
+  session cookie on the upgrade, or with a `client_handshake` message carrying a
+  session token within the first 3 s. Plugin traffic is addressed by message type
+  `plugin:{pluginName}:{eventType}` with a `data` payload.
 
 ## Related
 

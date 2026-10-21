@@ -10,7 +10,7 @@ sources:
   - catalyst-backend/src/plugins/
   - catalyst-frontend/src/plugins/
   - catalyst-frontend/src/pages/admin/PluginsPage.tsx
-last_verified: '2026-10-16'
+last_verified: '2026-10-20'
 ---
 
 A **plugin** extends the panel itself: extra API routes, admin and server tabs,
@@ -72,7 +72,7 @@ Anything else is rejected.
 ## Two ways to ship
 
 **Marketplace package.** Build a `.catpkg.zip`, publish it from an index, and
-admins install it from **Admin → Plugins → Marketplace**. The package stays
+admins install it from **Admin → Extensions → Marketplace**. The package stays
 inert until an admin accepts the safety disclaimer and enables it. This is how
 third-party plugins reach a panel. See [Packaging](/api/plugins/packaging/).
 
@@ -97,11 +97,18 @@ free of hooks.
 
 ## Rules
 
+- Nothing executes before an accepted safety disclaimer. Discovery reads
+  `plugin.json` only; the backend module is imported and `onLoad` runs when an
+  admin enables the plugin. A version or permission change forces a fresh
+  acceptance and leaves the new code disabled until it happens.
 - Declare the smallest permission set you actually use. Admins see that list
-  before they enable the plugin.
+  before they enable the plugin, and every host capability is gated on it.
 - Never put secrets in `plugin.json` or in source. Put them in config fields
   of type `password`, and document what the operator must set.
 - Register HTTP routes in `onLoad`. Register tasks, WebSocket handlers, and
   event listeners in `onEnable`, because disable clears them.
+- Gate your routes on the caller, not only on your own grant:
+  `config.requiredPermissions` is enforced by the host. See
+  [Backend](/api/plugins/backend/#routes).
 - `request.user.userId` is the authenticated user id. Use `context.getUserId(request)`.
 - `context.getConfig(key)` returns the configured **value**, not the schema object.

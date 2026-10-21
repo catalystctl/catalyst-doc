@@ -13,7 +13,7 @@ sources:
   - catalyst-backend/src/routes/setup.ts
   - catalyst-backend/src/lib/env-registry.ts
   - install.sh
-last_verified: '2026-10-16'
+last_verified: '2026-10-20'
 ---
 
 After [installation](/admin/installation/), opening the panel URL shows the
@@ -33,10 +33,11 @@ steps.
 1. **Welcome.** Set the **Panel Name** (default `Catalyst`) and confirm the
    **Public Panel URL**, which is prefilled with the address you opened the
    panel from. It drives sign-in links, CORS, and generated URLs, so it must be
-   the exact URL users open. The installer already wrote a `PUBLIC_URL` value to
-   `catalyst-docker/.env` — keep the two identical. Optionally upload a
-   **Panel Logo** (recommended: square, at least 128×128px, maximum 512KB).
-   Select **Next**.
+   the exact URL users open — the same value the installer wrote to
+   `catalyst-docker/.env`. The wizard stores it as a panel setting (a database
+   override applied on the next panel restart); it does not edit `.env`.
+   Optionally upload a **Panel Logo** (recommended: square, at least 128×128px,
+   maximum 512KB). Select **Next**.
 2. **Admin Account.** Create the first administrator:
    - **Email** — used for notifications and recovery.
    - **Username** — at least 3 characters.

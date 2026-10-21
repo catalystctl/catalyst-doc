@@ -18,7 +18,8 @@ sources:
   - catalyst-docker/nginx/default.conf.template
   - catalyst-docker/docker-compose.caddy.yml
   - catalyst-docker/docker-compose.traefik.yml
-last_verified: '2026-10-16'
+  - install.sh
+last_verified: '2026-10-20'
 ---
 
 ## Prerequisites
@@ -30,62 +31,94 @@ last_verified: '2026-10-16'
 ## Players cannot reach a game server
 
 1. Is the server **running**? A stopped server refuses everything.
-2. Is the address right — IP **and** port? Retype it; do not trust memory.
-   The **Address** column in **Servers** and the server's **Admin** tab show
-   its allocations.
-3. Is the port reachable from outside? Test from a different network (mobile
-   data works). "Works on my LAN, not from outside" means NAT/firewall, not
-   the game.
+2. Is the address right — IP **and** port? Retype it; do not trust memory. The
+   **Address** column in **Servers** and the server's **Admin** tab show its
+   allocations.
+3. Is the port reachable from outside? Test from a different network (mobile data
+   works). "Works on my LAN, not from outside" means NAT or firewall, not the game.
 4. **UDP vs TCP**: many games need UDP. A TCP-only port check passing proves
    nothing for a UDP game.
 5. Host firewall, cloud security group, and any NAT rule must all agree, and the
    allocation must be published on the node. The node agent creates the port
-   mapping and firewall rule for each server allocation; a rule that failed to
-   apply looks exactly like a closed firewall.
+   mapping and firewall rule for each allocation; a rule that failed to apply
+   looks exactly like a closed firewall.
+
+## Game ports on firewalld hosts
+
+On `firewalld` the agent adds the runtime rule first (reachable immediately) and
+then the permanent rule (survives a reboot), without reloading the daemon. Two
+failures remain:
+
+```bash
+sudo firewall-cmd --list-ports            # runtime rules
+sudo firewall-cmd --permanent --list-ports # rules kept across reboot
+```
+
+- The allocation is missing from both lists → the runtime add failed. The agent
+  log has `firewalld runtime add failed for <port>/<proto>`; fix the `firewall-cmd`
+  error it quotes (SELinux denial, read-only zone, missing capability).
+- The port works until the node reboots → only the runtime half landed. The agent
+  log warns `firewalld could not persist port <port>/<proto>`; re-add it with
+  `sudo firewall-cmd --permanent --add-port=<port>/tcp` (and `/udp`) then
+  `sudo firewall-cmd --reload`.
+
+## Panel unreachable from another machine
+
+The installer never changes the host firewall: it only reports whether the panel
+port is allowed and prints the command. On `firewalld` hosts (Fedora Server,
+RHEL, CentOS):
+
+```bash
+sudo firewall-cmd --permanent --add-port=8080/tcp && sudo firewall-cmd --reload
+```
+
+On `ufw` hosts: `sudo ufw allow 8080/tcp`. Use your own `FRONTEND_PORT` if you
+changed it ([installation](/admin/installation/)). If the panel works on the host
+itself but not from another machine, this — or an upstream cloud security group —
+is the cause.
 
 ## Node cannot reach the panel
 
-From the node: resolve the panel hostname, then `curl` the panel URL. Fix DNS
-first, then TLS (cert valid for that name?), then HTTP. See
+Resolve the panel hostname from the node, then `curl` the panel URL: DNS first,
+then TLS (cert valid for that name?), then HTTP. See
 [node issues](/troubleshooting/node/).
 
 ## Panel loads but every API call returns 502
 
-The page itself renders — static files come from the frontend container — but
-sign-in, the server list and realtime all fail, because the frontend's nginx
-cannot resolve the backend. nginx names the failure in its own log:
+The page renders — static files come from the frontend container — but sign-in,
+the server list, and realtime all fail, because the frontend's nginx cannot
+resolve the backend. nginx names the failure in its own log:
 
 ```bash
 docker compose logs frontend | grep -i 'backend could not be resolved'
 ```
 
-- **Bundled stack** — nginx proxies to the fixed service name `backend`, which
-  it resolves once at startup. A renamed or moved backend service stops the
-  frontend from starting; restore the service name.
+- **Bundled stack** — nginx proxies to the fixed service name `backend`, which it
+  resolves once at startup. A renamed or moved backend service stops the frontend
+  from starting; restore the service name.
 - **Frontend image run directly** (Podman, Kubernetes, host networking) — the
   resolver comes from the frontend container's own `/etc/resolv.conf`, so a
   backend name that only resolves through a search domain fails. Set
-  `BACKEND_HOST` to the fully qualified name, and `NGINX_LOCAL_RESOLVERS` when
-  its nameservers are wrong.
+  `BACKEND_HOST` to the fully qualified name, and `NGINX_LOCAL_RESOLVERS` when its
+  nameservers are wrong.
 
 A `wget http://backend:3000/health` that succeeds inside the frontend container
 while nginx logs a resolve failure is the signature of a resolver mismatch.
 
 ## TLS warnings in browsers
 
-- Name mismatch: the certificate must cover exactly the host users type. Set
+- Name mismatch: the certificate must cover exactly the host users type — set
   `PUBLIC_URL` in the install `.env` to that `https://` URL.
-- Expired: renewal failed — port 80 reachable? DNS unchanged? Check the TLS
+- Expired: renewal failed — is port 80 reachable, did DNS change? Check the TLS
   overlay's logs (`docker compose logs caddy` or `traefik`), not the backend.
-- Mixed setups: after moving TLS to the proxy, `PUBLIC_URL` must still be
-  `https://…`.
 
 ## SFTP times out
 
-SFTP runs on the **node agent** (default port **2022**), not on the panel, and
-is separate from game ports. Confirm the port is written into the agent config
-on the node, reachable through every firewall layer, and that the client uses
-SFTP (SSH transport), not FTP. Details: [SFTP](/users/sftp/).
+SFTP runs on the **node agent** (default port **2022**), not on the panel, and is
+separate from game ports. Confirm the port is written into the agent config on the
+node, reachable through every firewall layer (the agent opens it on the node's
+firewall when it starts), and that the client uses SFTP (SSH transport), not FTP.
+Details: [SFTP](/users/sftp/).
 
 ## Related
 

@@ -13,7 +13,7 @@ sources:
   - catalyst-backend/src/plugins/validator.ts
   - catalyst-backend/src/plugins/custom-permissions.ts
   - catalyst-backend/src/routes/plugins.ts
-last_verified: '2026-10-16'
+last_verified: '2026-10-20'
 ---
 
 A plugin has three stores, and a narrow window onto panel data. Use the
@@ -117,9 +117,10 @@ panel, not the ones the calling user owns. Filter in your handler after
 ## Reading panel data
 
 `ctx.db.servers` requires a live `server.read` grant. `ctx.db.users` requires
-`user.read`. Any other table throws. `credentials`, API keys, and audit logs
-are blocked even for `*`-adjacent custom tokens; `*` itself only adds
-`servers` and `users`.
+`user.read`. Any other table throws. The `.write` tokens grant no table access
+on their own, so a plugin that updates servers declares `server.read` **and**
+`server.write`. `credentials`, API keys, and audit logs are blocked even for
+`*`-adjacent custom tokens; `*` itself only adds `servers` and `users`.
 
 Reads always project a fixed field set. Requesting other fields drops them.
 

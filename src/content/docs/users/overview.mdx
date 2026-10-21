@@ -9,31 +9,31 @@ sources:
   - catalyst-frontend/src/pages/servers/ServerDetailsPage.tsx
   - catalyst-frontend/src/components/servers/ServerTabBar.tsx
   - catalyst-frontend/src/components/servers/ServerControls.tsx
-last_verified: '2026-10-16'
+last_verified: '2026-10-20'
 ---
 
 Open a server from the **Servers** page and you land on its tab bar. The tabs
-you see depend on the permissions you have; owners see everything, subusers
-only the tabs the owner enabled. If a tab is missing, ask the server owner —
-nothing is broken.
+you see depend on your permissions on that server and on the server's template.
+If a tab is missing, you do not have access to it — or the template does not
+support it — rather than something being broken.
 
 | Tab | What it is for | Guide |
 | --- | --- | --- |
 | **Console** | Live output and commands. | [Console](/users/console/) |
 | **Files** | Browse, edit, upload, download, archive. | [Files](/users/files/) |
 | **SFTP** | Connect with FileZilla or WinSCP for big transfers. | [SFTP](/users/sftp/) |
-| **Backups** | Create, restore, download, and prune snapshots. | [Backups](/users/backups/) |
+| **Backups** | Create, restore, download, pin, and prune snapshots. | [Backups](/users/backups/) |
 | **Tasks** | Scheduled restarts, backups, and commands. | [Tasks](/users/tasks/) |
 | **Databases** | Databases for plugins and mods. | [Databases](/users/databases/) |
 | **Metrics** | CPU, memory, disk, and network graphs. | [Metrics & Alerts](/users/metrics/) |
 | **Alerts** | Notifications when a metric crosses a threshold. | [Metrics & Alerts](/users/metrics/) |
 | **Activity** | Who did what, and when. | [Activity](/users/activity/) |
-| **Mod Manager** | Curated mod installs for supported templates. | [Mods & Plugins](/users/mods-plugins/) |
-| **Plugin Manager** | Curated plugin installs for supported templates. | [Mods & Plugins](/users/mods-plugins/) |
+| **Mod Manager** | Mods, datapacks, and modpacks from Modrinth or CurseForge. | [Mods & Plugins](/users/mods-plugins/) |
+| **Plugin Manager** | Plugins from Modrinth or CurseForge. | [Mods & Plugins](/users/mods-plugins/) |
 | **Configuration** | Startup command, variables, and config files. | [Startup & Variables](/users/startup/) |
 | **Users** | Give friends limited access. | [Users & Subusers](/users/subusers/) |
-| **Settings** | Server name, maintenance, and reinstall. | [Reinstalling](/users/reinstalling/) |
-| **Admin** | Admin-only: allocations, image, resources, owner transfer. | — |
+| **Settings** | Server name, maintenance, reinstall, clone. | [Reinstalling](/users/reinstalling/) |
+| **Admin** | Allocations, image, resources, owner transfer, danger zone. | [Networking](/users/networking/) |
 
 Power controls — **Start**, **Stop**, **Restart**, and **Kill** — sit in the
 server header, above the tabs. See [Power controls](/users/power/).

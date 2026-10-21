@@ -11,9 +11,10 @@ sources:
   - catalyst-frontend/src/pages/admin/ThemeSettingsPage.tsx
   - catalyst-frontend/src/pages/admin/EnvironmentPage.tsx
   - catalyst-backend/src/lib/env-registry.ts
+  - catalyst-backend/src/config.ts
   - catalyst-docker/docker-compose.yml
   - catalyst-docker/.env.example
-last_verified: '2026-10-16'
+last_verified: '2026-10-20'
 ---
 
 Most day-to-day settings live in the panel UI. A handful of infrastructure
@@ -33,7 +34,8 @@ when a change needs one.
 | **Admin → Environment** | Every environment variable the backend reads, with its source and a restart prompt when required |
 | **Admin → Theme** | Panel identity (panel name, logo, favicon), brand colors, surfaces, and custom CSS |
 | **Admin → Databases** | MySQL hosts used to provision databases for servers, plus Catalyst database health |
-| **Admin → Plugins** | Installed plugins and marketplace |
+| **Admin → Plugins** | Installed plugins: permissions, configuration, enable/disable, updates |
+| **Admin → Marketplace** | The **Plugin marketplace** (`/admin/plugins/marketplace`) — browse and install from the configured sources |
 | **Profile** | Your own language, password, passkeys, and API keys |
 
 ## Mod manager API keys
@@ -59,25 +61,24 @@ up as search returning fewer results or downloads failing intermittently.
 
 ## Environment variables in the panel
 
-**Admin → Environment** lists every variable the backend reads that does not
-already have its own settings page. Values saved there are stored in the
-database and applied on the next panel start; when a change needs a restart the
-panel prompts the signed-in admin with a **Restart panel** button. **Reset to
-.env** removes the override and falls back to the compose value.
+**Admin → Environment** renders the backend's own registry
+(`catalyst-backend/src/lib/env-registry.ts`): every variable it reads, with its
+category, where the current value comes from (**Environment**, **Database** or
+**Default**), and whether a restart is needed. A value saved there is stored in
+the database and applied on the next panel start — the page offers a **Restart
+panel** button, and **Reset to .env** drops the override.
 
-Settings with a dedicated editor are left out of this page so each value has one
-place to change it: the panel name under **Theme**, rate limits and console
-output under **Security**, update automation under **System → Auto Updater**,
-OIDC providers under **Theme → Advanced**, and marketplace sources in the plugin
-marketplace.
+Variables that have a dedicated editor are hidden from this page so each value
+has one home: the panel name under **Theme**, rate limits and console output
+under **Security**, update automation under **System → Auto Updater**, OIDC
+providers under **Theme → Advanced**, and marketplace sources in the
+**Marketplace** page.
 
-A few variables must stay in `catalyst-docker/.env` because the backend needs
-them before it can reach the database (they are shown read-only in the panel):
-`DATABASE_URL`, `NODE_ENV`, `PORT`, `POSTGRES_PASSWORD`, `TZ`, and `WORKERS`.
-`REDIS_PASSWORD` is **not** in this set — the backend reads it when it connects
-to Redis, so it can be set from **Admin → Environment** like other settings.
-
-For those, edit `.env` and recreate the backend container:
+Six variables are read before the backend can reach the database, so they are
+**`.env` only** (shown read-only in the panel): `DATABASE_URL`, `NODE_ENV`,
+`PORT`, `POSTGRES_PASSWORD`, `TZ`, and `WORKERS`. `POSTGRES_PASSWORD`,
+`REDIS_PASSWORD`, and `BETTER_AUTH_SECRET` are also the values the containers
+themselves start with, so change them in `.env` and recreate the stack:
 
 ```bash
 cd catalyst-docker
@@ -87,22 +88,38 @@ docker compose up -d
 
 ## Environment reference
 
-- The stack's variables live in `catalyst-docker/.env`; the annotated template
-  is `catalyst-docker/.env.example`. The backend's own registry
-  (`catalyst-backend/src/lib/env-registry.ts`) lists every variable it reads,
-  and **Admin → Environment** renders that registry.
-- Docker ports and their defaults: `FRONTEND_PORT=0.0.0.0:8080`,
-  `BACKEND_PORT=127.0.0.1:3000`, `POSTGRES_PORT=127.0.0.1:5432`. **Redis is
-  published on `127.0.0.1:6379` (loopback only) by default** — the compose
-  default `REDIS_PORT` is `127.0.0.1:6379`, and commenting it out does not
-  unpublish the port. To make Redis fully internal to the Docker network, add a
-  `ports: []` override for the `redis` service. See [networking](/admin/networking/).
-- `PUBLIC_URL` is the single source of truth for the panel URL — it drives CORS,
-  auth origins, and email links, and the installer derives `PASSKEY_RP_ID` from
-  its hostname. Set it here; [networking](/admin/networking/) covers the TLS and
-  proxy side.
-- Re-run the installer's prompts to regenerate a configured `.env`:
-  `bash install.sh --reconfigure` ([installation](/admin/installation/)).
+`catalyst-docker/.env.example` is the annotated template the installer copies.
+Docker ports, as written by the installer: `FRONTEND_PORT=0.0.0.0:8080`,
+`BACKEND_PORT=127.0.0.1:3000`, `POSTGRES_PORT=127.0.0.1:5432`. With no `.env`,
+compose falls back to `FRONTEND_PORT=0.0.0.0:80`. **Redis is
+published on `127.0.0.1:6379` (loopback only)** — the compose default
+`REDIS_PORT` is `127.0.0.1:6379`, and commenting it out does not unpublish the
+port. To make Redis fully internal to the Docker network, add a `ports: []`
+override for the `redis` service. See [networking](/admin/networking/).
+
+`PUBLIC_URL` is the single source of truth for the panel URL — it drives CORS,
+auth origins, and email links, and the installer derives `PASSKEY_RP_ID` from
+its hostname. [networking](/admin/networking/) covers the TLS and proxy side.
+Re-run the installer's prompts to regenerate a configured `.env` with
+`bash install.sh --reconfigure` ([installation](/admin/installation/)).
+
+`NODE_ENV` (`development`, `production`, `test`; default `development`) and
+`SUSPENSION_DELETE_POLICY` (`block` or `allow`) are enum-validated at startup: a
+wrong value exits the backend with `Invalid environment configuration`.
+`LOG_LEVEL` reaches pino only when `NODE_ENV=production` (otherwise `info`), an
+unrecognised `BACKUP_STORAGE_MODE` silently falls back to `local`, and a
+malformed `PUBLIC_URL` breaks CORS, auth origins, and email links at runtime
+instead of at startup. The suspension policy applies only while suspension is
+enforced, and only `DELETE /api/servers/:id` compares it literally — unset means
+deletion is allowed. The admin bulk delete uses `SUSPENSION_DELETE_BLOCKED`
+instead, which defaults to blocking.
+
+:::note
+If the backend exits at startup with `Invalid environment configuration`, the
+`[config] Environment variable validation failed` lines above it name the
+variable. `SUSPENSION_DELETE_POLICY=keep` — the commented value in
+`catalyst-docker/.env.example` — is **not** accepted; use `block` or `allow`.
+:::
 
 ## Rules
 

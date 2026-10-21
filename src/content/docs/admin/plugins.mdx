@@ -7,139 +7,142 @@ features:
   - plugin-development
 sources:
   - catalyst-backend/src/routes/plugins.ts
+  - catalyst-backend/src/plugins/loader.ts
   - catalyst-backend/src/plugins/safety.ts
-  - catalyst-backend/src/plugins/types.ts
-  - catalyst-backend/src/plugins/custom-permissions.ts
+  - catalyst-backend/src/plugins/capabilities.ts
+  - catalyst-backend/src/plugins/validator.ts
   - catalyst-backend/src/plugins/marketplace/service.ts
+  - catalyst-backend/src/plugins/marketplace/packaging.ts
   - catalyst-frontend/src/pages/admin/PluginsPage.tsx
   - catalyst-frontend/src/pages/admin/plugins/MarketplacePage.tsx
   - catalyst-frontend/src/pages/admin/plugins/SafetyConsentDialog.tsx
-  - packages/plugin-sdk/src/licensing.ts
-last_verified: '2026-10-16'
+  - catalyst-frontend/src/components/layout/navSections.ts
+last_verified: '2026-10-20'
 ---
 
 Plugins extend the panel with new pages, server tabs, API routes, scheduled
-tasks, and sign-in providers. Manage them under **Admin → Plugins**. Plugins run
-with the access you grant them, so every install is a trust decision — see
-[security](/admin/security/).
+work, and sign-in providers. Manage them under **Admin → Extensions**. A plugin
+runs in the panel process with the access you grant it, so every install is a
+trust decision — see [security](/admin/security/).
 
 ## Prerequisites
 
-- Administrator access — the plugin surfaces need `admin.read`/`admin.write`.
-- Outbound HTTP(S) from the backend to the marketplace index and the package
-  URL you install from. Loopback and private addresses are refused by default;
-  a LAN or air-gapped index is reachable once it is a configured source.
+- `admin.read` to browse, `admin.write` to install, enable, or change anything.
+- Outbound HTTPS from the backend to the marketplace index and the package
+  host. Loopback and private addresses are refused unless the host is one of
+  your configured index hosts or the panel sets
+  `PLUGIN_MARKETPLACE_ALLOW_LOCAL=true`.
 - For a vendor-licensed plugin, the license key from the vendor.
 
 ## Install a plugin
 
-1. Open **Admin → Plugins** and select **Marketplace**. The marketplace is a
-   full page (its own sidebar entry under **Extensions**) rather than a dialog,
-   so you can browse, filter, and compare versions without losing your place.
-2. Browse the configured sources. Each entry shows its version and whether a
-   newer one is available; expand an entry for its author, source, checksum,
-   package URL, and homepage. Use the tag and status filters (**Install**,
-   **Update**, **Installed**) to narrow the list.
+1. Open **Admin → Extensions → Marketplace**.
+2. Browse the configured sources. The status tabs filter to **All**, **Install**,
+   **Update**, and **Installed**; expand a row for its author, source,
+   checksum, package URL, homepage, and licensing block.
 3. Select **Install**. A package is a `.catpkg.zip` — a ZIP whose root contains
-   `plugin.json`. When the marketplace index publishes a `sha256`, the panel
-   verifies the download against it.
-4. Installed code is staged **inert**: it cannot run until you accept the safety
-   disclaimer and enable it.
+   `plugin.json`.
+4. Installed code is staged **inert**. It is not imported and none of its hooks
+   run until you accept the safety disclaimer and enable it.
 
-Installing over an existing copy upgrades it in place. You can also install by
-URL with `POST /api/plugins/install` and a body of `{ "url": "…", "sha256": "…" }`
-— `sha256` is optional but recommended.
+Installing over an existing copy upgrades it in place. The same flow over the
+API needs a pinned checksum:
 
-### Marketplace sources
+```bash
+curl -X POST https://panel.example.com/api/plugins/install \
+  -H "Authorization: Bearer $CATALYST_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"url":"https://cdn.example.com/my-plugin-1.0.0.catpkg.zip","sha256":"<64 hex chars>"}'
+```
 
-The marketplace merges the official index (unless `PLUGIN_MARKETPLACE_DISABLE_OFFICIAL`
-is set), comma-separated `PLUGIN_MARKETPLACE_URLS`, and sources added from the
-panel. Add, enable, or remove panel-added sources in the marketplace; the
-official and environment sources are read-only.
+`sha256` is **required**: the panel validates the 64-hex digest before it makes
+any network request (`CHECKSUM_REQUIRED`), and aborts before extracting if the
+downloaded bytes do not match (`CHECKSUM_MISMATCH`). An index entry without a
+digest shows **Not published** and cannot be installed.
+
+The marketplace merges the official index (unless
+`PLUGIN_MARKETPLACE_DISABLE_OFFICIAL` is set), comma-separated
+`PLUGIN_MARKETPLACE_URLS`, and sources added from the panel. Add, enable, or
+remove panel-added sources in the marketplace's **Marketplaces** rail; the
+official and environment sources are read-only. When two sources list the same
+plugin name, the newest version wins.
 
 ## Enable a plugin and accept the safety disclaimer
 
-The first time you enable a plugin, the panel requires an up-to-date acceptance
-of its safety disclaimer.
+Nothing in a plugin executes before an accepted disclaimer — discovery only
+reads `plugin.json`.
 
-1. In **Admin → Plugins**, toggle the plugin on.
-2. If consent is required, the **Enable** dialog opens: it lists the
-   plugin's author, version, declared permissions, and — for licensed plugins —
-   the activation endpoint it will contact. The dialog warns that plugins run
-   with the same network and host access as Catalyst itself.
+1. In **Admin → Extensions → Plugins**, switch the plugin on.
+2. The **Enable** dialog lists the author, version, every declared permission
+   with its risk copy, and — for a licensed plugin — the activation endpoint it
+   will contact. It warns that a plugin can contact external services, read the
+   data permitted above, and keep running until you disable it.
 3. Tick the acknowledgement and select **Accept & Enable**. The panel records
-   who accepted, when, and which permissions were in scope.
+   who accepted, when, which version, and which permissions were in scope.
 
-Consent is required again when:
+Consent is required again when the plugin's version changes, when its declared
+permissions grow beyond the accepted set, or when the disclaimer version
+changes. Re-enabling an unchanged plugin does not ask again. An update that
+changes either is left **disabled** after the copy lands (reload included)
+until you accept the new disclaimer.
 
-- the plugin's version changes,
-- its declared permissions grow beyond the accepted set,
-- the disclaimer version changes.
+A plugin that was already enabled before this feature existed keeps starting:
+the panel records a backfill acceptance with no accepting user and flags the row
+**Review access**.
 
-Disabling a plugin stops its routes, tasks, and event handlers. Re-enabling an
-unchanged plugin does not ask for a new acceptance.
+Disabling a plugin makes its routes answer `503` and clears its scheduled work
+and WebSocket handlers. Event listeners stay registered until the plugin is
+unloaded (reload or uninstall).
 
 ## Grant and revoke plugin permissions
 
-A plugin declares the capabilities it wants in `plugin.json`; you decide which it
-actually receives.
+A plugin declares the capabilities it wants in `plugin.json`; you decide which
+it receives. Open the plugin's **Details** → **Permissions**, toggle, save.
+Grants must be a subset of the declared list, and every change is audit-logged.
 
-1. Open the plugin's **Details** and the **Permissions** tab.
-2. Toggle individual permissions. Grants must be a subset of what the plugin
-   declared — the panel rejects undeclared scopes.
-3. Select **Save permissions**.
-
-Revoking a permission stops the plugin's access to that data immediately, with no
-restart. Mounted routes, scheduled tasks, and event listeners stay until you
-disable the plugin. Every change is audit-logged.
+Revocation applies to the next call: data reads, file operations, and
+plugin-to-plugin calls fail immediately, with no restart. Mounted routes,
+scheduled work, and event listeners stay until you disable or unload the plugin.
 
 Plugins can also expose permissions for panel **roles** (a separate namespace
-from the plugin's own capabilities). While a plugin is enabled, the permissions
-it declares appear in the role editor under **Plugins** — assign them to staff
-through [roles](/admin/roles/).
+from the plugin's own capabilities). While a plugin is enabled they appear in
+the role editor under **Plugins** — see [roles](/admin/roles/).
 
 ## Configure a plugin
 
-1. Select the plugin's **Settings**.
-2. Fill in the fields the plugin declares in its config schema (strings,
-   numbers, booleans, objects, or arrays, with optional `enum`, `default`, and
-   `min`/`max` constraints). Password-typed values are never returned to
-   non-admin callers.
-3. Save. The panel stores the values and applies them to the running plugin
-   immediately.
+Open the plugin's **Settings**, fill in the fields its config schema declares,
+and save. The running plugin reads the new values immediately. The control type
+comes from each field's `type`; see
+[config field types](/api/plugins/manifest/#config-field-types). The panel
+validates nothing on save, so a plugin must check what it reads.
 
 ## Update, reload, disable, uninstall
 
-- **Update** — the plugin list shows each installed version in its own
-  **Version** column next to the newest version the marketplace publishes. When
-  a newer one exists the row shows **Update available** and gains an **Update**
-  button; the list header shows an **N updates available** link straight to the
-  marketplace's update filter, where **Update all** applies every pending
-  update. Installing that listing upgrades the plugin in place. An upgrade
-  re-prompts for the safety disclaimer when the plugin's permissions changed,
-  so an update never silently widens a plugin's access.
-- **Reload** — re-reads the plugin from disk without restarting the panel.
+- **Version column** — the installed version, plus the marketplace version when
+  it is newer (an `Update 1.0.0 → 1.0.1` badge), or **Up to date** /
+  **Not in an index**.
+- **Update** — installs the newer listing over the running copy. The list header
+  shows **N updates available**, which links to the marketplace filtered to
+  pending updates, where **Update all (N)** applies them one at a time.
+- **Reload** — re-reads the plugin from disk without restarting the panel, and
+  leaves it disabled if the new copy needs consent.
 - **Disable** — stops the plugin; its files and settings stay installed.
-- **Uninstall** — removes the plugin code and unloads it. Optionally enable
-  **Also delete stored data** to also remove its config values, key-value
-  storage, collections, and consent history; stored data cannot be recovered
-  after purging.
+- **Uninstall** — removes the code and unloads it. **Also delete stored data**
+  additionally removes config values, key-value storage, collections, and
+  consent history, and cannot be undone.
 
 ## Licensing
 
 Catalyst does not issue or validate plugin licenses. A vendor plugin declares a
-`licensing` block in `plugin.json` (`licenseServer`, and optionally `buyUrl`,
-`encrypted`, `failMode`, and `cacheTtlHours`). The panel's job is to disclose the
-phone-home before you enable the plugin, hand the plugin a stable install ID, and
-refuse to install a package marked `encrypted` that ships no encrypted backend
-payload.
+`licensing` block in `plugin.json`; the panel discloses the phone-home before
+you enable it, hands the plugin a stable install ID, and refuses to install a
+package marked `encrypted` that ships no encrypted backend payload.
 
-- Put the vendor's **license key** in the plugin's config (usually the
-  `licenseKey` field) and reload it.
-- Activation is cached in the plugin's own storage (default 7 days), so a vendor
-  outage does not immediately take the plugin down.
-- When activation fails, the plugin decides whether to degrade or fail according
-  to its declared `failMode`.
+Put the vendor's license key in the plugin's config (usually `licenseKey`) and
+reload it. Activation is cached in the plugin's own storage (7 days by default),
+so a vendor outage does not immediately take the plugin down; when activation
+fails the plugin degrades or fails according to its declared `failMode`. See
+[plugin licensing](/api/plugins/licensing/).
 
 ## Related
 

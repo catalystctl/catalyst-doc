@@ -8,9 +8,10 @@ features:
 sources:
   - catalyst-frontend/src/components/servers/tabs/ServerDatabasesTab.tsx
   - catalyst-frontend/src/components/servers/tabs/DatabaseCredentialsDialog.tsx
+  - catalyst-frontend/src/pages/servers/ServerDetailsPage.tsx
   - catalyst-backend/src/routes/servers/databases.ts
   - catalyst-backend/prisma/schema.prisma
-last_verified: '2026-10-16'
+last_verified: '2026-10-20'
 ---
 
 Many plugins (permissions, economy, logging, Dynmap) need a database. The
@@ -19,71 +20,60 @@ database server.
 
 ## Prerequisites
 
-- A server you can access, with the `database.read` permission to see the tab.
-- The `database.create` permission to add one, `database.rotate` to rotate a
-  password, and `database.delete` to remove one.
-- A database allocation on this server and at least one database host configured
-  by your administrator. With no allocation the tab reports **Database
-  allocation disabled**; with an allocation but no hosts the panel sends you
-  back to the console.
+- `database.read` to see the tab, `database.create` to add a database,
+  `database.rotate` to rotate a password, `database.delete` to remove one.
+- A database allocation on the server **and** at least one database host
+  configured by your administrator. Without either, the tab is not shown at all.
 
 ## Create a database
 
-1. Open **Databases**. If the creation controls are not shown, you do not have
-   database access on this server.
-2. Choose a host from the **Select host** dropdown. Each option is listed as
+1. Open **Databases**. The header shows how many you have used, for example
+   *2 / 3 databases used*.
+2. Choose a host from the **Select host** dropdown — each option is listed as
    `name (host:port)`.
-3. Type a database name (for example `dynmap`), then select **Create**.
-   - The name must start with a letter and use only lowercase letters, numbers,
+3. Type a database name (for example `dynmap`) and select **Create**.
+   - The name must start with a letter and use only lowercase letters, numbers
      and underscores, up to 32 characters.
-   - Leave it blank (or use fewer than three characters) and the panel generates
-     a safe name for you.
+   - Leave it blank or shorter than three characters and the panel generates a
+     safe name for you.
 4. The **Database credentials** dialog opens. Copy the **Host** (shown as
-   `host:port`), **Database**, **Username**, and **Password**.
-5. Paste those values into your plugin's config file (via the
-   [Files](/users/files/) tab), then restart the server.
+   `host:port`), **Database**, **Username** and **Password**.
+5. Paste them into the plugin's config file through [Files](/users/files/), then
+   restart the server.
+
+**Create** is disabled once you reach the allocation limit. Deleting the server
+also removes its database records.
 
 :::caution
 The dialog warns that the password *"is shown only once and cannot be displayed
-again."* Copy it before you select **Done** — if you lose it, rotate it.
+again."* Copy it before selecting **Done** — if you lose it, rotate it.
 :::
-
-## Limits
-
-- Each server has a database allocation. The tab header shows how many you have
-  used (for example, *2 / 3 databases used*); **Create** is disabled once you
-  reach the limit.
-- If the allocation is disabled, the tab reports *"Database allocation
-  disabled"* / *"Database allocation is not available for this server."* — ask
-  your administrator to raise the per-server database limit.
-- Each database belongs to exactly one server. Deleting the server also removes
-  its database records.
 
 ## Rotate credentials
 
-If a password leaks (pasted into chat, committed to a public repo):
-
-1. Open **Databases** and select **Rotate** on the database.
+1. Select **Rotate** on the database.
 2. The **Database credentials** dialog opens with a fresh password. Copy it
    immediately — it is shown once.
-3. Update every plugin config that uses it.
-4. Restart the server and check the logs for successful connections.
+3. Update every plugin config that uses it, then restart the server and check
+   the logs for successful connections.
 
 ## Delete a database
 
-Select **Delete** and confirm. The dialog warns that this *"will permanently
-drop the database and its credentials"* and cannot be undone.
+Select **Delete** and confirm. The dialog warns that this permanently drops the
+database and its credentials.
 
 ## Troubleshooting
 
-- **Plugin cannot connect:** double-check the host and port from the credentials
-  dialog (not `localhost` — the database usually runs on shared infrastructure),
-  then confirm the username and password and that the server was restarted after
-  the config change.
+- **The tab is missing:** the server has no database allocation, or no database
+  host is available to you — ask your administrator for one.
+- **Plugin cannot connect:** use the host and port from the credentials dialog,
+  not `localhost` — the database usually runs on shared infrastructure. Then
+  confirm the username and password and that the server was restarted after the
+  config change.
 - **Access denied after rotation:** one of your configs still has the old
   password.
-- **Limit reached:** ask your administrator to raise the per-server database
-  limit, or delete a database you no longer need.
+- **Limit reached:** delete a database you no longer need, or ask your
+  administrator to raise the per-server allocation.
 
 ## Related
 

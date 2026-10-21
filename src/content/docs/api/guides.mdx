@@ -11,18 +11,18 @@ sources:
   - catalyst-backend/src/lib/validation.ts
   - catalyst-backend/src/routes/api-keys.ts
   - catalyst-backend/src/routes/sse-events.ts
-last_verified: '2026-10-16'
+last_verified: '2026-10-20'
 ---
 
-Copy-pasteable patterns for the jobs integrations do most. Adapt the host,
-key, and IDs. Full field details live in the [API reference](/api/reference/).
+Copy-pasteable patterns for the jobs integrations do most. Adapt the host, key,
+and IDs. Full field details live in the [API reference](/api/reference/).
 
 ## Prerequisites
 
 - An [API key](/api/authentication/) created in the panel
   (**Admin → Access Control → API Keys → Create API Key**).
-- The permissions each workflow needs — for example `server.create` to
-  provision a server and `backup.read` to list backups.
+- The permissions each workflow needs — for example `server.create` to provision
+  a server and `backup.read` to list backups.
 
 ## Provision a server for a new customer
 
@@ -36,23 +36,20 @@ curl -H "$AUTH" "$BASE/api/nodes" | head -c 600
 
 # 2. Create the server. Required: name, templateId, nodeId, locationId,
 #    primaryPort, allocatedMemoryMb, allocatedCpuCores, allocatedDiskMb.
-#    environment is a string map.
+#    environment is a string map. Returns 201 with data.id.
 curl -X POST -H "$AUTH" -H 'Content-Type: application/json' \
   -d '{"name":"customer-1","templateId":"<id>","nodeId":"<id>","locationId":"<id>","allocatedMemoryMb":2048,"allocatedCpuCores":2,"allocatedDiskMb":10240,"primaryPort":25565,"environment":{}}' \
   "$BASE/api/servers"
 
 # 3. Start it, then follow the console over SSE (see /api/websockets/).
 curl -X POST -H "$AUTH" "$BASE/api/servers/<serverId>/start"
-
-# Power actions are individual endpoints, not one action field:
-#   POST /api/servers/<serverId>/stop
-#   POST /api/servers/<serverId>/restart
-#   POST /api/servers/<serverId>/kill
 ```
 
-`allocatedMemoryMb` has a minimum of 512 and `allocatedDiskMb` a minimum of
-1024. The template may also define required environment variables — the create
-call returns `SERVER_MISSING_TEMPLATE_VARIABLES` if one is absent.
+`allocatedMemoryMb` has a minimum of 512 and `allocatedDiskMb` a minimum of 1024.
+The template may require environment variables — the create call returns
+`SERVER_MISSING_TEMPLATE_VARIABLES` if one is absent. Power actions are
+individual endpoints, not one action field: `POST /api/servers/<serverId>/stop`,
+`/restart`, `/kill`.
 
 ## Nightly backup check
 
@@ -62,7 +59,8 @@ curl -H "$AUTH" "$BASE/api/servers/<serverId>/backups?limit=5"
 ```
 
 `limit` defaults to 50 and is capped at 100; the response carries `total`,
-`page`, `pageSize`, and `totalPages`.
+`page`, `pageSize`, and `totalPages`. Backup routes allow 30 requests per minute
+([rate limits](/api/rate-limits/)).
 
 ## Rotate a leaked API key
 

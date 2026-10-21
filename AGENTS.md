@@ -40,9 +40,8 @@ Every page except the splash `index.mdx` must carry all six fields, and
 | `sources` | Non-empty list of repo paths/globs this page documents. |
 | `last_verified` | `YYYY-MM-DD`; bump only when re-verified against source. |
 
-`api_tags` is **not** part of the frontmatter contract — do not add it. It was
-never documented and is being removed; `features` is the only classification
-field.
+`api_tags` is **not** part of the frontmatter contract — do not add it.
+`features` is the only classification field.
 
 ## Writing conventions
 
@@ -57,11 +56,12 @@ field.
   Catalyst server a Pterodactyl server, a container, or an instance —
   *container* only means the Docker/OCI runtime object that runs the server.
   Never call scheduled actions cron jobs, or a task a schedule.
-- `scripts/check-terminology.mjs` enforces this. Banned phrases are hard
-  failures (plurals and possessives included); a banned phrase inside a quoted
-  UI label (`**Sub-users**`) is allowed, because the panel's own wording must
-  be reproduced verbatim. The `preferred` rules for `server`/`task` are
-  conservative: on pages whose audience includes `user` but not `developer`,
+- `scripts/check-terminology.mjs` enforces the `banned` map and the
+  `server`/`task` preferred rules. Banned phrases are hard failures, and a
+  plural/possessive form inside a quoted UI label (`**Sub-users**`) is allowed
+  because the panel's own wording must be reproduced verbatim — the singular
+  form has no such exemption. The `server`/`task` rules are conservative: on
+  pages whose audience includes `user` but not `developer`,
   *instance*/*container* as a server synonym fails unless the context is the
   OCI runtime (container image, the container runtime, docker container, …),
   and *schedule* as a noun for a task warns rather than fails. Admin pages are

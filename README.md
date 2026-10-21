@@ -30,7 +30,7 @@ pnpm preview        # serve the production output
 
 ```text
 astro.config.mjs      Starlight config — NESTED sidebar (group → subgroup → page)
-src/content/docs/     69 pages, one folder per audience:
+src/content/docs/     70 pages — one folder per audience, plus the splash:
   getting-started/      4  what Catalyst is, terminology, first server
   users/               17  the Game Server Guide (incl. account.mdx)
   admin/               22  the Administrator Guide (incl. plugins.mdx)
@@ -55,8 +55,7 @@ Pages live under `src/content/docs/`, one folder per audience. Every page
 except the splash `index.mdx` carries frontmatter (`title`, `description`,
 `audience`, `features`, `sources`, `last_verified`). A new page also needs a
 sidebar entry in `astro.config.mjs`; the sidebar is nested (`items:` groups to
-arbitrary depth) and nesting does not change URLs. Two recent additions:
-`admin/plugins` and `users/account`.
+arbitrary depth) and nesting does not change URLs.
 
 Run the gates before pushing:
 

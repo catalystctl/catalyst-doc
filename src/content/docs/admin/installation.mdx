@@ -8,24 +8,28 @@ features:
 sources:
   - install.sh
   - catalyst-docker/docker-compose.yml
+  - catalyst-docker/.env.example
   - catalyst-docker/update.sh
-last_verified: '2026-10-16'
+last_verified: '2026-10-20'
 ---
 
 The supported path is the released Docker installer: one command installs
 Docker if needed, downloads the compose stack, and writes a fully configured
-`.env` with generated secrets. It does **not** start the stack — you review the
-result and start it yourself.
+`.env` with generated secrets. It does **not** start the stack.
 
 ## Prerequisites
 
 The full host baseline is on [requirements](/admin/requirements/). In short:
 
-- A Linux host with `curl`, `tar`, and `openssl` (the installer stops if any is
-  missing).
-- Docker (or Podman) with Compose, or permission for the installer to install
-  Docker for you.
+- A supported Linux host: Ubuntu/Debian, RHEL/CentOS/Rocky/Alma, Fedora, Arch,
+  Alpine, or openSUSE. RHEL 10 and Fedora 41+ ship dnf5 and the installer
+  detects it; RHEL 8/9 still use dnf4.
+- `curl`, `tar`, and `openssl` (the installer stops if any is missing).
+- Docker with the Compose v2 plugin (or Podman with `podman compose`), or
+  permission for the installer to install Docker for you.
 - Root access — the one-liner below runs the installer through `sudo bash`.
+- If the host runs `firewalld` or `ufw`, the panel port must be open — the
+  installer checks it and prints the command.
 
 ## Install
 
@@ -37,46 +41,41 @@ curl -fsSL https://github.com/catalystctl/catalyst/releases/latest/download/inst
 
 The installer reads its prompts from `/dev/tty`, so the piped form stays
 interactive. It checks the container runtime and Compose, offers to install
-Docker when missing, warns when the target ports are already in use or disk
-space is low, then prompts for the panel URL and panel name. It generates every
+Docker when missing, warns when a port it needs is already in use or disk space
+is low, then prompts for the panel URL and panel name. It generates every
 required secret (`POSTGRES_PASSWORD`, `BETTER_AUTH_SECRET`, `REDIS_PASSWORD`,
 `API_KEY_SECRET`, `BACKUP_CREDENTIALS_ENCRYPTION_KEY`) and writes `.env` with
 `chmod 600`.
 
+On `firewalld` and `ufw` hosts it also reports whether the panel port
+(`FRONTEND_PORT`, `8080` by default) is allowed and prints the one-line command
+to allow it — advisory only, it never changes the host firewall. If you accept
+the HTTPS offer it writes `DOMAIN` and `ACME_EMAIL`, switches `PUBLIC_URL` to
+`https://<domain>` and sets `NODE_ENV=production`.
+
 To pin a specific release instead of tracking the newest one, swap `latest` for
-a tag:
+a tag (this pins the installer script; the stack files still come from `main`
+unless you also set `INSTALL_VERSION`):
 
 ```bash
-curl -fsSL https://github.com/catalystctl/catalyst/releases/download/v1.83.1/install.sh | sudo bash
+curl -fsSL https://github.com/catalystctl/catalyst/releases/download/v1.85.0/install.sh | sudo bash
 ```
-
-That pins the installer script; the stack files still come from `main` unless
-you also set `INSTALL_VERSION` (see below).
 
 ### Verify the download (recommended for production)
 
-Every release publishes `install.sh` plus an `install.sh.sha256` checksum. If
-your policy is to inspect a script before running it, download both, check the
-checksum, then run the file:
+Every release publishes `install.sh` plus an `install.sh.sha256`. Download both,
+check the checksum, then run the file:
 
 ```bash
-VERSION=v1.83.1  # replace with the release you want
-curl -fsSL -o install.sh "https://github.com/catalystctl/catalyst/releases/download/${VERSION}/install.sh"
+VERSION=v1.85.0  # the release you want
+curl -fsSL -o install.sh        "https://github.com/catalystctl/catalyst/releases/download/${VERSION}/install.sh"
 curl -fsSL -o install.sh.sha256 "https://github.com/catalystctl/catalyst/releases/download/${VERSION}/install.sh.sha256"
-sha256sum -c install.sh.sha256
-sudo bash install.sh
+sha256sum -c install.sh.sha256 && sudo bash install.sh
 ```
 
-The installer can also check itself while it runs. Pass the expected hash in
-its environment when running the downloaded file — the raw hex or the whole
-`.sha256` line both work:
-
-```bash
-INSTALL_SHA256="$(awk '{print $1}' install.sh.sha256)" sudo bash install.sh
-```
-
-A mismatch aborts the install before anything runs. The self-check hashes the
-script file, so it applies to the downloaded `install.sh`, not to the piped
+Passing `INSTALL_SHA256=<hash>` makes the script verify itself while it runs (the
+raw hex or a whole `.sha256` line both work); a mismatch aborts before anything
+happens. The self-check hashes the script file, so it does not apply to the piped
 one-liner above.
 
 ## Options
@@ -97,25 +96,29 @@ Run `--help` for the full list. Useful flags:
   `.env`.
 - `--uninstall` — remove the stack (data volumes are kept unless
   `REMOVE_VOLUMES=1` is set with `-y`).
-- `-h`, `--help` — all options.
 
 Environment overrides (used with `-y`, or as prompt defaults):
 
 - `PUBLIC_URL`, `APP_NAME` — pre-answer the prompts.
 - `REMOVE_VOLUMES=1` — with `--uninstall -y`, also delete compose volumes.
 - `INSTALL_VERSION` — git ref for the stack files. Defaults to `main`; a
-  release tag such as `v1.83.1` pins `catalyst-docker/` to that release so a
+  release tag such as `v1.85.0` pins `catalyst-docker/` to that release so a
   verified installer from release X installs stack X.
 - `INSTALL_SHA256` — expected checksum of `install.sh` itself (see above).
 
 Example — non-interactive, pinned stack files, custom port and timezone:
 
 ```bash
-INSTALL_VERSION=v1.83.1 bash install.sh -y \
+INSTALL_VERSION=v1.85.0 bash install.sh -y \
   --set PUBLIC_URL=https://panel.example.com \
   --set FRONTEND_PORT=0.0.0.0:8081 \
   --set TZ=Europe/Berlin
 ```
+
+The installer also records the absolute path of the compose directory in
+`CATALYST_COMPOSE_DIR` (bind-mounted at the same path into the backend), which
+is what lets the in-panel updater run `docker compose` — see
+[updating](/admin/updating/).
 
 ## Start the stack
 
@@ -128,8 +131,9 @@ nano .env   # optional — check everything the installer wrote
 docker compose up -d
 ```
 
-If the installer detected `PUBLIC_URL` over HTTPS, start the TLS overlay
-instead (Caddy issues the certificate; ports 80/443 must be reachable):
+If you answered the HTTPS offer during install (so `PUBLIC_URL` is `https://…`),
+start the Caddy overlay instead — it issues the certificate and needs ports
+80/443 reachable:
 
 ```bash
 cd catalyst-docker
@@ -141,18 +145,18 @@ browser.
 
 ## Finish setup in the browser
 
-Opening the panel URL shows the setup wizard. Complete it
-([first-time setup](/admin/first-time-setup/)) — panel name, admin account, and
-appearance. The wizard creates the first account with the **Administrator** role
-and marks it verified; there is no separate "first user becomes admin" step.
+Opening the panel URL shows the setup wizard — panel name, admin account, and
+appearance ([first-time setup](/admin/first-time-setup/)). The wizard creates the
+first account with the **Administrator** role and marks it verified; there is no
+separate "first user becomes admin" step.
 
 ## After installing
 
 - [Configure TLS and networking](/admin/networking/).
 - [Install a node](/admin/nodes/installing/) — the panel alone runs no games.
 - [Update safely](/admin/updating/) when new releases arrive.
-- The installer writes `catalyst-docker/diagnose.sh` for support bundles and
-  `catalyst-docker/update.sh` to refresh the stack files later.
+- `catalyst-docker/diagnose.sh` collects a redacted support bundle;
+  `catalyst-docker/update.sh` refreshes the stack files later.
 
 ## Troubleshooting
 
@@ -161,6 +165,9 @@ and marks it verified; there is no separate "first user becomes admin" step.
 - Port warnings during install: something is already listening on a port the
   stack wants — stop that service or set the matching `*_PORT` variable
   (for example `--set FRONTEND_PORT=0.0.0.0:8081`).
+- Panel unreachable from another machine but fine on the host: the host firewall
+  is blocking the panel port. Run the `firewall-cmd` or `ufw` command the
+  installer printed.
 - Panel 500s on first login: the database migrations run at container startup —
   wait a minute and check container logs (`docker compose logs backend`).
 - More: [panel issues](/troubleshooting/panel/).

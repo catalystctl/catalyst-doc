@@ -8,11 +8,12 @@ features:
 sources:
   - catalyst-backend/src/plugins/validator.ts
   - catalyst-backend/src/plugins/safety.ts
+  - catalyst-backend/src/plugins/capabilities.ts
   - catalyst-backend/src/plugins/types.ts
   - packages/plugin-sdk/src/types.ts
   - packages/plugin-sdk/src/permissions.ts
   - packages/plugin-sdk/src/config.ts
-last_verified: '2026-10-16'
+last_verified: '2026-10-20'
 ---
 
 `plugin.json` sits at the plugin root. The panel parses it with the manifest
@@ -64,18 +65,18 @@ A plugin that fails validation does not load.
 | `description` | yes | 1–500 chars. |
 | `author` | yes | 1–100 chars. |
 | `catalystVersion` | yes | Comparison against the running panel: `>=1.62.0`, `>1.0.0`, `=1.62.2`, `<2.0.0`, `<=1.62.2`. A bare `1.62.0` means equal. Anything that does not match that pattern is incompatible. |
-| `permissions` | no | Array of strings. Defaults to `[]`. Each token is trimmed; tokens that are not `^[a-zA-Z0-9_.*-]{1,64}$` are dropped. |
+| `permissions` | no | Array of strings. Defaults to `[]`. Each token is trimmed; tokens that are not `^[a-zA-Z0-9_.*-]{1,64}$` are dropped, as are duplicates. |
 | `permissionDescriptions` | no | Map of permission token → 1–200 char sentence. Every key must also appear in `permissions`, or discovery fails. |
-| `userPermissions` | no | Up to 32 `{ "id", "label", "description"? }` entries. Permissions you expose to the panel's role editor (the ids your frontend uses in `requiredPermissions`). Ids match `^[a-zA-Z0-9_.-]{1,64}$`, must be unique, and `*` is rejected. |
+| `userPermissions` | no | Up to 32 `{ "id", "label", "description"? }` entries. Permissions you expose to the panel's role editor (the ids your frontend uses in `requiredPermissions`). Ids match `^[a-zA-Z0-9_.-]{1,64}$`, must be unique, and `*` is rejected. `label` is 1–64 chars, `description` 1–200. |
 | `backend` | no | `{ "entry": "backend/index.js" }`. Path is resolved inside the plugin directory. |
-| `frontend` | no | `{ "entry": "frontend/index.ts", "hasTabs"?: boolean, "hasComponents"?: boolean }`. |
-| `dependencies` | no | Map of other plugin name → exact `MAJOR.MINOR.PATCH`. The dependency must be installed and version-compatible or the plugin is skipped. |
+| `frontend` | no | `{ "entry": "frontend/index.ts", "hasTabs"?: boolean, "hasComponents"?: boolean }`. The two booleans are accepted and unused; the panel only checks that `frontend` exists. |
+| `dependencies` | no | Map of other plugin name → exact `MAJOR.MINOR.PATCH`. A missing or mismatched dependency is logged as an error at discovery; the plugin still loads. |
 | `config` | no | Map of field name → schema object. Keys match `^[a-zA-Z][a-zA-Z0-9_-]{0,50}$`. |
 | `events` | no | Map of event name → `{ "payload": object, "description"?: string }`. |
 | `authProviders` | no | Up to 8 sign-in buttons. See [Sign-in plugins](/api/plugins/auth/). |
 | `storageEngine` | no | `"legacy"` (default) or `"dedicated"`. See [Data](/api/plugins/data/). |
 | `runtime` | no | `"legacy"` (default) or `"isolated"`. Isolation is not implemented: a plugin that declares `"isolated"` is refused at load time (`isolated plugin execution is unavailable`), so leave the field unset. |
-| `licensing` | no | Vendor-owned licensing declaration. Presence of the block declares the phone-home and is disclosed before enable. See [Plugin licensing](/api/plugins/licensing/). |
+| `licensing` | no | Vendor-owned licensing declaration. Presence of the block declares the phone-home and is disclosed before enable. `licenseServer` is required inside it. See [Plugin licensing](/api/plugins/licensing/). |
 
 Unknown top-level keys are stripped by the schema. Do not hide required
 settings there.
@@ -88,22 +89,26 @@ custom tokens, or to replace the built-in sentence.
 | Token | What granting it allows |
 | --- | --- |
 | `server.read` | Read server rows through `context.db.servers`. Field list is fixed; see [Data](/api/plugins/data/). |
-| `server.write` | `context.db.servers.update` may change `status` only. |
+| `server.write` | `context.db.servers.update` may change `status` only. Reaching the update method still requires table access, so declare `server.read` too. |
 | `user.read` | Read user rows through `context.db.users` (no credentials). |
-| `user.write` | Declared for route intent. `context.db.users.update` currently whitelists **no** fields, so it cannot change a user. Role changes go through `roles.assign`. |
-| `admin.read` | Reviewer signal that the plugin registers admin-information routes. It does not open admin tables. |
-| `admin.write` | Reviewer signal that the plugin registers admin-mutation routes. It does not open admin tables. |
+| `user.write` | Declared for route intent. `context.db.users.update` whitelists **no** fields, so it cannot change a user. Role changes go through `roles.assign`. |
+| `files.read` | Read files through `context.fileTunnel` (`list`, `download`, `archive-contents`). |
+| `files.write` | Write files through `context.fileTunnel`. Also satisfies the read ops. |
+| `console.write` | Send frames to a node agent through `context.wsGateway.sendToAgent`. |
+| `admin.read` | Reviewer signal that the plugin registers admin-information routes. It opens no database tables. It does satisfy `server.read`, so it also satisfies the file-read gate. |
+| `admin.write` | Reviewer signal that the plugin registers admin-mutation routes. It opens no database tables. The `hasGrant` gates (file tunnel, `sendToAgent`) accept it like `*`; the literal `routes.public` and `plugin.rpc` checks do not. |
 | `plugin.rpc` | `context.callPluginApi`. Checked on every call. |
 | `routes.public` | Lets `registerRoute({ config: { auth: 'public' \| 'optional' } })` skip session auth. Without it those routes are forced back to `required`. |
 | `auth.sessions` | `context.auth.createSession`. |
 | `auth.users` | `context.auth.findUser` and `createUser`. |
 | `roles.assign` | `context.auth.listRoles`, `listUserRoles`, `assignRoles`, `removeRoles`. |
-| `*` | Covers every declared token, including all host APIs. Treated as critical in the consent dialog. |
+| `*` | Covers every declared token and every host capability. Treated as critical in the consent dialog. |
 
-`files.read` and `files.write` appear on some official plugins as reviewer
-copy for file-tunnel use. The host does **not** gate `context.fileTunnel` on
-those tokens. Treat them as documentation of intent, not as an enforcement
-boundary, and still declare them so the consent dialog tells the truth.
+The file-tunnel and agent-console gates use `hasGrant` semantics: `*` and
+`admin.write` satisfy any token, and `admin.read` satisfies `server.read`
+(which the file-read gate also accepts). Declare the narrow token anyway — the
+consent dialog renders what you declared, and an admin who revokes `admin.write`
+or `*` takes the whole capability away.
 
 Custom tokens (for example `my-plugin.sample`) are stored and shown to admins.
 They do not unlock host APIs. Gate your own routes with
@@ -174,6 +179,11 @@ The admin plugin page renders a control from each entry in `config`.
 `ConfigFieldDef` also accepts `object` and `array`. The admin page has no
 control for those: any other `type` falls back to a single-line text field.
 
+`enum`, `min`, `max`, and `required` are accepted by the SDK's
+`createConfigSchema`, which builds a zod schema for your own tests. The panel
+ignores them: the settings form saves whatever it is given, so the plugin must
+validate the values it reads.
+
 `options` may be a list of strings (the ticketing plugin does this) or
 `[{ "label": "High", "value": "high" }]`. `getConfig` returns the stored value,
 falling back to `default`. It does not return this schema object.
@@ -213,9 +223,9 @@ all; it does not type-check values and does not reject the emit. Listeners use
 
 The value must be an exact `MAJOR.MINOR.PATCH` version — unlike
 `catalystVersion`, operators such as `>=` are rejected by the schema. The
-installed dependency must match that exact version. The panel loads
-dependencies first. A cycle is logged and the plugins still load; do not rely
-on cycle-breaking.
+panel loads dependencies first. A missing or mismatched dependency, and a
+dependency cycle, are logged as errors at discovery; the plugin still loads,
+so do not rely on either to gate it.
 
 ## Related
 

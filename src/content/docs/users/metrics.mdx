@@ -15,7 +15,7 @@ sources:
   - catalyst-backend/src/routes/metrics.ts
   - catalyst-backend/src/routes/alerts.ts
   - catalyst-backend/src/services/alert-service.ts
-last_verified: '2026-10-16'
+last_verified: '2026-10-20'
 ---
 
 The **Metrics** tab shows what your server is actually consuming right now and
@@ -24,10 +24,11 @@ incidents they fire.
 
 ## Prerequisites
 
-- A server you can access, with the `server.read` permission for the **Metrics**
-  tab.
-- The `alert.read` permission to see alert rules and incidents, and
-  `alert.create` to add one.
+- A server you can access, with `server.read` for the **Metrics** tab.
+- `alert.read` to see alert rules and incidents, `alert.create` to add one,
+  and `alert.update` / `alert.delete` to change or remove one. The **Alerts** tab
+  also appears with `server.read`, but the rules and history in it need
+  `alert.read`.
 
 ## Read the Metrics tab
 

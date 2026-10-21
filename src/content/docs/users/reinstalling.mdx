@@ -10,7 +10,7 @@ sources:
   - catalyst-frontend/src/components/servers/tabs/ServerAdminTab.tsx
   - catalyst-frontend/src/components/servers/EulaModal.tsx
   - catalyst-backend/src/routes/servers/power.ts
-last_verified: '2026-10-16'
+last_verified: '2026-10-20'
 ---
 
 Reinstalling replaces your server files with a fresh copy from its template. Use
@@ -40,10 +40,6 @@ You need the `server.reinstall` permission (the server owner has it by default).
 7. Re-apply anything the template install does not restore (configs, plugins,
    and so on).
 
-Reinstall is available to anyone with the `server.reinstall` permission, which
-the server owner has by default. Panel administrators also have a **Reinstall**
-action in the **Admin** tab's **Container** section.
-
 ## If an install gets stuck
 
 A server stuck in the **installing** state shows a **Cancel install** button
@@ -59,6 +55,10 @@ want to keep unless you restore them afterwards from the backup.
 
 - One broken config? Revert that file instead of wiping everything.
 - Boot loop after a variable change? Revert the variable ([startup](/users/startup/)).
+- Install script out of date but files fine? The **Admin** tab's **Container**
+  section has **Rebuild** (needs `server.rebuild`): it re-runs the install
+  command and keeps existing files instead of deleting them. Administrators
+  reinstall from the same section.
 - Just want a second server with the same setup? [Clone it](/users/cloning/)
   instead of starting from scratch — a configuration clone installs fresh, a
   full clone copies the world too.

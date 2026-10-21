@@ -11,8 +11,9 @@ sources:
   - catalyst-frontend/src/pages/admin/role-creator/
   - catalyst-backend/src/routes/roles.ts
   - catalyst-backend/src/lib/permissions-catalog.ts
+  - catalyst-backend/src/lib/permission-vocabulary.ts
   - catalyst-backend/src/plugins/custom-permissions.ts
-last_verified: '2026-10-16'
+last_verified: '2026-10-20'
 ---
 
 **Roles** are named bundles of permissions; users get powers through roles, not
@@ -74,7 +75,9 @@ do not hand that out casually.
 
 Admin-created [API keys](/api/authentication/) carry scoped permissions from
 the same catalog — a monitoring key gets read-only metrics, not server control.
-The permissions catalog endpoint documents every available scope.
+The exact strings are listed in
+[Authorization & Permissions](/api/authorization/#permission-catalog), served by
+`GET /api/roles/permissions-catalog`.
 
 ## Dangerous combinations
 

@@ -10,8 +10,10 @@ sources:
   - catalyst-frontend/src/lib/deploy-command.ts
   - catalyst-frontend/src/components/nodes/NodeCreateModal.tsx
   - catalyst-backend/src/server.ts
+  - catalyst-agent/src/firewall_manager.rs
+  - catalyst-agent/src/sftp_server.rs
   - scripts/deploy-agent.sh
-last_verified: '2026-10-16'
+last_verified: '2026-10-20'
 ---
 
 Create the node entry in the panel first, then run the install command the
@@ -73,7 +75,10 @@ agent version that panel understands. The installer then:
   Releases first, then from the panel itself if GitHub is unreachable.
 - Writes `/opt/catalyst-agent/config.toml` with mode `0600`, containing the
   panel URL and the node API key.
-- Installs the `catalyst-agent` service and starts it.
+- Installs the `catalyst-agent` service and starts it. The agent then opens its
+  own ports in the host firewall it detects (`ufw`, `firewalld`, or
+  `ipset`/`iptables`): each server's allocation ports as the server starts, and
+  the SFTP port.
 
 ## Verify
 

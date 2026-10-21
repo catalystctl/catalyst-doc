@@ -11,7 +11,7 @@ sources:
   - catalyst-backend/src/routes/migration.ts
   - catalyst-backend/src/services/migration/index.ts
   - catalyst-backend/src/services/migration/types.ts
-last_verified: '2026-10-16'
+last_verified: '2026-10-20'
 ---
 
 The migration center (**Admin → Migration**) imports a Pterodactyl panel into
@@ -24,12 +24,13 @@ administrator account.
 
 - A Catalyst node that is **online** with enough free capacity for the servers
   you are moving. Migration refuses to start with no online target node.
-- The source panel's **Application API Key** (`ptla_…`).
-- The source panel's **Client API Key** (`ptlc_…`) if you want backups and
-  server files migrated. Without it, those steps are skipped. Create it in
-  Pterodactyl under **API Credentials → Client API**.
-- Space for backup slots on the source panel; servers with none report it as a
-  skipped import.
+- The source panel's **Application API Key** (`ptla_…`). It must be allowed to
+  change server feature limits: when a source server has no backup slots (or all
+  of them are used), the job raises its backup limit so it can create the
+  migration backup. If that call fails, that server's backup step is skipped.
+- The source panel's **Client API Key** (`ptlc_…`) if you want backups, server
+  files, schedules and subusers migrated. Without it those steps are skipped.
+  Create it in Pterodactyl under **API Credentials → Client API**.
 - Templates and nests are imported automatically by the job — you do not have to
   run [egg imports](/admin/importing-eggs/) first, though doing so lets you fix a
   template before a large run.
@@ -40,7 +41,7 @@ administrator account.
 2. Under **Connect**, enter the source **Panel URL** and **Application API Key**,
    plus the optional **Client API Key (for file migration)**.
 3. Select **Test Connection**. The panel reports the source's locations, nodes,
-   nests, users, and servers, and warns about servers with no backup slots.
+   nests, users, and servers, and warns about servers with no free backup slots.
 4. Choose the **Migration Scope**:
    - **Full Migration** — every source node, mapped onto Catalyst nodes.
    - **Node by Node** — only the source nodes you select.

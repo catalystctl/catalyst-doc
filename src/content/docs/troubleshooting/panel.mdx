@@ -11,7 +11,8 @@ sources:
   - catalyst-frontend/src/pages/admin/SystemErrorsPage.tsx
   - catalyst-docker/docker-compose.yml
   - catalyst-docker/update.sh
-last_verified: '2026-10-16'
+  - install.sh
+last_verified: '2026-10-20'
 ---
 
 ## Prerequisites
@@ -21,23 +22,39 @@ last_verified: '2026-10-16'
 - Shell access on the host running the stack, to read container logs and run
   `docker compose`.
 
+## Install stopped on Fedora or RHEL (dnf5)
+
+Fedora 41+ and RHEL/CentOS Stream 10 ship dnf5, which dropped the dnf4
+`config-manager --add-repo` command the installer used to add Docker's
+repository. An `install.sh` older than v1.85.0 aborts at that step, so Docker is
+never installed and the stack is never created.
+
+1. Re-download the current installer (v1.85.0 or later) and run it again. It
+   detects dnf5, installs `dnf5-plugins` and uses
+   `dnf config-manager addrepo --from-repofile=`; on dnf4 it keeps using
+   `dnf-plugins-core` and `--add-repo`.
+2. To repair an old script by hand:
+   `sudo dnf install -y dnf5-plugins` and
+   `sudo dnf config-manager addrepo --from-repofile=https://download.docker.com/linux/fedora/docker-ce.repo`
+   (use the `centos` path on RHEL/CentOS), then re-run the installer.
+
 ## Panel will not start after an update
 
 1. Read the backend container logs first (`docker compose logs backend` from the
    install directory). Most failures announce themselves: a migration waiting on
    a lock, a renamed environment variable (check the release notes), or an
    unreachable database.
-2. Confirm the PostgreSQL and Redis containers are up (`docker compose ps`)
-   before blaming the backend.
-3. Roll back per [updating Catalyst](/admin/updating/) if the cause is not
-   obvious within minutes — a down panel blocks all management.
+2. Confirm the PostgreSQL and Redis containers are up (`docker compose ps`) before
+   blaming the backend.
+3. Roll back per [updating Catalyst](/admin/updating/) if the cause is not obvious
+   within minutes — a down panel blocks all management.
 
 ## HTTP 500s in the UI
 
-- One page broken, rest fine: open **Admin → System Errors** and filter by
+- One page broken, the rest fine: open **Admin → System Errors** and filter by
   **Component** to see the persisted exception, then check backend logs at that
-  timestamp. A missing column after a partial migration looks exactly like this
-  — never interrupt migrations.
+  timestamp. A missing column after a partial migration looks exactly like this —
+  never interrupt migrations.
 - Everything broken: database or Redis connectivity. Verify credentials,
   connectivity, and free disk on the database host.
 
@@ -45,24 +62,25 @@ last_verified: '2026-10-16'
 
 1. Can you reach the panel URL at all? If not, this is
    [networking](/troubleshooting/networking/), not auth.
-2. Wrong-password for everyone including admins: check the backend logs for
-   auth/database errors rather than resetting passwords blindly. Sign-in
-   failures also appear in **Admin → Audit Logs**.
-3. Invites/resets never arrive: mail configuration ([configuration](/admin/configuration/)),
-   spam folders, then mail provider logs.
+2. Wrong password for everyone including admins: check the backend logs for
+   auth/database errors rather than resetting passwords blindly. Sign-in failures
+   are recorded in **Admin → Audit Logs** as `login_failed`.
+3. Invites or resets never arrive: mail configuration
+   ([configuration](/admin/configuration/)), spam folders, then mail provider
+   logs.
 
 ## Pages load but data is stale
 
-The UI caches aggressively. Hard-refresh, then check whether realtime streams
-are connecting ([realtime events](/api/websockets/)) — a broken event stream looks
+The UI caches aggressively. Hard-refresh, then check whether realtime streams are
+connecting ([realtime events](/api/websockets/)) — a broken event stream looks
 like frozen data while REST keeps working.
 
 ## Collect for a bug report
 
-Panel version, browser + version, exact steps, backend log lines for the
-incident window, and whether the problem survives a private window
-(rules out extensions/cookies). **Admin → System Errors → Download diagnostics**
-captures the panel logs and system errors in one redacted ZIP — see
+Panel version, browser and version, exact steps, backend log lines for the
+incident window, and whether the problem survives a private window (rules out
+extensions and cookies). **Admin → System Errors → Download diagnostics** captures
+panel, node, and server logs in one redacted ZIP — see
 [diagnostics bundle](/troubleshooting/diagnostics-bundle/).
 
 ## Related
@@ -70,4 +88,3 @@ captures the panel logs and system errors in one redacted ZIP — see
 - [Common errors](/troubleshooting/common-errors/) — look up a code or message.
 - [Node issues](/troubleshooting/node/) — the panel is healthy but nodes are not.
 - [Networking issues](/troubleshooting/networking/) — the panel URL is unreachable.
-- [Diagnostics bundle](/troubleshooting/diagnostics-bundle/) — export panel logs for support.
