@@ -41,6 +41,13 @@ Below the header are trend cards for **CPU**, **Memory**, **Disk usage**,
 **Disk I/O**, and **Network** (receive plus transmit, in MB/s). The latest value
 on each card turns amber past 75% and red past 90% for CPU and memory.
 
+Each card is drawn on a scale that starts at zero — CPU against the whole
+allocation, so a line at the top of the card means every allocated core busy —
+and small readings keep the decimals they need instead of rounding to nothing: a
+server using a fraction of a core reads `0.01 / 4 cores · 0.35% of allocated
+cores`, and anything under a hundredth of a core reads `<0.01`. A quiet server
+therefore draws a flat line along the bottom of its card rather than a spiky one.
+
 Use the time range selector at the top right to change the window:
 
 - **1 hour**, **6 hours**, **24 hours**, **7 days**, **30 days**.
