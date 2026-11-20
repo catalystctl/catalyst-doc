@@ -1,0 +1,168 @@
+# Catalyst Docs
+
+> Catalyst is a game-server control panel: create and run game servers, edit
+> files, schedule backups, manage nodes and users, and automate everything
+> through a REST API. This file indexes the complete documentation.
+
+- Documentation home: https://docs.catalystctl.com/
+- Full documentation in one file: https://docs.catalystctl.com/llms-full.txt
+- REST API contract (OpenAPI 3.1): https://docs.catalystctl.com/openapi.json
+- Catalyst product site index: https://catalystctl.com/llms.txt
+
+## Catalyst products
+
+- [Catalyst product site](https://catalystctl.com/)
+- [Template catalogue — installable game recipes](https://catalystctl.com/templates/)
+- [Plugin catalogue](https://catalystctl.com/plugins/)
+- [Release notes and changelog](https://catalystctl.com/changelog/)
+
+## Getting Started
+
+### Core concepts
+
+- [What is Catalyst?](https://docs.catalystctl.com/getting-started/what-is-catalyst/): The panel, the node, and the server — how Catalyst fits together.
+- [Terminology](https://docs.catalystctl.com/getting-started/terminology/): Panel, node, server, template, allocation, and the other words Catalyst uses.
+
+### First steps
+
+- [Your First Server](https://docs.catalystctl.com/getting-started/first-server/): Create a Minecraft server in Catalyst, start it, and join it.
+- [Connecting to Your Server](https://docs.catalystctl.com/getting-started/connecting/): Find your server address and connect from the game client.
+
+## Game Server Guide
+
+### Server basics
+
+- [Overview](https://docs.catalystctl.com/users/overview/): Everything a server owner can do in Catalyst, tab by tab.
+- [Console](https://docs.catalystctl.com/users/console/): Read live logs, run commands, and control your server from the console.
+- [Power Controls](https://docs.catalystctl.com/users/power/): Start, stop, restart, and kill a game server safely.
+
+### Files & backups
+
+- [Files](https://docs.catalystctl.com/users/files/): Browse, edit, upload, download, and archive your server files in the browser.
+- [SFTP](https://docs.catalystctl.com/users/sftp/): Connect to your server files with FileZilla, WinSCP, or any SFTP client.
+- [Backups](https://docs.catalystctl.com/users/backups/): Create, restore, download, pin, and prune backups of your server.
+- [Databases](https://docs.catalystctl.com/users/databases/): Create and use managed databases for plugins and mods.
+
+### Configuration & maintenance
+
+- [Startup & Variables](https://docs.catalystctl.com/users/startup/): Change the startup command, variables, and config files your server boots with.
+- [CPU Pinning](https://docs.catalystctl.com/users/cpu-pinning/): Pin a server to specific CPUs on its node, and know exactly what that does not promise.
+- [Reinstalling](https://docs.catalystctl.com/users/reinstalling/): Reinstall a server cleanly without losing what matters.
+- [Cloning](https://docs.catalystctl.com/users/cloning/): Duplicate a server — configuration only or a complete copy — on the same node or another one.
+- [Mods & Plugins](https://docs.catalystctl.com/users/mods-plugins/): Install and update mods, datapacks, modpacks, and plugins from the panel.
+
+### Networking & sharing
+
+- [Networking](https://docs.catalystctl.com/users/networking/): Understand allocations and how players reach your server.
+- [Users & Subusers](https://docs.catalystctl.com/users/subusers/): Share your server with friends without sharing your login.
+
+### Automation & insights
+
+- [Tasks](https://docs.catalystctl.com/users/tasks/): Schedule restarts, backups, and commands that run automatically.
+- [Activity](https://docs.catalystctl.com/users/activity/): See who did what on your server and when.
+- [Metrics & Alerts](https://docs.catalystctl.com/users/metrics/): Watch CPU, memory, disk, and network usage, and get notified before limits bite.
+
+### Account
+
+- [Your Account](https://docs.catalystctl.com/users/account/): Sign in, and manage your password, email, two-factor authentication, passkeys, sessions, and personal API keys.
+
+## Administrator Guide
+
+- [Overview](https://docs.catalystctl.com/admin/overview/): Install, configure, and operate Catalyst for your players or customers.
+
+### Install & Update
+
+- [Requirements](https://docs.catalystctl.com/admin/requirements/): What the panel and nodes need before you install Catalyst.
+- [Installation](https://docs.catalystctl.com/admin/installation/): Install the Catalyst panel on a Linux host with the released installer.
+- [First-Time Setup](https://docs.catalystctl.com/admin/first-time-setup/): Create the admin account and brand the panel on first launch.
+- [Updating Catalyst](https://docs.catalystctl.com/admin/updating/): Update the panel and nodes safely, in the right order.
+
+### Nodes
+
+- [Overview](https://docs.catalystctl.com/admin/nodes/overview/): What nodes do, how they talk to the panel, and the node lifecycle.
+- [Registering a Node](https://docs.catalystctl.com/admin/nodes/registering/): Create a node in the panel, run its install command, and add allocations.
+- [Installing a Node](https://docs.catalystctl.com/admin/nodes/installing/): Install the Catalyst agent on a fresh Linux machine with the command the panel shows.
+- [Updating a Node](https://docs.catalystctl.com/admin/nodes/updating/): Roll the agent forward from the panel without losing running servers.
+
+### Configuration
+
+- [Configuration](https://docs.catalystctl.com/admin/configuration/): Panel settings, environment variables, and when to change them.
+- [Networking](https://docs.catalystctl.com/admin/networking/): Panel TLS, reverse proxies, node connectivity, and game ports.
+- [Storage](https://docs.catalystctl.com/admin/storage/): Disk layout for the panel and nodes, and keeping disks healthy.
+
+### Access & Security
+
+- [Users](https://docs.catalystctl.com/admin/users/): Create accounts, handle invites, and manage the admin team.
+- [Roles & Permissions](https://docs.catalystctl.com/admin/roles/): Design roles that give staff exactly the access they need.
+- [Security](https://docs.catalystctl.com/admin/security/): Harden the panel, nodes, and accounts against the common attacks.
+
+### Content
+
+- [Templates](https://docs.catalystctl.com/admin/templates/): Provide the games your users can install.
+- [Importing Pterodactyl Eggs](https://docs.catalystctl.com/admin/importing-eggs/): Bring Pterodactyl eggs into Catalyst as templates.
+
+### Extensions
+
+- [Plugins](https://docs.catalystctl.com/admin/plugins/): Install, enable, configure, and license panel extensions.
+
+### Operations
+
+- [Backups](https://docs.catalystctl.com/admin/backups/): Operator-level backup strategy for the panel and the fleet.
+- [Monitoring & Logs](https://docs.catalystctl.com/admin/monitoring/): Know your fleet is healthy — and find out fast when it is not.
+
+### Migration & Recovery
+
+- [Migration](https://docs.catalystctl.com/admin/migration/): Move servers into Catalyst from Pterodactyl with tracked, resumable jobs.
+- [Disaster Recovery](https://docs.catalystctl.com/admin/disaster-recovery/): Rebuild the panel and restore service after serious failure.
+
+## API & Developers
+
+- [Overview](https://docs.catalystctl.com/api/overview/): Integrate with Catalyst programmatically — REST, realtime events, and the reference.
+
+### REST API
+
+- [Authentication](https://docs.catalystctl.com/api/authentication/): Create an API key in the panel and call the API as an authenticated identity.
+- [Authorization & Permissions](https://docs.catalystctl.com/api/authorization/): How Catalyst resolves what an identity may do, and the permission strings you can request.
+- [Errors](https://docs.catalystctl.com/api/errors/): Status codes, stable error codes, and how to handle failures.
+- [Pagination](https://docs.catalystctl.com/api/pagination/): Walk list endpoints with the parameters and envelope each one actually uses.
+- [Rate Limits](https://docs.catalystctl.com/api/rate-limits/): Stay inside the API rate limits and handle 429s gracefully.
+- [Realtime Events](https://docs.catalystctl.com/api/websockets/): Subscribe to console output, server events, and metrics over SSE.
+- [API Guides](https://docs.catalystctl.com/api/guides/): Common Catalyst workflows built from API calls.
+
+### Plugin development
+
+- [Plugin Development](https://docs.catalystctl.com/api/plugins/): Extend the panel with plugins — routes, tabs, tasks, storage, and sign-in.
+- [Create a Plugin](https://docs.catalystctl.com/api/plugins/creating/): Scaffold a plugin with the SDK CLI, install it, and enable it.
+- [Plugin Manifest](https://docs.catalystctl.com/api/plugins/manifest/): Every plugin.json field the panel validates, with the rules that reject a plugin.
+- [Plugin Backend](https://docs.catalystctl.com/api/plugins/backend/): Lifecycle hooks, routes, tasks, events, WebSocket, and file access for a plugin backend.
+- [Plugin Frontend](https://docs.catalystctl.com/api/plugins/frontend/): Add admin tabs, server tabs, pages, and slots, and call your plugin API from the browser.
+- [Plugin Data & Permissions](https://docs.catalystctl.com/api/plugins/data/): Config, key-value storage, collections, and the database fields a plugin is allowed to touch.
+- [Sign-in Plugins](https://docs.catalystctl.com/api/plugins/auth/): Add a "Continue with" login button that creates a real panel session.
+- [Plugin Licensing](https://docs.catalystctl.com/api/plugins/licensing/): Sell plugins with vendor-owned license validation and encrypted payloads.
+- [Packaging & Marketplace](https://docs.catalystctl.com/api/plugins/packaging/): Build a .catpkg.zip, publish an index, and get a plugin onto a panel.
+
+### Reference
+
+- [API Reference](https://docs.catalystctl.com/api/reference/): Generated endpoint reference for the Catalyst REST API.
+
+## Troubleshooting
+
+- [Overview](https://docs.catalystctl.com/troubleshooting/overview/): Diagnose and fix server, node, panel, and networking problems.
+
+### Server owners
+
+- [Server Issues](https://docs.catalystctl.com/troubleshooting/server/): Fix crashes, boot loops, and misbehaving game servers.
+- [Networking Issues](https://docs.catalystctl.com/troubleshooting/networking/): Fix connection failures between players, nodes, and the panel.
+- [Common Errors](https://docs.catalystctl.com/troubleshooting/common-errors/): Match a Catalyst error message to a symptom and fix it.
+
+### Administrators
+
+- [Node Issues](https://docs.catalystctl.com/troubleshooting/node/): Diagnose unreachable nodes, failed agents, and node-level failures.
+- [Panel Issues](https://docs.catalystctl.com/troubleshooting/panel/): Fix login failures, 500s, and a panel that will not start.
+- [Diagnostics Bundle](https://docs.catalystctl.com/troubleshooting/diagnostics-bundle/): Export panel, node, and server logs into one redacted ZIP for support.
+
+## Optional
+
+### Contributing
+
+- [Docs Contributor Guide](https://docs.catalystctl.com/contributing/docs/): How to edit, validate, and publish Catalyst documentation.

@@ -20,6 +20,9 @@ export default defineConfig({
         baseUrl: 'https://github.com/catalystctl/catalyst-doc/edit/main/',
       },
       customCss: ['./src/styles/custom.css'],
+      components: {
+        Head: './src/components/Head.astro',
+      },
       head: [
         {
           tag: 'meta',
@@ -34,6 +37,21 @@ export default defineConfig({
         {
           label: 'Catalyst Website',
           link: 'https://catalystctl.com/',
+          attrs: { target: '_blank', rel: 'noopener' },
+        },
+        {
+          label: 'Templates',
+          link: 'https://catalystctl.com/templates/',
+          attrs: { target: '_blank', rel: 'noopener' },
+        },
+        {
+          label: 'Plugins',
+          link: 'https://catalystctl.com/plugins/',
+          attrs: { target: '_blank', rel: 'noopener' },
+        },
+        {
+          label: 'Changelog',
+          link: 'https://catalystctl.com/changelog/',
           attrs: { target: '_blank', rel: 'noopener' },
         },
         {

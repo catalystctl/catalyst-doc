@@ -1,0 +1,41 @@
+# robots.txt — https://docs.catalystctl.com
+#
+# The documentation is intentionally open to classic search engines AND to AI
+# answer engines: every page is public product documentation meant to be
+# retrieved, quoted and cited. This file is served verbatim by Cloudflare
+# Pages, which overrides Cloudflare's managed robots.txt (that managed file
+# blocks GPTBot, ClaudeBot, PerplexityBot and friends by default).
+
+User-agent: *
+Allow: /
+
+# AI / answer engines — explicitly allowed.
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+Sitemap: https://docs.catalystctl.com/sitemap-index.xml
+# LLMs: https://docs.catalystctl.com/llms.txt

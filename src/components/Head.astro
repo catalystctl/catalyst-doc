@@ -1,0 +1,143 @@
+---
+import type { Props } from '@astrojs/starlight/props';
+import Default from '@astrojs/starlight/components/Head.astro';
+
+const route = Astro.locals.starlightRoute;
+const entry = route?.entry;
+const site = 'https://docs.catalystctl.com';
+
+const pathname = Astro.url.pathname.replace(/\/$/, '') ? `${Astro.url.pathname.replace(/\/$/, '')}/` : '/';
+const canonicalUrl = `${site}${pathname}`;
+const isIndex = pathname === '/';
+
+const title = entry?.data?.title ?? 'Catalyst Documentation';
+const description =
+  entry?.data?.description ??
+  'Use, operate, and integrate with Catalyst — the game-server control panel.';
+
+// `last_verified` comes from frontmatter (via extended schema)
+const dateModified = entry?.data?.last_verified;
+const ogImageUrl = `${site}/og-docs.png`;
+
+const websiteJsonLd = {
+  '@type': 'WebSite',
+  '@id': `${site}/#website`,
+  url: site,
+  name: 'Catalyst Docs',
+  description: 'Use, operate, and integrate with Catalyst — the game-server control panel.',
+  publisher: {
+    '@type': 'Organization',
+    name: 'Catalyst',
+    url: 'https://catalystctl.com',
+    logo: {
+      '@type': 'ImageObject',
+      url: `${site}/favicon.png`,
+    },
+  },
+};
+
+const breadcrumbs = [
+  {
+    '@type': 'ListItem',
+    position: 1,
+    name: 'Catalyst Docs',
+    item: `${site}/`,
+  },
+];
+
+const sectionMap: Record<string, { name: string; url: string }> = {
+  'getting-started': { name: 'Getting Started', url: `${site}/getting-started/what-is-catalyst/` },
+  users: { name: 'Game Server Guide', url: `${site}/users/overview/` },
+  admin: { name: 'Administrator Guide', url: `${site}/admin/overview/` },
+  api: { name: 'API & Developers', url: `${site}/api/overview/` },
+  troubleshooting: { name: 'Troubleshooting', url: `${site}/troubleshooting/overview/` },
+  contributing: { name: 'Contributing', url: `${site}/contributing/docs/` },
+};
+
+const parts = pathname.replace(/^\//, '').replace(/\/$/, '').split('/');
+if (!isIndex && parts.length > 0 && parts[0] !== '') {
+  const section = sectionMap[parts[0]];
+  if (section) {
+    if (section.url === canonicalUrl) {
+      breadcrumbs.push({
+        '@type': 'ListItem',
+        position: 2,
+        name: section.name,
+        item: canonicalUrl,
+      });
+    } else {
+      breadcrumbs.push({
+        '@type': 'ListItem',
+        position: 2,
+        name: section.name,
+        item: section.url,
+      });
+      breadcrumbs.push({
+        '@type': 'ListItem',
+        position: 3,
+        name: title,
+        item: canonicalUrl,
+      });
+    }
+  } else {
+    breadcrumbs.push({
+      '@type': 'ListItem',
+      position: 2,
+      name: title,
+      item: canonicalUrl,
+    });
+  }
+}
+
+const breadcrumbJsonLd = {
+  '@type': 'BreadcrumbList',
+  '@id': `${canonicalUrl}#breadcrumb`,
+  itemListElement: breadcrumbs,
+};
+
+const articleJsonLd = !isIndex
+  ? {
+      '@type': 'TechArticle',
+      '@id': `${canonicalUrl}#article`,
+      isPartOf: { '@id': `${site}/#website` },
+      headline: title,
+      description,
+      url: canonicalUrl,
+      inLanguage: 'en',
+      image: ogImageUrl,
+      ...(dateModified ? { dateModified, datePublished: dateModified } : {}),
+      author: {
+        '@type': 'Organization',
+        name: 'Catalyst Team',
+        url: 'https://catalystctl.com',
+      },
+      publisher: {
+        '@type': 'Organization',
+        name: 'Catalyst',
+        url: 'https://catalystctl.com',
+        logo: {
+          '@type': 'ImageObject',
+          url: `${site}/favicon.png`,
+        },
+      },
+    }
+  : null;
+
+const jsonLdGraph = {
+  '@context': 'https://schema.org',
+  '@graph': [websiteJsonLd, breadcrumbJsonLd, ...(articleJsonLd ? [articleJsonLd] : [])],
+};
+---
+
+<Default {...Astro.props}><slot /></Default>
+
+<meta property="og:image" content={ogImageUrl} />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:type" content="image/png" />
+<meta property="og:image:alt" content="Catalyst Documentation" />
+
+<meta name="twitter:image" content={ogImageUrl} />
+<meta name="twitter:image:alt" content="Catalyst Documentation" />
+
+<script type="application/ld+json" set:html={JSON.stringify(jsonLdGraph)} />

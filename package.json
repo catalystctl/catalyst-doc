@@ -3,21 +3,24 @@
   "version": "0.1.0",
   "private": true,
   "packageManager": "pnpm@9.15.9",
-  "description": "Catalyst product documentation site (docs.catalystctl.com) — Astro Starlight, deployed on Cloudflare Pages.",
+  "description": "Catalyst product documentation site (docs.catalystctl.com) \u2014 Astro Starlight, deployed on Cloudflare Pages.",
   "type": "module",
   "engines": {
     "node": ">=20"
   },
   "scripts": {
     "dev": "astro dev",
-    "prebuild": "node scripts/sync-openapi.mjs",
-    "build": "astro build",
+    "prebuild": "node scripts/sync-openapi.mjs && node scripts/generate-og-image.mjs && node scripts/generate-llms.mjs",
+    "build": "astro build && node scripts/enrich-sitemap.mjs",
     "preview": "astro preview",
     "validate": "node scripts/validate-docs.mjs",
     "sync-openapi": "node scripts/sync-openapi.mjs",
     "check-terminology": "node scripts/check-terminology.mjs",
     "docs-agent": "node tools/docs-agent/bin/docs-agent.mjs",
-    "test": "node --test tools/docs-agent/tests/*.test.mjs"
+    "test": "node --test tools/docs-agent/tests/*.test.mjs",
+    "generate-llms": "node scripts/generate-llms.mjs",
+    "enrich-sitemap": "node scripts/enrich-sitemap.mjs",
+    "generate-og-image": "node scripts/generate-og-image.mjs"
   },
   "dependencies": {
     "@astrojs/starlight": "^0.42.1",
