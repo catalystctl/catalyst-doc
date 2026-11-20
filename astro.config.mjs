@@ -79,6 +79,7 @@ export default defineConfig({
               label: 'Configuration & maintenance',
               items: [
                 { label: 'Startup & Variables', slug: 'users/startup' },
+                { label: 'CPU Pinning', slug: 'users/cpu-pinning' },
                 { label: 'Reinstalling', slug: 'users/reinstalling' },
                 { label: 'Cloning', slug: 'users/cloning' },
                 { label: 'Mods & Plugins', slug: 'users/mods-plugins' },

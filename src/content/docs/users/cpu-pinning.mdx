@@ -1,0 +1,82 @@
+---
+title: CPU Pinning
+description: Pin a server to specific CPUs on its node, and know exactly what that does not promise.
+audience:
+  - user
+  - admin
+features:
+  - servers
+  - nodes
+sources:
+  - catalyst-frontend/src/components/servers/CpuAffinityField.tsx
+  - catalyst-frontend/src/components/servers/UpdateServerModal.tsx
+  - catalyst-frontend/src/components/servers/CreateServerModal.tsx
+  - catalyst-backend/src/lib/cpu-affinity.ts
+  - catalyst-agent/src/runtime_manager/image_and_spec.rs
+last_verified: '2026-11-20'
+---
+
+CPU pinning restricts a server to a numbered subset of its node's CPUs. Use it
+when a game is picky about core locality, when you want two heavy servers on
+clearly separate cores, or when a node mixes fast and slow cores and you want a
+server on the fast ones.
+
+:::note[What pinning does not do]
+Pinning does not reserve a CPU. The server's **CPU allocation** still caps how
+much CPU time it may use, and other servers may be pinned to the same CPUs —
+they then share that time by weight. To place a server and cap it, set both.
+:::
+
+## Prerequisites
+
+- A server you can manage, with the `server.resources` permission (owners and
+  administrators always have it).
+- The node's agent must have reported its CPU set. Nodes that have never
+  connected, or that run an older agent, show a text field instead of a picker
+  and the pin is only checked when the server starts.
+
+## Pin a server
+
+1. Open the server and choose **Edit resources** (the pencil next to the
+   resource summary).
+2. Under **CPU pinning**, pick the CPUs. **All CPUs** clears the pin; the
+   canonical form of your selection is shown next to the label.
+3. Save, then **restart** the server: a pin applies when the server starts, so
+   changing it on a running server takes effect at its next start.
+
+For a new server, the same field is in the **Resources** step of the create
+dialog.
+
+## Rules
+
+- A pin must name at least as many CPUs as the server's **CPU allocation**. A
+  2-core server pinned to one CPU can never spend its allocation, so the panel
+  refuses the save and tells you which value to change.
+- A pin may name more CPUs than the allocation. That is the normal way to let a
+  2-core server spread across four CPUs.
+- Only CPUs the node has are accepted. The picker offers exactly the node's
+  reported set; the server refuses anything else with the available set named.
+- A pin is a property of the node's CPU numbering, not of the server. Moving a
+  server to another node is covered below.
+
+## Moving a server
+
+- **Cloning** to the same node keeps the pin. Cloning to another node keeps it
+  only when that node has the same CPUs; otherwise the review step warns that
+  the clone will not be pinned, and you must acknowledge it before cloning.
+- **Transferring** a pinned server to another node is refused while the pin
+  cannot be satisfied there. Clear the pin, transfer, then pin again.
+
+## Troubleshooting
+
+| Message | Meaning | Fix |
+|---|---|---|
+| The pinned CPUs are not available on this node | The node's CPU set changed since the pin was saved (a CPU was taken offline, or the server was moved) | Edit resources and pick CPUs the node has, or clear the pin |
+| CPU pinning covers *n* CPUs but the server is allocated *m* cores | The pin is narrower than the allocation | Pin more CPUs, or lower the CPU allocation in the same save |
+| The pin is only checked when the server starts | The node has not reported a CPU set yet | Start the server; the node refuses an impossible pin with the same message |
+
+## Related
+
+- [Metrics & Alerts](/users/metrics/) — CPU usage is reported per core
+- [Cloning](/users/cloning/) — how node-specific settings move between nodes
+- [Startup & Variables](/users/startup/) — changing the command a pinned server runs
